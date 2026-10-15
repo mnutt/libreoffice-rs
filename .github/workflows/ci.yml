@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, davros-fixes]
   pull_request:
 
 permissions:
