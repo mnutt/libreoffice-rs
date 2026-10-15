@@ -140,12 +140,14 @@ def raster_color_counts(pdf):
     pixels = data[match.end():]
     if len(pixels) != int(match[1]) * int(match[2]) * 3:
         raise ValueError('Unexpected PPM dimensions')
-    colors = dict(red=0, blue=0, orange=0)
+    colors = dict(red=0, blue=0, orange=0, green=0, rose=0)
     for i in range(0, len(pixels), 3):
         r,g,b = pixels[i:i+3]
         colors['red'] += r > 180 and g < 100 and b < 100
         colors['blue'] += b > 140 and r < 100 and g < 170
         colors['orange'] += r > 180 and 80 < g < 180 and b < 100
+        colors['green'] += g > 140 and r < 140 and b < 160
+        colors['rose'] += r > 200 and g < 150 and b < 160
     return colors
 
 def inspect_pdf(pdf, previews):

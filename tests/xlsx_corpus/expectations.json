@@ -131,5 +131,28 @@
       "LiberationSans-Bold",
       "LiberationSans-Italic"
     ]
+  },
+  "expanded-123233_charts": {
+    "text": [
+      "Camping Equipment",
+      "Personal Accessories",
+      "2004",
+      "2007"
+    ],
+    "min_colors": {
+      "blue": 100,
+      "green": 100
+    }
+  },
+  "expanded-06_sales_dashboard_en": {
+    "text": [
+      "Regional Sales Dashboard",
+      "North America",
+      "3,488"
+    ],
+    "min_colors": {
+      "green": 200,
+      "rose": 200
+    }
   }
 }

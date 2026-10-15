@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 import run
 
 class CorpusTests(unittest.TestCase):
@@ -28,8 +29,16 @@ class CorpusTests(unittest.TestCase):
         expected={'min_colors':{'blue':100},'max_colors':{'red':0},'fonts':['LiberationSans-Bold']}
         self.assertEqual(len(run.check_expectations(stage,'',expected)),3)
 
+    def test_heatmap_color_pixels_are_measured(self):
+        data = b'P6\n3 1\n255\n' + bytes([248,105,107,99,190,123,255,255,255])
+        with patch.object(run.subprocess, 'check_output', return_value=data):
+            colors = run.raster_color_counts(Path('unused.pdf'))
+        self.assertEqual(colors['rose'], 1)
+        self.assertEqual(colors['green'], 1)
+
     def test_checked_in_manifest(self):
-        run.validate_manifest(json.loads((run.HERE/'manifest.json').read_text()))
+        for name in ['manifest.json', 'expanded.json']:
+            run.validate_manifest(json.loads((run.HERE/name).read_text()))
 
     def test_unsafe_paths_and_duplicate_ids_are_rejected(self):
         original=json.loads((run.HERE/'manifest.json').read_text())

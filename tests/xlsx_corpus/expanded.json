@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/developer0hye/office2pdf",
+  "revision": "2e0ae824ac1b7f49a20e8fedcd019a87941d80c0",
+  "fixtures": [
+    {
+      "id": "expanded-ExcelTables",
+      "path": "tests/fixtures/xlsx/ExcelTables.xlsx",
+      "file": "expanded-ExcelTables.xlsx",
+      "purpose": "structured table style and totals",
+      "size": 9457,
+      "sha256": "1e43011440eb39000d1751abaf9ded42d37b26f91b4f586a94bf91ce8ecbe9e5"
+    },
+    {
+      "id": "expanded-ExcelPivotTableSample",
+      "path": "tests/fixtures/xlsx/ExcelPivotTableSample.xlsx",
+      "file": "expanded-ExcelPivotTableSample.xlsx",
+      "purpose": "saved pivot-table report",
+      "size": 19460,
+      "sha256": "f0ef1d61c9f3d8b27b18a876b8e24676314c6450ed64a725a7bfaa603fdd67e3"
+    },
+    {
+      "id": "expanded-WithDrawing",
+      "path": "tests/fixtures/xlsx/WithDrawing.xlsx",
+      "file": "expanded-WithDrawing.xlsx",
+      "purpose": "multiple embedded drawings",
+      "size": 101696,
+      "sha256": "97b1ab359d6aecbe37864f30c85106e386f0a19bea8f290103927362a2701066"
+    },
+    {
+      "id": "expanded-WithTextBox",
+      "path": "tests/fixtures/xlsx/WithTextBox.xlsx",
+      "file": "expanded-WithTextBox.xlsx",
+      "purpose": "drawing text boxes",
+      "size": 9661,
+      "sha256": "4626f09c5d870726d6c7837b37c2bbfe7376cb025f61648af39a63ee8be1b1be"
+    },
+    {
+      "id": "expanded-123233_charts",
+      "path": "tests/fixtures/xlsx/123233_charts.xlsx",
+      "file": "expanded-123233_charts.xlsx",
+      "purpose": "chart families and source axes",
+      "size": 12957,
+      "sha256": "47e9e8dea87494d17dbacce9aa3a9ec31cb2b26b288de05ca95c0a4622ca7f80"
+    },
+    {
+      "id": "expanded-chart_sheet",
+      "path": "tests/fixtures/xlsx/chart_sheet.xlsx",
+      "file": "expanded-chart_sheet.xlsx",
+      "purpose": "dedicated chart sheet",
+      "size": 10795,
+      "sha256": "93e2d8663bc1a6b7d961f2a74440953ecdaadb1a3f171960129b730f7c935d3e"
+    },
+    {
+      "id": "expanded-issue_1603_gift_budget",
+      "path": "tests/fixtures/xlsx/issue_1603_gift_budget.xlsx",
+      "file": "expanded-issue_1603_gift_budget.xlsx",
+      "purpose": "gift budget with pictures and print layout",
+      "size": 285993,
+      "sha256": "25f5dc75dab19ea12042979a61842314ddc226e3e45d447e36b2a2a104112613"
+    },
+    {
+      "id": "expanded-issue_1181_fit_to_height",
+      "path": "tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx",
+      "file": "expanded-issue_1181_fit_to_height.xlsx",
+      "purpose": "fit-to-height print layout",
+      "size": 52526,
+      "sha256": "2b4a2d8dceda58758593c88409875efbda05780559154c02bd13fef4f7a1c65b"
+    },
+    {
+      "id": "expanded-richtext-namespaced",
+      "path": "tests/fixtures/xlsx/richtext-namespaced.xlsx",
+      "file": "expanded-richtext-namespaced.xlsx",
+      "purpose": "namespaced rich strings",
+      "size": 10070,
+      "sha256": "b495b2bf4d4d2edc66daaca107981a66c5ec608cc46476251498ce0af8507a88"
+    },
+    {
+      "id": "expanded-right-to-left",
+      "path": "tests/fixtures/xlsx/right-to-left.xlsx",
+      "file": "expanded-right-to-left.xlsx",
+      "purpose": "right-to-left sheet layout",
+      "size": 14478,
+      "sha256": "419ef388b20501009a8c546f20ca0371abac168389b556ba47c52f48f0e7f3b0"
+    },
+    {
+      "id": "expanded-table-multiple",
+      "path": "tests/fixtures/xlsx/table-multiple.xlsx",
+      "file": "expanded-table-multiple.xlsx",
+      "purpose": "multiple styled tables",
+      "size": 11520,
+      "sha256": "8d39e98b17bcd2937171dacbae296c2f3cd975bbf41809738c05c7ffdccc977f"
+    },
+    {
+      "id": "expanded-ConditionalFormattingSamples",
+      "path": "tests/fixtures/xlsx/poi/ConditionalFormattingSamples.xlsx",
+      "file": "expanded-ConditionalFormattingSamples.xlsx",
+      "purpose": "conditional formatting examples",
+      "size": 654688,
+      "sha256": "8dfa997a642c00a1da8c0750c371f204553a98c537ca046028b052f9b424a074"
+    },
+    {
+      "id": "expanded-NewStyleConditionalFormattings",
+      "path": "tests/fixtures/xlsx/poi/NewStyleConditionalFormattings.xlsx",
+      "file": "expanded-NewStyleConditionalFormattings.xlsx",
+      "purpose": "extended conditional styles",
+      "size": 13378,
+      "sha256": "1e97af3b87636bd0a759c25439a21b928c2ff3b9a3c57ca49ae24cb1ccdb7e2f"
+    },
+    {
+      "id": "expanded-conditional_formatting_cell_is",
+      "path": "tests/fixtures/xlsx/poi/conditional_formatting_cell_is.xlsx",
+      "file": "expanded-conditional_formatting_cell_is.xlsx",
+      "purpose": "conditional comparisons across sheets",
+      "size": 68571,
+      "sha256": "7deed8f22cb3cf45733a94b975950b49f6ab89e37e891e62f0be8a0b07d9bc26"
+    },
+    {
+      "id": "expanded-02_financial_model_en",
+      "path": "tests/golden_mocks/business/sources/xlsx/02_financial_model_en.xlsx",
+      "file": "expanded-02_financial_model_en.xlsx",
+      "purpose": "authored upstream business example: financial model",
+      "size": 8988,
+      "sha256": "d4d00ec421a465fa24769fa6b450d53252cab5d10c5beb75d6db8fd8ed7bbfa6"
+    },
+    {
+      "id": "expanded-03_inventory_en",
+      "path": "tests/golden_mocks/business/sources/xlsx/03_inventory_en.xlsx",
+      "file": "expanded-03_inventory_en.xlsx",
+      "purpose": "authored upstream business example: inventory",
+      "size": 10929,
+      "sha256": "43ab1a64eaac520472091e42b2f2790ca570b93205b64cb09e7267d1c915336f"
+    },
+    {
+      "id": "expanded-05_project_schedule_en",
+      "path": "tests/golden_mocks/business/sources/xlsx/05_project_schedule_en.xlsx",
+      "file": "expanded-05_project_schedule_en.xlsx",
+      "purpose": "authored upstream business example: project schedule",
+      "size": 7373,
+      "sha256": "3f8d95e3d6133fa5c0bed6766ba669bc193b0f8ebf024773159b5374cd3a6c5f"
+    },
+    {
+      "id": "expanded-06_sales_dashboard_en",
+      "path": "tests/golden_mocks/business/sources/xlsx/06_sales_dashboard_en.xlsx",
+      "file": "expanded-06_sales_dashboard_en.xlsx",
+      "purpose": "authored upstream business example: sales dashboard",
+      "size": 7824,
+      "sha256": "e794d8d6c40dd6f76e2d6ee7fe3f8cc21c6f17059ccfa3477a8e46c62ee75283"
+    },
+    {
+      "id": "expanded-09_expense_report_en",
+      "path": "tests/golden_mocks/business/sources/xlsx/09_expense_report_en.xlsx",
+      "file": "expanded-09_expense_report_en.xlsx",
+      "purpose": "authored upstream business example: expense report",
+      "size": 7460,
+      "sha256": "3403db276febaab11fedea12efc734af1a99fe0f25f2fc306c2093dd354ca283"
+    },
+    {
+      "id": "expanded-10_kpi_tracker_en",
+      "path": "tests/golden_mocks/business/sources/xlsx/10_kpi_tracker_en.xlsx",
+      "file": "expanded-10_kpi_tracker_en.xlsx",
+      "purpose": "authored upstream business example: kpi tracker",
+      "size": 7474,
+      "sha256": "82543b139cd7d9f0be55ecea408a530859b7d4886cc4dfdf143ee8246cbb47ad"
+    }
+  ],
+  "notices": [
+    {
+      "path": "LICENSE",
+      "file": "LICENSE",
+      "size": 10763,
+      "sha256": "a69f60df4102c74db295b45bdeca8bb300ecaa954a319de94cbe4e8e337e98f9"
+    },
+    {
+      "path": "tests/fixtures/THIRD-PARTY-LICENSES.md",
+      "file": "THIRD-PARTY-LICENSES.md",
+      "size": 9998,
+      "sha256": "2b805ba002ba8a288d892870b6662bee601ac6ef727ff31723772b23c3de222c"
+    }
+  ]
+}
