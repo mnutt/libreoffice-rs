@@ -1,0 +1,825 @@
+{
+  "buAutoNum": {
+    "instances": 244,
+    "decks": [
+      "lo-NumberedList-12ab-ab-34-f4812d",
+      "lo-n83889-343add",
+      "lo-n90255-7c6405",
+      "lo-tdf173712-1f3454",
+      "lo-tdf173712-liststyle-507e90",
+      "lo-tdf95932-77fd45",
+      "office-customGeo-cb55b2",
+      "office-customGeo-e9f945",
+      "office-powerpoint_sample-ecae5b",
+      "poi-60810-96f655",
+      "poi-aascu.org_hbcu_leadershipsummit_cooper_-de0479",
+      "poi-aascu.org_workarea_downloadasset.aspx_id_5864-e06f01",
+      "poi-ae.ac.uaeu.faculty_nafaachbili_GeomLec1-59c2be",
+      "poi-alterman_security-59be94",
+      "poi-aptia-6ca35c",
+      "poi-au.asn.aes.www_conferences_2011_presentations_Fri_20Room4Level4_20930_20Maloney-a1c8a8",
+      "poi-bug62513-7e24dc",
+      "poi-customGeo-070207"
+    ]
+  },
+  "buChar": {
+    "instances": 760,
+    "decks": [
+      "lo-TextFittingComparisonWithMSO_3-ed8120",
+      "lo-bullet-indent-c01aa3",
+      "lo-bulletColor-5f5947",
+      "lo-bulletMarginAndIndent-6a9631",
+      "lo-connector-shape-animations-3c9110",
+      "lo-font-scale-08c794",
+      "lo-group-07914b",
+      "lo-n83889-343add",
+      "lo-rightToLeftParagraph-3cae95",
+      "lo-tdf103477-880715",
+      "lo-tdf106638-7c80f4",
+      "lo-tdf123090-5fbc5d",
+      "lo-tdf126234-7c9135",
+      "lo-tdf126324-22340d",
+      "lo-tdf128550-f16cb0",
+      "lo-tdf146223-e5062c",
+      "lo-tdf148810_PARA_OUTLLEVEL-f6dc6e",
+      "lo-tdf149961-autofitIndentation-522c85",
+      "lo-tdf165261-a4c3a3",
+      "lo-tdf168835-abceec",
+      "lo-tdf169524-cb20b8",
+      "lo-tdf79082-c03492",
+      "office-customGeo-cb55b2",
+      "office-customGeo-e9f945",
+      "office-keyframes-4b57e3",
+      "office-keyframes-741d27",
+      "office-layouts-29b6ca",
+      "office-layouts-345592",
+      "office-office2pdf_introduction_ko-ddb512",
+      "office-oxp_PB001-Input2-240891",
+      "office-oxp_PB001-Input3-0d2640",
+      "office-powerpoint_sample-ecae5b",
+      "office-themes-338f80",
+      "office-themes-a72ad0",
+      "office-with_japanese-0a08e7",
+      "office-with_japanese-ffb082",
+      "poi-60810-96f655",
+      "poi-ArtisticEffectSample-53b198",
+      "poi-LIBRE_OFFICE-100610-0-da342c",
+      "poi-aascu.org_hbcu_leadershipsummit_cooper_-de0479",
+      "poi-aascu.org_workarea_downloadasset.aspx_id_5864-e06f01",
+      "poi-aptia-6ca35c",
+      "poi-at.ecodesign.www_downloads_Vertiefungsvortrag_elektronik-3ccd83",
+      "poi-au.asn.aes.www_conferences_2011_presentations_Fri_20Room4Level4_20930_20Maloney-a1c8a8",
+      "poi-bug62513-7e24dc",
+      "poi-bug64693-d960e8",
+      "poi-customGeo-070207",
+      "poi-ececapstonespring2012-231781",
+      "poi-keyframes-fe013e",
+      "poi-layouts-6985d0",
+      "poi-pptx2svg-926aa6",
+      "poi-themes-aca4e3",
+      "poi-with_japanese-efc28d"
+    ]
+  },
+  "columns": {
+    "instances": 2,
+    "decks": [
+      "lo-3columns-f28ebf",
+      "lo-tdf120028-cfc244"
+    ]
+  },
+  "headEnd": {
+    "instances": 5136,
+    "decks": [
+      "lo-bnc480256-2-21f068",
+      "lo-bnc584721_4-9eac37",
+      "lo-bnc880763-321e76",
+      "lo-connector-shape-animations-3c9110",
+      "lo-cshapes-bad4d0",
+      "lo-fdo71434-b20af9",
+      "lo-group-rot-ee0db2",
+      "lo-n593612-6be9ef",
+      "lo-n762695-db06b0",
+      "lo-n80340-eff7c8",
+      "lo-n820786-20fcd6",
+      "lo-n90190-a8e917",
+      "lo-n90223-a896e7",
+      "lo-slide-section-test-a74aec",
+      "lo-tableBorderLineStyle-bafab9",
+      "lo-tablescale-cb626d",
+      "lo-tdf100491-aa6584",
+      "lo-tdf103477-880715",
+      "lo-tdf103800-6e33b6",
+      "lo-tdf104788-ea57f0",
+      "lo-tdf105150-2a2fb4",
+      "lo-tdf113163-3b907c",
+      "lo-tdf114845_rotateShape-4b25d7",
+      "lo-tdf114848-72726a",
+      "lo-tdf123090-5fbc5d",
+      "lo-tdf125573_FontWorkScaleX-3760d8",
+      "lo-tdf131554-251dbb",
+      "lo-tdf131905-3be2cd",
+      "lo-tdf135843-b3ddc7",
+      "lo-tdf136830-83c707",
+      "lo-tdf146731-fdd13d",
+      "lo-tdf149588_transparentSolidFill-12b912",
+      "lo-tdf149785-624411",
+      "lo-tdf165321-cb99e8",
+      "lo-tdf169088-ad3617",
+      "lo-tdf50499-4c1a33",
+      "lo-tdf93868-496f3a",
+      "lo-tdt142291-ef8160",
+      "office-45545_Comment-5b5c4b",
+      "office-45545_Comment-c0a120",
+      "office-customGeo-cb55b2",
+      "office-customGeo-e9f945",
+      "office-group-rot-dcb2de",
+      "office-office2pdf_introduction_ko-ddb512",
+      "office-oxp_PB001-Input1-782d9f",
+      "office-oxp_PB001-Input2-240891",
+      "office-oxp_PB001-Input3-0d2640",
+      "office-shapes-152c54",
+      "office-shapes-6f473e",
+      "office-table_test2-40bb97",
+      "office-table_test2-42895b",
+      "office-with_japanese-0a08e7",
+      "office-with_japanese-ffb082",
+      "poi-2411-Performance_Up-793baf",
+      "poi-45541_Footer-888074",
+      "poi-45541_Header-3e3952",
+      "poi-45545_Comment-788ee5",
+      "poi-51187-7b726b",
+      "poi-60810-96f655",
+      "poi-aascu.org_hbcu_leadershipsummit_cooper_-de0479",
+      "poi-aascu.org_workarea_downloadasset.aspx_id_5864-e06f01",
+      "poi-ae.ac.uaeu.faculty_nafaachbili_GeomLec1-59c2be",
+      "poi-alterman_security-59be94",
+      "poi-aptia-6ca35c",
+      "poi-at.ecodesign.www_downloads_Vertiefungsvortrag_elektronik-3ccd83",
+      "poi-au.asn.aes.www_conferences_2011_presentations_Fri_20Room4Level4_20930_20Maloney-a1c8a8",
+      "poi-bug62513-7e24dc",
+      "poi-ca.ubc.cs.people__emhill_presentations_HowWeRefactor-4a8482",
+      "poi-customGeo-070207",
+      "poi-prProps-90742b",
+      "poi-sample_pptx_grouping_issues-e97ec4",
+      "poi-shapes-2764da",
+      "poi-table_test2-f01b52",
+      "poi-with_japanese-efc28d",
+      "python-shp-common-props-2dab49"
+    ]
+  },
+  "normAutofit": {
+    "instances": 376,
+    "decks": [
+      "lo-3columns-f28ebf",
+      "lo-NumberedList-12ab-ab-34-f4812d",
+      "lo-TextFittingComparisonWithMSO_1-7e0264",
+      "lo-TextFittingComparisonWithMSO_2-385a49",
+      "lo-TextFittingComparisonWithMSO_3-ed8120",
+      "lo-TextFittingComparisonWithMSO_TopBottomMiddleAlignment-c794f5",
+      "lo-TextFittingStored-978610",
+      "lo-bnc862510_7-66dc9e",
+      "lo-bullet-indent-c01aa3",
+      "lo-customxml-460d61",
+      "lo-font-scale-08c794",
+      "lo-n819614-8c763c",
+      "lo-placeholder-priority-9dd5fb",
+      "lo-pres-with-notes-17573e",
+      "lo-slide-section-test-a74aec",
+      "lo-subtitle-animation-save-40eff0",
+      "lo-tdf104788-ea57f0",
+      "lo-tdf120028-cfc244",
+      "lo-tdf129686-6ebf27",
+      "lo-tdf132282-d3ccd4",
+      "lo-tdf134862-fb0e35",
+      "lo-tdf137367-8e0021",
+      "lo-tdf142648-0c4319",
+      "lo-tdf146223-e5062c",
+      "lo-tdf147121-bce624",
+      "lo-tdf149961-autofitIndentation-522c85",
+      "lo-tdf168835-abceec",
+      "lo-tdf44223-e8e37e",
+      "lo-tdf79082-c03492",
+      "lo-tdf89927-95178f",
+      "lo-tdf98603-55a0ca",
+      "lo-trailing-paragraphs-ac4dd1",
+      "office-1-slide-f8fac1",
+      "office-10-slides-1ec643",
+      "office-5-slides-e1574d",
+      "office-customGeo-cb55b2",
+      "office-customGeo-e9f945",
+      "office-ffc-735bc2",
+      "office-issue_1682_shape_line_cap-beea31",
+      "office-powerpoint_with_image-e46233",
+      "office-themes-338f80",
+      "office-themes-a72ad0",
+      "poi-2411-Performance_Up-793baf",
+      "poi-60810-96f655",
+      "poi-aascu.org_hbcu_leadershipsummit_cooper_-de0479",
+      "poi-aascu.org_workarea_downloadasset.aspx_id_5864-e06f01",
+      "poi-ae.ac.uaeu.faculty_nafaachbili_GeomLec1-59c2be",
+      "poi-aptia-6ca35c",
+      "poi-at.ecodesign.www_downloads_Vertiefungsvortrag_elektronik-3ccd83",
+      "poi-bug58144-headers-footers-2007-cf8b63",
+      "poi-bug62513-7e24dc",
+      "poi-customGeo-070207",
+      "poi-pptx2svg-926aa6",
+      "poi-testPPT-20475a",
+      "poi-themes-aca4e3",
+      "python-shp-shapes-8788f9",
+      "python-txt-text-frame-39caa4"
+    ]
+  },
+  "pattern:": {
+    "instances": 1,
+    "decks": [
+      "python-dml-fill-5a02d1"
+    ]
+  },
+  "pattern:dashDnDiag": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:dashHorz": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:dashUpDiag": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:dashVert": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:diagBrick": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:divot": {
+    "instances": 3,
+    "decks": [
+      "lo-n820786-20fcd6",
+      "python-dml-fill-5a02d1"
+    ]
+  },
+  "pattern:dkDnDiag": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:dkHorz": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:dkUpDiag": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:dkVert": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:dotDmnd": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:dotGrid": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:horzBrick": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:lgCheck": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:lgConfetti": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:lgGrid": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:ltDnDiag": {
+    "instances": 2,
+    "decks": [
+      "lo-n820786-20fcd6",
+      "lo-tdf107608-620cb9"
+    ]
+  },
+  "pattern:ltHorz": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:ltUpDiag": {
+    "instances": 2,
+    "decks": [
+      "lo-n820786-20fcd6",
+      "office-pattern-fill-26db68"
+    ]
+  },
+  "pattern:ltVert": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:narHorz": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:narVert": {
+    "instances": 2,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:openDmnd": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct10": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct20": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct25": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct30": {
+    "instances": 3,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct40": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct5": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct50": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct60": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct70": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct75": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct80": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:pct90": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:plaid": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:shingle": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:smCheck": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:smConfetti": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:smGrid": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:solidDmnd": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:sphere": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:trellis": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:wave": {
+    "instances": 2,
+    "decks": [
+      "lo-n820786-20fcd6",
+      "python-dml-fill-5a02d1"
+    ]
+  },
+  "pattern:wdDnDiag": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:wdUpDiag": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:weave": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "pattern:zigZag": {
+    "instances": 1,
+    "decks": [
+      "lo-n820786-20fcd6"
+    ]
+  },
+  "relIds": {
+    "instances": 123,
+    "decks": [
+      "lo-bnc862510_5-512c52",
+      "lo-bnc862510_6-cc8f57",
+      "lo-bnc870233_2-5ac6da",
+      "lo-bnc870237-461e7e",
+      "lo-bnc880763-321e76",
+      "lo-fill-color-list-45c704",
+      "lo-n819614-8c763c",
+      "lo-n862510_2-9f3a34",
+      "lo-smartart-accent-process-57d495",
+      "lo-smartart-autoTxRot-af30c8",
+      "lo-smartart-autofit-sync-909a0d",
+      "lo-smartart-background-9428a7",
+      "lo-smartart-background-drawingml-fallback-cbb8fd",
+      "lo-smartart-bullet-list-1cfc9c",
+      "lo-smartart-center-cycle-761986",
+      "lo-smartart-chevron-55bda5",
+      "lo-smartart-children-e33436",
+      "lo-smartart-cnt-eef55a",
+      "lo-smartart-composite-infer-right-883e37",
+      "lo-smartart-continuous-block-process-5c183c",
+      "lo-smartart-cycle-4f1f4b",
+      "lo-smartart-cycle-matrix-4271e9",
+      "lo-smartart-data-follow-fd243a",
+      "lo-smartart-dir-a83b7a",
+      "lo-smartart-font-size-de73dd",
+      "lo-smartart-interopgrabbag-7376dc",
+      "lo-smartart-linear-rule-696fad",
+      "lo-smartart-linear-rule-vert-12c1c1",
+      "lo-smartart-maxdepth-1b8aa7",
+      "lo-smartart-missing-bullet-51d64a",
+      "lo-smartart-multidirectional-133aad",
+      "lo-smartart-org-chart-9dbb1f",
+      "lo-smartart-org-chart2-a6a06c",
+      "lo-smartart-picture-strip-fd2f19",
+      "lo-smartart-preserve-327a3e",
+      "lo-smartart-pyramid-1child-29bf9e",
+      "lo-smartart-recursion-b95ffd",
+      "lo-smartart-rightoleftblockdiagram-215b43",
+      "lo-smartart-rotation-4b22df",
+      "lo-smartart-rotation2-2a857b",
+      "lo-smartart-snake-rows-904fe0",
+      "lo-smartart-tdf134221-fa8746",
+      "lo-smartart-text-1b9a84",
+      "lo-smartart-vertical-block-list-c0c019",
+      "lo-smartart-vertical-box-list-b641f7",
+      "lo-smartart1-499f72",
+      "lo-table-list-9f435e",
+      "lo-tdf104792-smart-art-animation-2bd1fc",
+      "lo-tdf125551-d2631c",
+      "lo-tdf131553-3de989",
+      "lo-tdf132302_SmartArt_rightArrow-252ee2",
+      "lo-tdf135953_SmartArt_textposition-2c5ca6",
+      "lo-tdf141058-1-d152a4",
+      "lo-tdf145528_SmartArt_Matrix-3eeede",
+      "lo-tdf148665-7c2b8e",
+      "lo-tdf148921-0e6cee",
+      "lo-tdf149551_SmartArt_Gear-c507bc",
+      "lo-tdf149551_SmartArt_Pie-9bdc37",
+      "lo-tdf149551_SmartArt_Pyramid-f1247c",
+      "lo-tdf149551_SmartArt_Venn-5685a2",
+      "lo-tdf150789-3517fd",
+      "lo-tdf152606-fb7277",
+      "lo-tdf168755_anim_on_SmartArt-5278b4",
+      "lo-tdf169781-72863a",
+      "lo-tdf84205-b5a15b",
+      "lo-tdf93830-5fca70",
+      "lo-vertical-bracket-list-d6db33",
+      "office-SmartArt-1f8160",
+      "office-SmartArt-66d989",
+      "office-customGeo-cb55b2",
+      "office-customGeo-e9f945",
+      "office-oxp_Presentation-cbb178",
+      "office-smartart-simple-1b327c",
+      "office-smartart-simple-2bdd41",
+      "poi-60810-96f655",
+      "poi-SmartArt-93a253",
+      "poi-ae.ac.uaeu.faculty_nafaachbili_GeomLec1-59c2be",
+      "poi-customGeo-070207",
+      "poi-smartart-rotated-text-9e9c77",
+      "poi-smartart-simple-077493",
+      "python-ph-populated-placeholders-843724",
+      "python-shp-shapes-8788f9"
+    ]
+  },
+  "spAutoFit": {
+    "instances": 690,
+    "decks": [
+      "lo-bnc584721_4-9eac37",
+      "lo-bullet-indent-c01aa3",
+      "lo-bulletColor-5f5947",
+      "lo-bulletMarginAndIndent-6a9631",
+      "lo-crop-position-fe1bad",
+      "lo-formatting-bullet-indent-cdae08",
+      "lo-n593612-6be9ef",
+      "lo-n83889-343add",
+      "lo-n862510_4-b97a05",
+      "lo-n90255-7c6405",
+      "lo-paraMarginAndIndentation-89cb4a",
+      "lo-rightToLeftParagraph-3cae95",
+      "lo-shape-soft-edges-2eff87",
+      "lo-slide-sections-c145d1",
+      "lo-smartart-picture-strip-fd2f19",
+      "lo-tdf100065-96809f",
+      "lo-tdf102261_testParaTabStopDefaultDistance-228f8d",
+      "lo-tdf103477-880715",
+      "lo-tdf103800-6e33b6",
+      "lo-tdf104788-ea57f0",
+      "lo-tdf111789-733d9d",
+      "lo-tdf112334-84eeee",
+      "lo-tdf114848-72726a",
+      "lo-tdf116350-texteffects-9995a5",
+      "lo-tdf118776-bd4b3d",
+      "lo-tdf119087-9f560f",
+      "lo-tdf119118-36dcab",
+      "lo-tdf123684-49d269",
+      "lo-tdf126234-7c9135",
+      "lo-tdf127129-c4fcfa",
+      "lo-tdf129372-272146",
+      "lo-tdf138148-ac6e66",
+      "lo-tdf140865Wordart3D-74454f",
+      "lo-tdf148966-ccd976",
+      "lo-tdf149588_transparentSolidFill-12b912",
+      "lo-tdf150770-1709ff",
+      "lo-tdf151547-transparent-white-text-3b5960",
+      "lo-tdf153036_resizedConnectorL-5a87f4",
+      "lo-tdf157285-aa3541",
+      "lo-tdf157529-69315c",
+      "lo-tdf160487-8662df",
+      "lo-tdf160490-55cd31",
+      "lo-tdf165261-a4c3a3",
+      "lo-tdf165321-cb99e8",
+      "lo-tdf165341-d5cfc2",
+      "lo-tdf169524-cb20b8",
+      "lo-tdf89928-blackWhiteEffectThreshold-fee27f",
+      "lo-tdf93868-496f3a",
+      "lo-testShapeAutofit-dfd9ef",
+      "office-45545_Comment-5b5c4b",
+      "office-45545_Comment-c0a120",
+      "office-backgrounds-27664d",
+      "office-backgrounds-33b000",
+      "office-crop-position-49e741",
+      "office-customGeo-cb55b2",
+      "office-customGeo-e9f945",
+      "office-highlight-test-case-058a6a",
+      "office-highlight-test-case-c5a541",
+      "office-keyframes-4b57e3",
+      "office-keyframes-741d27",
+      "office-layouts-29b6ca",
+      "office-layouts-345592",
+      "office-oxp_PB001-Input1-782d9f",
+      "office-oxp_PB001-Input2-240891",
+      "office-oxp_PB001-Input3-0d2640",
+      "office-powerpoint_sample-ecae5b",
+      "office-run-fill-alpha-f7c6c9",
+      "office-shapes-152c54",
+      "office-shapes-6f473e",
+      "office-smartart-simple-1b327c",
+      "office-smartart-simple-2bdd41",
+      "office-test_slides-5de877",
+      "office-with_japanese-0a08e7",
+      "office-with_japanese-ffb082",
+      "poi-2411-Performance_Up-793baf",
+      "poi-45541_Footer-888074",
+      "poi-45541_Header-3e3952",
+      "poi-45545_Comment-788ee5",
+      "poi-56812-5faa25",
+      "poi-60810-96f655",
+      "poi-ArtisticEffectSample-53b198",
+      "poi-aascu.org_hbcu_leadershipsummit_cooper_-de0479",
+      "poi-aascu.org_workarea_downloadasset.aspx_id_5864-e06f01",
+      "poi-ae.ac.uaeu.faculty_nafaachbili_GeomLec1-59c2be",
+      "poi-alterman_security-59be94",
+      "poi-aptia-6ca35c",
+      "poi-at.ecodesign.www_downloads_Vertiefungsvortrag_elektronik-3ccd83",
+      "poi-backgrounds-b08b5f",
+      "poi-bug60499-8a83b9",
+      "poi-bug63290-0a456d",
+      "poi-ca.ubc.cs.people__emhill_presentations_HowWeRefactor-4a8482",
+      "poi-customGeo-070207",
+      "poi-highlight-test-case-e15b7d",
+      "poi-keyframes-fe013e",
+      "poi-layouts-6985d0",
+      "poi-shapes-2764da",
+      "poi-smartart-simple-077493",
+      "poi-templatePPTWithOnlyOneText-f31c80",
+      "poi-text-highlight-375ecd",
+      "poi-tika-2605-9dbdee",
+      "poi-with_japanese-efc28d",
+      "python-ext-rels-0a35cf",
+      "python-font-color-ea3b01",
+      "python-shp-common-props-2dab49",
+      "python-test_slides-fec3ac",
+      "python-txt-fit-text-850c16",
+      "python-txt-font-props-d3c111",
+      "python-txt-font-typeface-419e8b",
+      "python-txt-paragraph-spacing-118bf6",
+      "python-txt-text-ff76e7",
+      "python-txt-text-frame-39caa4"
+    ]
+  },
+  "tailEnd": {
+    "instances": 5202,
+    "decks": [
+      "lo-bnc480256-2-21f068",
+      "lo-bnc584721_4-9eac37",
+      "lo-bnc880763-321e76",
+      "lo-connector-shape-animations-3c9110",
+      "lo-connectors-c80880",
+      "lo-cshapes-bad4d0",
+      "lo-fdo47434-7e5692",
+      "lo-fdo71434-b20af9",
+      "lo-group-rot-ee0db2",
+      "lo-n593612-6be9ef",
+      "lo-n762695-db06b0",
+      "lo-n80340-eff7c8",
+      "lo-n820786-20fcd6",
+      "lo-n90190-a8e917",
+      "lo-n90223-a896e7",
+      "lo-slide-section-test-a74aec",
+      "lo-tableBorderLineStyle-bafab9",
+      "lo-tablescale-cb626d",
+      "lo-tdf100491-aa6584",
+      "lo-tdf103477-880715",
+      "lo-tdf103800-6e33b6",
+      "lo-tdf104788-ea57f0",
+      "lo-tdf105150-2a2fb4",
+      "lo-tdf113163-3b907c",
+      "lo-tdf114845_rotateShape-4b25d7",
+      "lo-tdf114848-72726a",
+      "lo-tdf123090-5fbc5d",
+      "lo-tdf125573_FontWorkScaleX-3760d8",
+      "lo-tdf131554-251dbb",
+      "lo-tdf131905-3be2cd",
+      "lo-tdf135843-b3ddc7",
+      "lo-tdf136830-83c707",
+      "lo-tdf141058-1-d152a4",
+      "lo-tdf146731-fdd13d",
+      "lo-tdf149124-43d274",
+      "lo-tdf149588_transparentSolidFill-12b912",
+      "lo-tdf149697-afbe8d",
+      "lo-tdf149785-624411",
+      "lo-tdf153036_resizedConnectorL-5a87f4",
+      "lo-tdf154363-fa8e37",
+      "lo-tdf157216-0c62e7",
+      "lo-tdf165321-cb99e8",
+      "lo-tdf169088-ad3617",
+      "lo-tdf50499-4c1a33",
+      "lo-tdf93868-496f3a",
+      "lo-tdt142291-ef8160",
+      "office-45545_Comment-5b5c4b",
+      "office-45545_Comment-c0a120",
+      "office-customGeo-cb55b2",
+      "office-customGeo-e9f945",
+      "office-group-rot-dcb2de",
+      "office-office2pdf_introduction_ko-ddb512",
+      "office-oxp_PB001-Input1-782d9f",
+      "office-oxp_PB001-Input2-240891",
+      "office-oxp_PB001-Input3-0d2640",
+      "office-shapes-152c54",
+      "office-shapes-6f473e",
+      "office-table_test2-40bb97",
+      "office-table_test2-42895b",
+      "office-test_slides-5de877",
+      "office-with_japanese-0a08e7",
+      "office-with_japanese-ffb082",
+      "poi-2411-Performance_Up-793baf",
+      "poi-45541_Footer-888074",
+      "poi-45541_Header-3e3952",
+      "poi-45545_Comment-788ee5",
+      "poi-51187-7b726b",
+      "poi-60810-96f655",
+      "poi-aascu.org_hbcu_leadershipsummit_cooper_-de0479",
+      "poi-aascu.org_workarea_downloadasset.aspx_id_5864-e06f01",
+      "poi-ae.ac.uaeu.faculty_nafaachbili_GeomLec1-59c2be",
+      "poi-alterman_security-59be94",
+      "poi-aptia-6ca35c",
+      "poi-at.ecodesign.www_downloads_Vertiefungsvortrag_elektronik-3ccd83",
+      "poi-au.asn.aes.www_conferences_2011_presentations_Fri_20Room4Level4_20930_20Maloney-a1c8a8",
+      "poi-bug62513-7e24dc",
+      "poi-ca.ubc.cs.people__emhill_presentations_HowWeRefactor-4a8482",
+      "poi-customGeo-070207",
+      "poi-prProps-90742b",
+      "poi-sample_pptx_grouping_issues-e97ec4",
+      "poi-shapes-2764da",
+      "poi-table_test2-f01b52",
+      "poi-with_japanese-efc28d",
+      "python-shp-common-props-2dab49",
+      "python-shp-connector-props-c5d943",
+      "python-shp-shapes-8788f9",
+      "python-test_slides-fec3ac"
+    ]
+  }
+}

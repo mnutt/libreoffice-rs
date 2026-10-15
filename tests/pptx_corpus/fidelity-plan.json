@@ -1,0 +1,94 @@
+{
+  "objective": "PPTX fidelity against LibreOffice, with office2pdf as a secondary baseline",
+  "acceptance": [
+    "All 627 pinned cases retained, including expected normal errors",
+    "No new crashes, timeouts, missing text, page count changes or unexplained pixel regressions",
+    "All-page raster comparisons where page geometry is compatible; incompatible geometry reported explicitly",
+    "Targeted semantic assertions and old-binary negative controls for each supported feature",
+    "Workspace tests and XLSX corpus after shared-core changes",
+    "Self-contained aligned report and committed raw evidence after each full pass"
+  ],
+  "loop": {
+    "command_prefix": [
+      "python3",
+      "tests/pptx_corpus/run.py",
+      "evaluate"
+    ],
+    "approval": "Reusable prefix requested and first sandboxed evaluation succeeded; approval policy remains environment-controlled",
+    "isolation": "bwrap, no network, pinned fixtures/fonts, 4 GiB address space, 256 MiB output, timeout, separate fresh output directory",
+    "iteration": [
+      "Build immutable candidate",
+      "Run focused cases with --preview-pages 0",
+      "Review images/text and semantic tests",
+      "Run all four shards and visual audit",
+      "Investigate every regression rather than average it away",
+      "Commit and push validated batch"
+    ]
+  },
+  "milestones": [
+    {
+      "area": "Harness and coverage",
+      "tasks": [
+        "All-page raster mode",
+        "Paired per-page regression gate",
+        "Feature inventory and targeted cohorts",
+        "Standalone report handles all-page runs"
+      ],
+      "status": "in_progress"
+    },
+    {
+      "area": "Text",
+      "tasks": [
+        "Column flow and RTL column ordering",
+        "Paragraph margins, hanging bullets, numbering and tab stops",
+        "Explicit line/paragraph spacing and normal autofit reduction",
+        "Automatic fit and shape autofit semantics",
+        "Superscript/subscript, vertical text and per-character font fallback",
+        "Source font availability and shaping diagnosis"
+      ],
+      "status": "in_progress"
+    },
+    {
+      "area": "Shapes and fills",
+      "tasks": [
+        "Fix known pattern-fill regression",
+        "Pattern and themed bitmap fills",
+        "Gradient geometry and transparency",
+        "Missing preset shapes, line caps and arrowheads",
+        "Group text scale and rotation inheritance"
+      ],
+      "status": "pending"
+    },
+    {
+      "area": "SmartArt",
+      "tasks": [
+        "Inventory missing cached drawings",
+        "Cached drawing relationship/transform edge cases",
+        "Parse data/layout models and implement common layout families",
+        "Explicitly report unsupported layout algorithms"
+      ],
+      "status": "pending"
+    },
+    {
+      "area": "Charts and tables",
+      "tasks": [
+        "Axis scale/ticks and label placement",
+        "Legends, category hierarchies and plot frame layout",
+        "Advanced chart families with reference fixtures",
+        "Table edge precedence, dash styles and merged corners"
+      ],
+      "status": "pending"
+    },
+    {
+      "area": "Final verification",
+      "tasks": [
+        "All-page corpus and negative controls",
+        "Malformed and extreme inputs for new parsers/layout loops",
+        "Shared-core XLSX regression suite",
+        "Release size and performance measurements",
+        "Refresh full three-renderer report and record remaining limitations"
+      ],
+      "status": "pending"
+    }
+  ]
+}

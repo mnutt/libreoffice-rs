@@ -55,6 +55,8 @@ def main():
     parser.add_argument('prefix',type=Path)
     parser.add_argument('--output',type=Path,required=True)
     args = parser.parse_args()
+    from summarize import load
+    load(args.prefix)  # A partial shard must never masquerade as a full audit.
     work = []
     metadata = []
     for i in range(4):

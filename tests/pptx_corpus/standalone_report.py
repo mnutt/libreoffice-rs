@@ -40,6 +40,10 @@ def write_report(prefix, output):
         for case in json.loads((root / 'results.json').read_text())['cases']:
             roots[case['id']] = root
     count = len(dataset['cases'])
+    pdfs = [s['pdf'] for c in dataset['cases'] for s in c['stages'].values() if s['status']=='ok']
+    all_pages = all(len(p['previews']) == p['pages'] for p in pdfs)
+    coverage = ('Every page of each successful PDF is shown.' if all_pages else
+                f'Up to the first {max((len(p["previews"]) for p in pdfs), default=0)} pages are shown per deck.')
     images = pages = 0
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open('w') as out:
@@ -49,7 +53,7 @@ def write_report(prefix, output):
         out.write(f'<header><h1>PPTX: three-renderer comparison</h1><p>{count} distinct presentations. '
                   'LibreOffice is the primary fidelity reference; office2pdf is the existing baseline. '
                   'Each row shows the same PDF page in all three renderers, in that order.</p>'
-                  '<p>Up to the first two pages are shown per deck; page counts and text comparisons cover '
+                  f'<p>{coverage} Page counts and text comparisons cover '
                   'the full PDFs. These include deliberately malformed upstream regression fixtures. '
                   'All previews are embedded original PNGs, without resampling. Click an image to enlarge it. '
                   'This file works offline.</p><details><summary>Run provenance</summary><pre>' +

@@ -25,6 +25,28 @@ than a representative sample of everyday presentations.
 
 ## Reproduce
 
+The repeatable build/test/comparison cycle is:
+
+```sh
+python3 tests/pptx_corpus/loop.py
+python3 tests/pptx_corpus/loop.py --ids lo-3columns-f28ebf
+```
+
+The environment has a saved approval prefix for this exact Python script. It
+uses no shell command strings, performs no downloads or deletion, builds an
+immutable candidate, and runs pinned inputs inside Bubblewrap with networking
+disabled and resource limits. Fresh timestamped run directories contain logs,
+results and PDFs. A full cycle writes the self-contained report and fails on
+individual per-page pixel regressions, text regressions, changed page geometry,
+lost visual comparability, or feature failures. The thresholds are recorded in
+the output; they are review triggers, not proof of parity. Focused runs execute
+tests and feature checks but require a full cycle for the paired regression gate.
+
+`--preview-pages 0` renders every page. All-page audits retain the existing
+0.1-point PDF rounding allowance and require identical raster dimensions.
+`fidelity-plan.json` tracks the remaining milestones; `feature-inventory.json`
+lists the pinned slide fixtures exercising common DrawingML features.
+
 To create an offline, self-contained three-renderer report from four completed
 shards:
 

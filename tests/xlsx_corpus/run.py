@@ -179,7 +179,9 @@ def inspect_pdf(pdf, previews):
     text = subprocess.check_output(['pdftotext', '-layout', str(pdf), '-'], text=True, timeout=30)
     pdf.with_suffix('.txt').write_text(text)
     images = []
-    for page in range(1, min(pages, previews) + 1):
+    if previews < 0:
+        raise ValueError('Preview count must be nonnegative (0 means all pages)')
+    for page in range(1, (pages if previews == 0 else min(pages, previews)) + 1):
         prefix = pdf.parent / f'page-{page}'
         subprocess.run(['pdftoppm', '-r', '72', '-scale-to', '1600', '-f', str(page), '-l', str(page),
                         '-singlefile', '-png', str(pdf), str(prefix)], check=True,
@@ -408,7 +410,7 @@ def main():
     run.add_argument('--ids', nargs='+')
     run.add_argument('--references', type=Path, help='reuse Office2PDF/LibreOffice stages from a matching prior run')
     run.add_argument('--timeout', type=int, default=60)
-    run.add_argument('--preview-pages', type=int, default=2)
+    run.add_argument('--preview-pages', type=int, default=2, help='Number of initial pages to rasterize; 0 renders all pages')
     args=parser.parse_args()
     manifest=json.loads(args.manifest.read_text())
     validate_manifest(manifest)
