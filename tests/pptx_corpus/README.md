@@ -33,7 +33,7 @@ python3 tests/pptx_corpus/loop.py --ids lo-3columns-f28ebf
 ```
 
 The environment has a saved approval prefix for this exact Python script. It
-uses no shell command strings, performs no downloads or deletion, builds an
+uses no shell command strings, performs no downloads or artifact deletion, builds an
 immutable candidate, and runs pinned inputs inside Bubblewrap with networking
 disabled and resource limits. Fresh timestamped run directories contain logs,
 results and PDFs. A full cycle writes the self-contained report and fails on
@@ -41,6 +41,12 @@ individual per-page pixel regressions, text regressions, changed page geometry,
 lost visual comparability, or feature failures. The thresholds are recorded in
 the output; they are review triggers, not proof of parity. Focused runs apply the same gate to the selected fixtures and write their
 visual audit and regression findings alongside the PDFs.
+
+Completed byte-identical candidate artifacts are shared through hard links under
+an exclusive lock. In-progress runs are never compacted, and all paths and bytes
+are retained. `--resume loop-TIMESTAMP` repeats audit/report/gate stages using the
+saved immutable candidate, so quota interruptions do not require conversion again.
+For a focused resume, supply the original `--ids` as well.
 
 `--preview-pages 0` renders every page. All-page audits retain the existing
 0.1-point PDF rounding allowance and require identical raster dimensions.

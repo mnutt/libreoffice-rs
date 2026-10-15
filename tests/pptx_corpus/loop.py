@@ -8,6 +8,8 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
+import hashlib
+import fcntl
 import os
 from pathlib import Path
 import shutil
@@ -18,34 +20,79 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 
 
+def compact_completed_candidates(runs):
+    """Share identical immutable outputs; preserve all bytes and paths."""
+    with (runs/'.compact.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        return _compact_completed_candidates(runs)
+
+
+def _compact_completed_candidates(runs):
+    seen, inodes = {}, {}
+    saved = 0
+    for path in sorted(runs.glob('*/**/candidate/*')):
+        if path.suffix not in ('.pdf', '.png', '.txt') or not path.is_file():
+            continue
+        # Never touch an in-progress conversion or rasterization.
+        if not (path.parent.parent.parent/'results.json').is_file():
+            continue
+        stat = path.stat()
+        identity = (stat.st_dev,stat.st_ino)
+        key = inodes.get(identity)
+        if key is None:
+            key = (stat.st_size,hashlib.sha256(path.read_bytes()).digest())
+            inodes[identity] = key
+        previous = seen.get(key)
+        if previous is None:
+            seen[key] = path
+            continue
+        if previous.stat().st_ino == stat.st_ino:
+            continue
+        temporary = path.with_name(path.name+'.dedup-link')
+        os.link(previous,temporary)
+        os.replace(temporary,path)
+        if stat.st_nlink == 1:
+            saved += stat.st_size
+    return saved
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--ids', nargs='+', help='Optional focused fixture IDs, automatically assigned to shards')
     parser.add_argument('--baseline', default='fifth-final', help='Run prefix within runs/')
     parser.add_argument('--baseline-audit', default='fifth-visual-audit.json', help='Audit filename within this corpus directory')
+    parser.add_argument('--resume', help='Resume audit/report/gate for an existing loop directory; retain its immutable candidate')
     args = parser.parse_args()
-    for name in (args.baseline,args.baseline_audit):
+    for name in (args.baseline,args.baseline_audit,args.resume or 'unused'):
         if Path(name).name != name or name in ('.','..'):
             parser.error('Baseline names must be simple filenames')
     manifests = [json.loads((HERE/f'shard-{i}.json').read_text()) for i in range(4)]
     known = {f['id'] for m in manifests for f in m['fixtures']}
     if args.ids and set(args.ids)-known:
         parser.error('Unknown fixture IDs: '+', '.join(sorted(set(args.ids)-known)))
+    saved = compact_completed_candidates(HERE/'runs')
+    if saved:
+        print(f'Shared identical completed candidates: {saved/1024**2:.1f} MiB reclaimed',flush=True)
     if shutil.disk_usage(HERE).free < 1024**3:
         parser.error('Need at least 1 GiB free space for an all-page cycle')
     stamp = datetime.now(timezone.utc).strftime('loop-%Y%m%dT%H%M%S%f')
-    root = HERE/'runs'/stamp
-    root.mkdir(parents=True,exist_ok=False)
+    root = HERE/'runs'/(args.resume or stamp)
+    if args.resume:
+        if not args.resume.startswith('loop-') or not (root/'pptx-preview').is_file():
+            parser.error('Resume requires an existing loop directory and immutable candidate')
+    else:
+        root.mkdir(parents=True,exist_ok=False)
     print(f'Cycle logs: {root}',flush=True)
     env = dict(os.environ,CARGO_PROFILE_DEV_DEBUG='0',CARGO_PROFILE_DEV_INCREMENTAL='false')
     def command(argv, log):
         with (root/log).open('wb') as stream:
             subprocess.run(argv,cwd=ROOT,env=env,stdout=stream,stderr=subprocess.STDOUT,check=True)
-    command(['cargo','test','--offline','--workspace','--all-features'],'tests.log')
-    command(['cargo','build','--offline','-p','lo_impress','--example','pptx-preview'],'build.log')
     candidate = root/'pptx-preview'
-    shutil.copyfile(ROOT/'target/debug/examples/pptx-preview',candidate)
-    candidate.chmod(0o755)
+    if not args.resume:
+        command(['cargo','test','--offline','--workspace','--all-features'],'tests.log')
+        command(['cargo','build','--offline','-p','lo_impress','--example','pptx-preview'],'build.log')
+        shutil.copyfile(ROOT/'target/debug/examples/pptx-preview',candidate)
+        candidate.chmod(0o755)
     print(f'Immutable candidate and logs: {root}',flush=True)
     def shard(i):
         ids = [f['id'] for f in manifests[i]['fixtures'] if not args.ids or f['id'] in args.ids]
@@ -58,8 +105,9 @@ def main():
         if args.ids:argv+=['--ids',*ids]
         command(argv,f'shard-{i}.log')
         print(f'Shard {i} passed feature checks',flush=True)
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        list(pool.map(shard,range(4)))
+    if not args.resume:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(shard,range(4)))
     if args.ids:
         # Apply the same paired gate to focused runs; a successful conversion
         # alone must not be mistaken for a fidelity pass.
