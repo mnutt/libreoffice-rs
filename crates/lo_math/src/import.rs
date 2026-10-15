@@ -56,7 +56,7 @@ fn parse_odf_formula(bytes: &[u8]) -> Result<FormulaNode> {
         .iter()
         .find(|child| !matches!(child.local_name(), "annotation" | "annotation-xml"))
         .cloned()
-        .unwrap_or(math_node);
+        .unwrap_or_else(|| math_node.into());
     parse_mathml_root(&inner)
 }
 

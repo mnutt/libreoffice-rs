@@ -102,7 +102,7 @@ pub fn from_ods_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workbook
     let mut workbook = Workbook::new(title);
     workbook.sheets.clear();
     for table in spreadsheet.children_named("table") {
-        let mut sheet = parse_ods_sheet(table);
+        let mut sheet = parse_ods_sheet(table)?;
         apply_ods_layout(table, &styles, page_styles.as_ref(), &mut sheet);
         sheet.layout.as_mut().unwrap().charts = lo_zip::odf_charts(table, &zip);
         workbook.sheets.push(sheet);
@@ -524,7 +524,8 @@ fn apply_ods_layout(
     sheet.layout = Some(layout);
 }
 
-fn parse_ods_sheet(node: &XmlNode) -> Sheet {
+fn parse_ods_sheet(node: &XmlNode) -> Result<Sheet> {
+    let mut expanded_cells = 0usize;
     let name = node.attr("name").unwrap_or("Sheet1").to_string();
     let mut sheet = Sheet::new(name);
     let mut row_index: u32 = 1;
@@ -540,7 +541,12 @@ fn parse_ods_sheet(node: &XmlNode) -> Sheet {
             row_index = row_index.saturating_add(repeat_rows);
             continue;
         }
-        for _ in 0..repeat_rows.min(1_048_576u32.saturating_sub(row_index - 1)) {
+        let count = repeat_rows.min(1_048_576u32.saturating_sub(row_index - 1)) as usize;
+        expanded_cells = expanded_cells.saturating_add(count.saturating_mul(row_values.len()));
+        if expanded_cells > 100_000 {
+            return Err(LoError::Parse("ODS expanded cells exceed preview limit".into()));
+        }
+        for _ in 0..count {
             for (col, value, display) in &row_values {
                 if *value != CellValue::Empty {
                     sheet.set(
@@ -558,7 +564,7 @@ fn parse_ods_sheet(node: &XmlNode) -> Sheet {
             row_index += 1;
         }
     }
-    sheet
+    Ok(sheet)
 }
 
 fn parse_ods_row(row_node: &XmlNode) -> Vec<(u32, CellValue, Option<String>)> {
@@ -653,7 +659,7 @@ mod tests {
     #[test]
     fn hidden_grid_dimensions_and_sheet_fields_are_preserved() {
         let node = parse_xml_document(r#"<table><table-column visibility="collapse"/><table-column/><table-row visibility="filter"><table-cell value-type="string"><p>hidden</p></table-cell></table-row><table-row><table-cell/><table-cell value-type="string"><p>shown</p></table-cell></table-row></table>"#).unwrap();
-        let mut sheet = parse_ods_sheet(&node);
+        let mut sheet = parse_ods_sheet(&node).unwrap();
         apply_ods_layout(
             &node,
             &lo_core::style::OdfStyles::default(),
@@ -681,7 +687,7 @@ mod tests {
         let style_root=parse_xml_document(r##"<styles><style name="Cell" family="table-cell"><table-cell-properties border="1pt solid #123456" wrap-option="wrap"/></style></styles>"##).unwrap();
         let mut styles = lo_core::style::OdfStyles::default();
         styles.collect(&style_root);
-        let mut sheet = parse_ods_sheet(&root);
+        let mut sheet = parse_ods_sheet(&root).unwrap();
         apply_ods_layout(&root, &styles, None, &mut sheet);
         assert_eq!(
             sheet.layout.as_ref().unwrap().merges[&CellAddr::new(0, 0)],
@@ -700,7 +706,7 @@ mod tests {
     #[test]
     fn preview_preserves_odf_display_values() {
         let root = parse_xml_document(r#"<table><table-row number-rows-repeated="2"><table-cell value-type="percentage" value="0.125"><p>12.5%</p></table-cell><table-cell value-type="currency" value="12.5"><p>$12.50</p></table-cell></table-row></table>"#).unwrap();
-        let sheet = parse_ods_sheet(&root);
+        let sheet = parse_ods_sheet(&root).unwrap();
         assert_eq!(sheet.display_values[&CellAddr::new(1, 0)], "12.5%");
         assert_eq!(sheet.display_values[&CellAddr::new(1, 1)], "$12.50");
         assert_eq!(
@@ -751,5 +757,16 @@ mod tests {
             sheet.get(CellAddr::new(0, 0)).map(|c| c.value.clone()),
             Some(CellValue::Text("a".to_string()))
         );
+    }
+}
+
+#[cfg(test)]
+mod expansion_tests {
+    use super::*;
+    #[test]
+    fn rejects_multiplicative_row_column_expansion() {
+        let xml = r#"<table><table-row number-rows-repeated="1000000"><table-cell number-columns-repeated="16384" value-type="float" value="1"/></table-row></table>"#;
+        let node = parse_xml_document(xml).unwrap();
+        assert!(parse_ods_sheet(&node).unwrap_err().to_string().contains("expanded cells"));
     }
 }

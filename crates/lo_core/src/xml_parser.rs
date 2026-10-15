@@ -3,21 +3,21 @@
 //! It is intentionally lenient: namespaces are kept on element/attribute
 //! names but accessors expose `local_name()` for convenience.
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 use crate::{LoError, Result};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum XmlItem {
     Text(String),
-    Node(XmlNode),
+    Node(Arc<XmlNode>),
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct XmlNode {
     pub name: String,
     pub attributes: BTreeMap<String, String>,
-    pub children: Vec<XmlNode>,
+    pub children: Vec<Arc<XmlNode>>,
     pub items: Vec<XmlItem>,
     pub text: String,
 }
@@ -40,12 +40,14 @@ impl XmlNode {
         self.children
             .iter()
             .find(|child| child.local_name() == name || child.name == name)
+            .map(AsRef::as_ref)
     }
 
     pub fn children_named<'a>(&'a self, name: &'a str) -> impl Iterator<Item = &'a XmlNode> + 'a {
         self.children
             .iter()
             .filter(move |child| child.local_name() == name || child.name == name)
+            .map(AsRef::as_ref)
     }
 
     pub fn descendants_named<'a>(&'a self, name: &'a str, out: &mut Vec<&'a XmlNode>) {
@@ -143,7 +145,20 @@ fn xml_attr_escape(value: &str) -> String {
     out
 }
 
+// Subtrees are shared between children and ordered items, so parsing grows
+// linearly instead of recursively cloning every subtree twice. Keep explicit
+// depth and structural budgets for downstream recursive traversal and cloning.
+fn charge_xml(budget: &mut usize, depth: usize, bytes: usize) -> Result<()> {
+    if depth > 64 || bytes > *budget {
+        return Err(LoError::Parse("XML expansion exceeds preview budget".into()));
+    }
+    *budget -= bytes;
+    Ok(())
+}
+
 pub fn parse_xml_document(xml: &str) -> Result<XmlNode> {
+    // Conservative accounting units, not a promise about allocator RSS.
+    let mut budget = 128 * 1024 * 1024usize;
     let bytes = xml.as_bytes();
     let mut stack: Vec<XmlNode> = Vec::new();
     let mut root: Option<XmlNode> = None;
@@ -158,6 +173,7 @@ pub fn parse_xml_document(xml: &str) -> Result<XmlNode> {
             }
             if bytes[index..].starts_with(b"<![CDATA[") {
                 let end = find_bytes(bytes, index + 9, b"]]>")?;
+                charge_xml(&mut budget, stack.len(), (end - index).saturating_mul(2))?;
                 let text = String::from_utf8(bytes[index + 9..end].to_vec())
                     .map_err(|err| LoError::Parse(format!("invalid cdata utf-8: {err}")))?;
                 if let Some(current) = stack.last_mut() {
@@ -192,6 +208,7 @@ pub fn parse_xml_document(xml: &str) -> Result<XmlNode> {
                     )));
                 }
                 if let Some(parent) = stack.last_mut() {
+                    let node = Arc::new(node);
                     parent.children.push(node.clone());
                     parent.items.push(XmlItem::Node(node));
                 } else if root.is_none() {
@@ -204,6 +221,7 @@ pub fn parse_xml_document(xml: &str) -> Result<XmlNode> {
             }
 
             let end = find_tag_end(bytes, index + 1)?;
+            charge_xml(&mut budget, stack.len(), 512usize.saturating_add((end - index).saturating_mul(16)))?;
             let raw = String::from_utf8(bytes[index + 1..end].to_vec())
                 .map_err(|err| LoError::Parse(format!("invalid tag utf-8: {err}")))?;
             let self_closing = raw.trim_end().ends_with('/');
@@ -222,6 +240,7 @@ pub fn parse_xml_document(xml: &str) -> Result<XmlNode> {
             };
             if self_closing {
                 if let Some(parent) = stack.last_mut() {
+                    let node = Arc::new(node);
                     parent.children.push(node.clone());
                     parent.items.push(XmlItem::Node(node));
                 } else if root.is_none() {
@@ -235,6 +254,7 @@ pub fn parse_xml_document(xml: &str) -> Result<XmlNode> {
             index = end + 1;
         } else {
             let next = find_byte_optional(bytes, index, b'<').unwrap_or(bytes.len());
+            charge_xml(&mut budget, stack.len(), (next - index).saturating_mul(2))?;
             let raw_text = String::from_utf8(bytes[index..next].to_vec())
                 .map_err(|err| LoError::Parse(format!("invalid text utf-8: {err}")))?;
             let decoded = decode_entities(&raw_text);
@@ -250,7 +270,8 @@ pub fn parse_xml_document(xml: &str) -> Result<XmlNode> {
 
     while let Some(node) = stack.pop() {
         if let Some(parent) = stack.last_mut() {
-            parent.children.push(node.clone());
+            let node = Arc::new(node);
+                    parent.children.push(node.clone());
             parent.items.push(XmlItem::Node(node));
         } else if root.is_none() {
             root = Some(node);
@@ -445,5 +466,32 @@ mod tests {
     #[test]
     fn decode_entities_handles_named_and_numeric() {
         assert_eq!(decode_entities("&amp;&lt;&#65;&#x42;"), "&<AB");
+    }
+}
+
+#[cfg(test)]
+mod expansion_tests {
+    use super::*;
+    #[test]
+    fn rejects_recursive_clone_bombs_including_unclosed_input() {
+        for suffix in ["</a>".repeat(80), String::new()] {
+            let xml = "<a>".repeat(80) + "x" + &suffix;
+            assert!(parse_xml_document(&xml).unwrap_err().to_string().contains("budget"));
+        }
+    }
+    #[test]
+    fn nested_subtrees_share_storage() {
+        let xml = "<a>".repeat(32) + "payload" + &"</a>".repeat(32);
+        let node = parse_xml_document(&xml).unwrap();
+        let XmlItem::Node(item) = &node.items[0] else { panic!("missing node") };
+        assert!(Arc::ptr_eq(&node.children[0], item));
+        assert_eq!(node.text_content(), "payload");
+    }
+    #[test]
+    fn budget_rejects_large_structural_cost_before_allocation() {
+        let mut budget = 8;
+        assert!(charge_xml(&mut budget, 1, 9).is_err());
+        charge_xml(&mut budget, 1, 8).unwrap();
+        assert!(charge_xml(&mut budget, 1, 1).is_err());
     }
 }

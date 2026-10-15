@@ -307,11 +307,13 @@ fn resolve_odp_fields(
         return;
     }
     for child in &mut node.children {
-        resolve_odp_fields(child, page, presentation, number, count);
+        resolve_odp_fields(std::sync::Arc::make_mut(child), page, presentation, number, count);
     }
+    // Resolve each subtree once, then restore sharing in the ordered view.
+    let mut children = node.children.iter();
     for item in &mut node.items {
         if let XmlItem::Node(child) = item {
-            resolve_odp_fields(child, page, presentation, number, count);
+            *child = children.next().expect("XML child/item correspondence").clone();
         }
     }
 }
