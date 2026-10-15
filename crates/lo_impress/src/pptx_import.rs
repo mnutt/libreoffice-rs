@@ -88,8 +88,19 @@ fn matching<'a>(n: &XmlNode, parent: Option<&'a XmlNode>) -> Option<&'a XmlNode>
         })
         .map(|s| s.as_ref())
 }
+fn multiply(a: [f32; 6], b: [f32; 6]) -> [f32; 6] {
+    [
+        a[0] * b[0] + a[2] * b[1],
+        a[1] * b[0] + a[3] * b[1],
+        a[0] * b[2] + a[2] * b[3],
+        a[1] * b[2] + a[3] * b[3],
+        a[0] * b[4] + a[2] * b[5] + a[4],
+        a[1] * b[4] + a[3] * b[5] + a[5],
+    ]
+}
 #[derive(Clone, Copy)]
 struct Transform {
+    actual: [f32; 6],
     sx: f32,
     sy: f32,
     tx: f32,
@@ -98,6 +109,7 @@ struct Transform {
 impl Transform {
     fn identity() -> Self {
         Self {
+            actual: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
             sx: 1.0,
             sy: 1.0,
             tx: 0.0,
@@ -112,6 +124,30 @@ impl Transform {
             h * self.sy,
         )
     }
+    fn post(self) -> Option<[f32; 6]> {
+        if self.sx.abs() < 1e-8 || self.sy.abs() < 1e-8 {
+            return None;
+        }
+        let m = multiply(
+            self.actual,
+            [
+                1.0 / self.sx,
+                0.0,
+                0.0,
+                1.0 / self.sy,
+                -self.tx / self.sx,
+                -self.ty / self.sy,
+            ],
+        );
+        if !m.iter().all(|v| v.is_finite()) {
+            return None;
+        }
+        let identity = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+        m.iter()
+            .zip(identity)
+            .any(|(a, b)| (*a - b).abs() > 0.0001)
+            .then_some(m)
+    }
     fn group(self, n: &XmlNode) -> Self {
         let t = n.child("grpSpPr").and_then(|n| n.child("xfrm"));
         let off = t.and_then(|n| n.child("off"));
@@ -120,11 +156,45 @@ impl Transform {
         let ch_ext = t.and_then(|n| n.child("chExt"));
         let sx = pt(ext, "cx", 1.0) / pt(ch_ext, "cx", 1.0).max(0.001);
         let sy = pt(ext, "cy", 1.0) / pt(ch_ext, "cy", 1.0).max(0.001);
+        let tx = pt(off, "x", 0.0) - pt(ch_off, "x", 0.0) * sx;
+        let ty = pt(off, "y", 0.0) - pt(ch_off, "y", 0.0) * sy;
+        let center = (
+            pt(off, "x", 0.0) + pt(ext, "cx", 1.0) / 2.0,
+            pt(off, "y", 0.0) + pt(ext, "cy", 1.0) / 2.0,
+        );
+        let angle = (num(t, "rot", 0.0) / 60000.0).to_radians();
+        let (sin, cos) = angle.sin_cos();
+        let fx = if t
+            .and_then(|n| n.attr("flipH"))
+            .is_some_and(|v| matches!(v, "1" | "true"))
+        {
+            -1.0
+        } else {
+            1.0
+        };
+        let fy = if t
+            .and_then(|n| n.attr("flipV"))
+            .is_some_and(|v| matches!(v, "1" | "true"))
+        {
+            -1.0
+        } else {
+            1.0
+        };
+        let (a, b, c, d) = (cos * fx, sin * fx, -sin * fy, cos * fy);
+        let rotation = [
+            a,
+            b,
+            c,
+            d,
+            center.0 - a * center.0 - c * center.1,
+            center.1 - b * center.0 - d * center.1,
+        ];
         Self {
             sx: self.sx * sx,
             sy: self.sy * sy,
-            tx: self.tx + self.sx * (pt(off, "x", 0.0) - pt(ch_off, "x", 0.0) * sx),
-            ty: self.ty + self.sy * (pt(off, "y", 0.0) - pt(ch_off, "y", 0.0) * sy),
+            tx: self.tx + self.sx * tx,
+            ty: self.ty + self.sy * ty,
+            actual: multiply(self.actual, multiply(rotation, [sx, 0.0, 0.0, sy, tx, ty])),
         }
     }
 }
@@ -344,6 +414,7 @@ pub(crate) fn load(title: String, bytes: &[u8]) -> Result<Presentation> {
                 layout: layout_root,
                 default_text: root.child("defaultTextStyle"),
                 budget: &mut budget,
+                diagram_depth: 0,
             };
             if let Some(bg) = background {
                 let frame = rect(
@@ -409,6 +480,7 @@ struct Context<'a> {
     layout: Option<&'a XmlNode>,
     default_text: Option<&'a XmlNode>,
     budget: &'a mut usize,
+    diagram_depth: usize,
 }
 impl Context<'_> {
     fn walk(
@@ -427,7 +499,25 @@ impl Context<'_> {
             if inherited && placeholder(n).is_some() {
                 continue;
             }
+            let element_start = slide.elements.len();
+            let chart_start = slide.odf_charts.len();
             match n.local_name() {
+                "AlternateContent" => {
+                    let chosen = n
+                        .children_named("Choice")
+                        .find(|c| {
+                            c.children.iter().any(|s| {
+                                matches!(
+                                    s.local_name(),
+                                    "sp" | "grpSp" | "pic" | "graphicFrame" | "cxnSp"
+                                )
+                            })
+                        })
+                        .or_else(|| n.child("Fallback"));
+                    if let Some(chosen) = chosen {
+                        self.walk(chosen, rels, slide, t, inherited)?;
+                    }
+                }
                 "grpSp" => self.walk(n, rels, slide, t.group(n), inherited)?,
                 "sp" | "cxnSp" => {
                     let layout = if inherited {
@@ -449,7 +539,9 @@ impl Context<'_> {
                 "graphicFrame" => {
                     let data = n.child("graphic").and_then(|n| n.child("graphicData"));
                     let f = frame(&[n], t);
-                    if let Some(table) = data.and_then(|n| n.child("tbl")) {
+                    if let Some(ids) = data.and_then(|n| n.child("relIds")) {
+                        self.diagram(ids, rels, slide, f)?;
+                    } else if let Some(table) = data.and_then(|n| n.child("tbl")) {
                         self.table(table, slide, f);
                     } else if let Some(path) = data
                         .and_then(|n| n.child("chart"))
@@ -472,6 +564,86 @@ impl Context<'_> {
                 }
                 _ => {}
             }
+            if !matches!(n.local_name(), "grpSp" | "AlternateContent") {
+                if let Some(matrix) = t.post() {
+                    for element in &mut slide.elements[element_start..] {
+                        let target = match element {
+                            SlideElement::Shape(s) => &mut s.style.transform,
+                            SlideElement::TextBox(s) => &mut s.style.transform,
+                            SlideElement::Image(s) => &mut s.transform,
+                        };
+                        *target = Some(target.map(|m| multiply(matrix, m)).unwrap_or(matrix));
+                    }
+                    for chart in &mut slide.odf_charts[chart_start..] {
+                        chart.transform = Some(
+                            chart
+                                .transform
+                                .map(|m| multiply(matrix, m))
+                                .unwrap_or(matrix),
+                        );
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+    fn diagram(
+        &mut self,
+        ids: &XmlNode,
+        rels: &Relations,
+        slide: &mut Slide,
+        f: Rect,
+    ) -> Result<()> {
+        if self.diagram_depth >= 16 {
+            return Ok(());
+        }
+        let Some(path) = ids
+            .attr("r:dm")
+            .or_else(|| ids.attr("dm"))
+            .and_then(|id| rels.paths.get(id))
+        else {
+            return Ok(());
+        };
+        if !self.zip.contains(path) {
+            return Ok(());
+        }
+        let model = parse_xml_document(&self.zip.read_string(path)?)?;
+        if let Some(bg) = model.child("bg").and_then(|n| {
+            n.children
+                .iter()
+                .find(|n| matches!(n.local_name(), "solidFill" | "gradFill"))
+        }) {
+            self.paint_fill(bg, slide, f);
+        }
+        fn drawing_id(n: &XmlNode) -> Option<&str> {
+            if n.local_name() == "dataModelExt" {
+                return n.attr("relId");
+            }
+            n.children.iter().find_map(|c| drawing_id(c))
+        }
+        let model_rels = relationships(self.zip, path)?;
+        let Some(drawing) = drawing_id(&model)
+            .and_then(|id| rels.paths.get(id).or_else(|| model_rels.paths.get(id)))
+        else {
+            return Ok(());
+        };
+        if !self.zip.contains(drawing) {
+            return Ok(());
+        }
+        let root = parse_xml_document(&self.zip.read_string(drawing)?)?;
+        let dr = relationships(self.zip, drawing)?;
+        if let Some(tree) = root.child("spTree") {
+            let transform = Transform {
+                actual: [1.0, 0.0, 0.0, 1.0, f.origin.x.as_pt(), f.origin.y.as_pt()],
+                sx: 1.0,
+                sy: 1.0,
+                tx: f.origin.x.as_pt(),
+                ty: f.origin.y.as_pt(),
+            };
+            self.diagram_depth += 1;
+            let result = self.walk(tree, &dr, slide, transform, false);
+            self.diagram_depth -= 1;
+            result?;
         }
         Ok(())
     }
@@ -480,7 +652,9 @@ impl Context<'_> {
         if index == 0 {
             return None;
         }
-        let (list, index) = if index >= 1001 {
+        let (list, index) = if reference.local_name() == "lnRef" {
+            ("lnStyleLst", index - 1)
+        } else if index >= 1001 {
             ("bgFillStyleLst", index - 1001)
         } else {
             ("fillStyleLst", index - 1)
@@ -523,6 +697,7 @@ impl Context<'_> {
                 frame: f,
                 kind: ShapeKind::Rectangle,
                 style: ShapeStyle {
+                    transform: None,
                     fill: color,
                     stroke: "none".into(),
                     ..Default::default()
@@ -575,6 +750,7 @@ impl Context<'_> {
             slide
                 .elements
                 .push(SlideElement::Image(lo_core::ImageElement {
+                    transform: None,
                     name: "background-gradient.png".into(),
                     mime_type: "image/png".into(),
                     data: image.encode_png(),
@@ -638,18 +814,42 @@ impl Context<'_> {
                         }
                     })
             });
+        let uses_background = chain[0]
+            .attr("useBgFill")
+            .is_some_and(|v| matches!(v, "1" | "true"));
+        let fill = if uses_background { None } else { fill };
         if chain[0]
             .attr("useBgFill")
             .is_some_and(|v| matches!(v, "1" | "true"))
         {
-            if let Some(bg) = self.background.and_then(|n| n.child("bgPr")) {
-                if let Some(fill) = bg
-                    .children
-                    .iter()
-                    .find(|n| matches!(n.local_name(), "solidFill" | "gradFill"))
-                {
-                    self.paint_fill(fill, slide, f);
-                }
+            let referenced = self
+                .background
+                .and_then(|n| n.child("bgRef"))
+                .and_then(|n| self.theme_fill(n));
+            let background_fill = self
+                .background
+                .and_then(|n| n.child("bgPr"))
+                .and_then(|n| {
+                    n.children
+                        .iter()
+                        .find(|n| matches!(n.local_name(), "solidFill" | "gradFill"))
+                })
+                .map(|n| n.as_ref())
+                .or(referenced.as_ref());
+            if let Some(fill) = background_fill {
+                self.paint_fill(fill, slide, f);
+            } else if self.background.is_none() {
+                // The implicit slide background is opaque white. A background-filled
+                // shape must cover earlier elements even when no bg node is stored.
+                slide.elements.push(SlideElement::Shape(Shape {
+                    frame: f,
+                    kind: ShapeKind::Rectangle,
+                    style: ShapeStyle {
+                        fill: "#FFFFFF".into(),
+                        stroke: "none".into(),
+                        ..Default::default()
+                    },
+                }));
             }
         } else if let Some(gradient) = props.iter().find_map(|n| n.child("gradFill")) {
             // Until curved path clipping is supported, only rectangular gradients are painted.
@@ -662,7 +862,14 @@ impl Context<'_> {
                 self.paint_fill(gradient, slide, f);
             }
         }
-        let line = props.iter().find_map(|n| n.child("ln"));
+        let theme_line = chain
+            .iter()
+            .find_map(|n| n.child("style").and_then(|n| n.child("lnRef")))
+            .and_then(|n| self.theme_fill(n));
+        let line = props
+            .iter()
+            .find_map(|n| n.child("ln"))
+            .or(theme_line.as_ref());
         let stroke = line
             .and_then(|n| {
                 if n.child("noFill").is_some() {
@@ -672,15 +879,21 @@ impl Context<'_> {
                 }
             })
             .unwrap_or_else(|| "none".into());
-        let geom = props
+        let mut kind = props
             .iter()
-            .find_map(|n| n.child("prstGeom"))
-            .and_then(|n| n.attr("prst"));
-        let kind = match geom {
-            Some("ellipse") => ShapeKind::Ellipse,
-            Some("line") => ShapeKind::Line,
-            _ => ShapeKind::Rectangle,
-        };
+            .find_map(|n| n.child("custGeom").or_else(|| n.child("prstGeom")))
+            .and_then(|n| {
+                crate::pptx_geometry::geometry(n, f.size.width.as_pt(), f.size.height.as_pt())
+            })
+            .unwrap_or(ShapeKind::Rectangle);
+        let xf = chain.iter().find_map(|n| xfrm(n));
+        crate::pptx_geometry::flip(
+            &mut kind,
+            xf.and_then(|n| n.attr("flipH"))
+                .is_some_and(|v| matches!(v, "1" | "true")),
+            xf.and_then(|n| n.attr("flipV"))
+                .is_some_and(|v| matches!(v, "1" | "true")),
+        );
         let angle = chain
             .iter()
             .find_map(|n| xfrm(n))
@@ -691,10 +904,12 @@ impl Context<'_> {
                 frame: f,
                 kind,
                 style: ShapeStyle {
+                    transform: None,
                     fill: fill.unwrap_or_else(|| "none".into()),
                     stroke,
-                    rotation_millidegrees: (angle * 1000.0) as i32,
+                    rotation_millidegrees: (-angle * 1000.0) as i32,
                     stroke_width_mm: 0,
+                    stroke_width_mpt: Some((pt(line, "w", 0.75).clamp(0.0, 100.0) * 1000.0) as u32),
                 },
             }));
         }
@@ -755,6 +970,7 @@ impl Context<'_> {
         slide
             .elements
             .push(SlideElement::Image(lo_core::ImageElement {
+                transform: None,
                 crop,
                 rotation,
                 flip_horizontal,
@@ -798,6 +1014,24 @@ impl Context<'_> {
             .flat_map(|n| n.children.clone())
             .collect();
         let bodypr = Some(&merged_body);
+        let vertical = bodypr.and_then(|n| n.attr("vert"));
+        let angle = angle
+            + match vertical {
+                Some("vert") => 90.0,
+                Some("vert270") => -90.0,
+                _ => 0.0,
+            };
+        let f = if matches!(vertical, Some("vert" | "vert270")) {
+            let (w, h) = (f.size.width.as_pt(), f.size.height.as_pt());
+            rect(
+                f.origin.x.as_pt() + (w - h) / 2.0,
+                f.origin.y.as_pt() + (h - w) / 2.0,
+                h,
+                w,
+            )
+        } else {
+            f
+        };
         let left = pt(bodypr, "lIns", 7.2);
         let right = pt(bodypr, "rIns", 7.2);
         let top = pt(bodypr, "tIns", 3.6);
@@ -849,6 +1083,22 @@ impl Context<'_> {
                 .get("tx1")
                 .map(|s| format!("#{s}"))
                 .unwrap_or_else(|| "#000000".into());
+            for n in chain
+                .iter()
+                .rev()
+                .filter_map(|n| n.child("style").and_then(|n| n.child("fontRef")))
+            {
+                if let Some(color) = self.theme.color(n) {
+                    base.foreground = color;
+                }
+                if let Some(index) = n.attr("idx") {
+                    base.font_family = if index == "major" {
+                        self.theme.major.clone()
+                    } else {
+                        self.theme.minor.clone()
+                    };
+                }
+            }
             let mut alignment = Alignment::Start;
             let mut indent = 0.0;
             let mut before = 0.0;
@@ -933,18 +1183,31 @@ impl Context<'_> {
                 );
             }
             let text = runs.iter().map(|r| r.text.as_str()).collect::<String>();
-            let text_width = (width - indent).max(1.0);
+            let wrap_text = bodypr.and_then(|n| n.attr("wrap")) != Some("none")
+                || bodypr.is_some_and(|n| {
+                    n.child("spAutoFit").is_some() || n.child("normAutofit").is_some()
+                });
+            let text_width = if wrap_text {
+                (width - indent).max(1.0)
+            } else {
+                1e8
+            };
             let h = crate::pptx_text::height(&runs, text_width, spacing)
-                .max(base.font_size_mpt.unwrap_or(18000) as f32 / 1000.0);
+                .max(base.font_size_mpt.unwrap_or(18000) as f32 / 1000.0 * scale);
             let style = TextBoxStyle {
+                wrap_text,
                 runs,
                 line_spacing: spacing,
-                font_size_pt: base.font_size_mpt.unwrap_or(18000) as f32 / 1000.0,
+                font_size_pt: base.font_size_mpt.unwrap_or(18000) as f32 / 1000.0 * scale,
                 font_family: base.font_family.clone(),
                 alignment,
                 padding: Length::pt(0.0),
                 border: false,
                 rotation: -angle.to_radians(),
+                rotation_origin: Some((
+                    f.origin.x.as_pt() + f.size.width.as_pt() / 2.0,
+                    f.origin.y.as_pt() + f.size.height.as_pt() / 2.0,
+                )),
                 ..Default::default()
             };
             paragraphs.push((text, style, h, indent, before, after));
@@ -1099,6 +1362,7 @@ impl Context<'_> {
                         frame: cf,
                         kind: ShapeKind::Rectangle,
                         style: ShapeStyle {
+                            transform: None,
                             fill,
                             stroke: "none".into(),
                             ..Default::default()
@@ -1150,6 +1414,7 @@ impl Context<'_> {
                                     frame: bf,
                                     kind: ShapeKind::Rectangle,
                                     style: ShapeStyle {
+                                        transform: None,
                                         fill: color,
                                         stroke: "none".into(),
                                         ..Default::default()
@@ -1319,6 +1584,7 @@ mod tests {
             background: None,
             slide_number: 1,
             budget: &mut budget,
+            diagram_depth: 0,
         };
         let t=parse_xml_document(r#"<tbl><tblPr><tableStyleId>test</tableStyleId></tblPr><tblGrid><gridCol w="1270000"/><gridCol w="1270000"/></tblGrid><tr h="254000"><tc gridSpan="2" rowSpan="2"><txBody><bodyPr/><p><r><rPr b="0"/><t>Merged</t></r></p></txBody><tcPr marL="12700" anchor="b"/></tc><tc hMerge="1"/></tr><tr h="381000"><tc vMerge="1"/><tc hMerge="1" vMerge="1"/></tr></tbl>"#).unwrap();
         let mut slide = Slide::default();
@@ -1355,6 +1621,7 @@ mod tests {
             background: None,
             slide_number: 1,
             budget: &mut budget,
+            diagram_depth: 0,
         };
         let shape=parse_xml_document(r#"<sp><txBody><bodyPr/><p><r><rPr sz="3200"><solidFill><srgbClr val="FF0000"/></solidFill></rPr><t>Title</t></r></p></txBody></sp>"#).unwrap();
         let mut slide = Slide::default();
@@ -1365,5 +1632,44 @@ mod tests {
         assert_eq!(t.text, "Title");
         assert_eq!(t.style.runs[0].style.font_size_mpt, Some(32000));
         assert_eq!(t.style.runs[0].style.foreground, "#FF0000");
+    }
+    #[test]
+    fn implicit_background_fill_covers_preceding_shapes() {
+        let zip = ZipArchive::new(&package(&[("a", "b")])).unwrap();
+        let theme = Theme::new(None, None);
+        let mut budget = 100;
+        let ctx = Context {
+            zip: &zip,
+            theme: &theme,
+            theme_root: None,
+            master: None,
+            layout: None,
+            default_text: None,
+            table_styles: None,
+            background: None,
+            slide_number: 1,
+            budget: &mut budget,
+            diagram_depth: 0,
+        };
+        let shape = parse_xml_document(r#"<sp useBgFill="1"><spPr><xfrm><off x="0" y="0"/><ext cx="1270000" cy="1270000"/></xfrm><ln><noFill/></ln></spPr></sp>"#).unwrap();
+        let mut slide = Slide::default();
+        ctx.shape(&[&shape], &mut slide, Transform::identity());
+        let SlideElement::Shape(s) = &slide.elements[0] else {
+            panic!()
+        };
+        assert_eq!(s.style.fill, "#FFFFFF");
+        assert_eq!(s.frame.size.width.as_pt(), 100.0);
+    }
+    #[test]
+    fn group_rotation_and_flip_preserve_center() {
+        let group = parse_xml_document(r#"<grpSp><grpSpPr><xfrm rot="5400000" flipH="1"><off x="1270000" y="2540000"/><ext cx="2540000" cy="1270000"/><chOff x="0" y="0"/><chExt cx="2540000" cy="1270000"/></xfrm></grpSpPr></grpSp>"#).unwrap();
+        let t = Transform::identity().group(&group);
+        let m = t.post().unwrap();
+        let apply = |x, y| (m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]);
+        let center = apply(200.0, 250.0);
+        assert!((center.0 - 200.0).abs() < 0.001 && (center.1 - 250.0).abs() < 0.001);
+        let corner = apply(100.0, 200.0);
+        assert!((corner.0 - 250.0).abs() < 0.001 && (corner.1 - 350.0).abs() < 0.001);
+        assert!(Transform::identity().post().is_none());
     }
 }

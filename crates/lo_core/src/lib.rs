@@ -47,3 +47,6 @@ pub use xml_parser::{
 };
 
 pub mod xlsx_format;
+
+pub mod vector_path;
+pub use vector_path::{PathCommand, VectorPath};

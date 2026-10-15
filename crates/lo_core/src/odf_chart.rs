@@ -4,6 +4,7 @@ use crate::{PdfFont, PdfPage, Rect, XmlNode};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct OdfChart {
+    pub transform: Option<[f32;6]>,
     pub frame: Rect,
     ooxml_layout: Option<OoxmlLayout>,
     plot: [f32; 4],
@@ -280,6 +281,7 @@ impl OdfChart {
                 .filter(|v| v.is_finite() && v.abs() < 1e100)
         };
         Some(Self {
+            transform:None,
             frame,
             ooxml_layout: None,
             plot,
@@ -565,6 +567,7 @@ impl OdfChart {
             )
         };
         Some(Self {
+            transform:None,
             frame,
             ooxml_layout: Some(OoxmlLayout {
                 stacked,
@@ -880,6 +883,11 @@ impl OdfChart {
         }
     }
     pub fn render(&self, page: &mut PdfPage, page_height: f32, dx: f32, dy: f32) {
+        if let Some([a,b,c,d,e,f])=self.transform {page.raw(&format!("q {a} {} {} {d} {} {} cm",-b,-c,e+c*page_height,page_height*(1.0-d)-f));}
+        self.render_inner(page,page_height,dx,dy);
+        if self.transform.is_some(){page.raw("Q");}
+    }
+    fn render_inner(&self, page: &mut PdfPage, page_height: f32, dx: f32, dy: f32) {
         let x = self.frame.origin.x.as_pt() + dx;
         let y = self.frame.origin.y.as_pt() + dy;
         let w = self.frame.size.width.as_pt();

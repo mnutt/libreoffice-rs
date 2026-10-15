@@ -6,6 +6,10 @@ use crate::common::{content_root_attrs, image_extras, package_document, MIME_ODG
 
 fn shape_xml(shape: &lo_core::Shape) -> String {
     match shape.kind {
+        ShapeKind::Custom(ref paths) => paths.iter().map(|path|format!(
+            "<draw:path svg:x=\"{}\" svg:y=\"{}\" svg:width=\"{}\" svg:height=\"{}\" svg:viewBox=\"0 0 100000 100000\" svg:d=\"{}\" draw:fill-color=\"{}\" draw:stroke-color=\"{}\"/>",
+            shape.frame.origin.x.css(),shape.frame.origin.y.css(),shape.frame.size.width.css(),shape.frame.size.height.css(),path.svg_data(0.0,0.0,100000.0,100000.0),lo_core::escape_attr(if path.fill{&shape.style.fill}else{"none"}),lo_core::escape_attr(if path.stroke{&shape.style.stroke}else{"none"})
+        )).collect::<String>(),
         ShapeKind::Rectangle => format!(
             "<draw:rect svg:x=\"{}\" svg:y=\"{}\" svg:width=\"{}\" svg:height=\"{}\" draw:fill-color=\"{}\" draw:stroke-color=\"{}\"/>",
             shape.frame.origin.x.css(),

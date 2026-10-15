@@ -757,10 +757,12 @@ fn execute_impress_command(
                         Length::mm(get_i64(arguments, "height").unwrap_or(45) as f32),
                     ),
                     style: lo_core::ShapeStyle {
+                    transform: None,
                         rotation_millidegrees: 0,
                         fill: "#d9eaf7".to_string(),
                         stroke: "#1f4e79".to_string(),
                         stroke_width_mm: 1,
+                    stroke_width_mpt: None,
                     },
                     kind,
                 }));
@@ -812,10 +814,12 @@ fn execute_draw_command(
                         Length::mm(get_i64(arguments, "height").unwrap_or(40) as f32),
                     ),
                     style: lo_core::ShapeStyle {
+                    transform: None,
                         rotation_millidegrees: 0,
                         fill: "#d9eaf7".to_string(),
                         stroke: "#1f4e79".to_string(),
                         stroke_width_mm: 1,
+                    stroke_width_mpt: None,
                     },
                     kind,
                 }));

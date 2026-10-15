@@ -21,6 +21,7 @@ pub fn to_markdown(presentation: &Presentation) -> String {
                 SlideElement::Shape(shape) => bullets.push(format!(
                     "[shape: {}]",
                     match shape.kind {
+                        ShapeKind::Custom(_) => "custom shape",
                         ShapeKind::Rectangle => "rectangle",
                         ShapeKind::Ellipse => "ellipse",
                         ShapeKind::Line => "line",

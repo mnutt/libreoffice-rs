@@ -82,8 +82,12 @@ pub struct CellStyle {
     pub alignment: Alignment,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ShapeStyle {
+    /// Optional affine transform in top-left slide coordinates.
+    pub transform: Option<[f32;6]>,
+    /// Optional exact line width, in thousandths of a point.
+    pub stroke_width_mpt: Option<u32>,
     pub rotation_millidegrees: i32,
     pub fill: String,
     pub stroke: String,
@@ -92,6 +96,10 @@ pub struct ShapeStyle {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextBoxStyle {
+    pub transform: Option<[f32;6]>,
+    pub wrap_text: bool,
+    /// Rotation center in slide coordinates (points); None retains the legacy frame origin.
+    pub rotation_origin: Option<(f32,f32)>,
     pub runs: Vec<crate::calc::CellTextRun>,
     pub line_spacing: f32,
     pub font_family: String,
@@ -112,6 +120,9 @@ pub struct TextBoxStyle {
 impl Default for TextBoxStyle {
     fn default() -> Self {
         Self {
+            transform: None,
+            rotation_origin: None,
+            wrap_text: true,
             runs: Vec::new(),
             line_spacing: 0.0,
             font_family: String::new(),

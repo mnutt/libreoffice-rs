@@ -17,6 +17,7 @@ pub fn to_pdf(drawing: &Drawing) -> Vec<u8> {
                 }
                 DrawElement::Shape(shape) => {
                     let kind = match shape.kind {
+                        ShapeKind::Custom(_) => "path",
                         ShapeKind::Rectangle => "rect",
                         ShapeKind::Ellipse => "ellipse",
                         ShapeKind::Line => "line",

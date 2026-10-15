@@ -67,6 +67,9 @@ pub fn render_pages(presentation: &Presentation, dpi: u32) -> Vec<RasterImage> {
                     };
                     let line_w = mm_to_px(shape.style.stroke_width_mm.max(1) as f32, dpi).max(1);
                     match shape.kind {
+                        ShapeKind::Custom(ref paths) => {
+                            for path in paths {path.render_raster(&mut page,[x as f32,y as f32,w as f32,h as f32],(shape.style.fill!="none").then_some(fill),(shape.style.stroke!="none").then_some(stroke),line_w);}
+                        }
                         ShapeKind::Rectangle => {
                             if !shape.style.fill.trim().is_empty() {
                                 page.fill_rect(x, y, w, h, fill);

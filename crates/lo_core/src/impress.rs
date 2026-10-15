@@ -19,6 +19,7 @@ pub struct Shape {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ShapeKind {
+    Custom(Vec<crate::VectorPath>),
     Rectangle,
     Ellipse,
     Line,
@@ -26,6 +27,8 @@ pub enum ShapeKind {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ImageElement {
+    /// Optional affine transform in top-left slide coordinates.
+    pub transform: Option<[f32;6]>,
     /// Source crop fractions: left, top, right, bottom.
     pub crop: [f32; 4],
     /// Clockwise rotation in degrees around the image center.

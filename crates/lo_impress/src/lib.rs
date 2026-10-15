@@ -109,10 +109,12 @@ impl ImpressBuilder {
                         Length::mm(25.0),
                     ),
                     style: ShapeStyle {
+                    transform: None,
                         rotation_millidegrees: 0,
                         fill: "#d9eaf7".to_string(),
                         stroke: "#1f4e79".to_string(),
                         stroke_width_mm: 1,
+                    stroke_width_mpt: None,
                     },
                     kind: ShapeKind::Rectangle,
                 }),
@@ -124,10 +126,12 @@ impl ImpressBuilder {
                         Length::mm(25.0),
                     ),
                     style: ShapeStyle {
+                    transform: None,
                         rotation_millidegrees: 0,
                         fill: "#e2f0d9".to_string(),
                         stroke: "#375623".to_string(),
                         stroke_width_mm: 1,
+                    stroke_width_mpt: None,
                     },
                     kind: ShapeKind::Rectangle,
                 }),
@@ -139,10 +143,12 @@ impl ImpressBuilder {
                         Length::mm(0.0),
                     ),
                     style: ShapeStyle {
+                    transform: None,
                         rotation_millidegrees: 0,
                         fill: String::new(),
                         stroke: "#666666".to_string(),
                         stroke_width_mm: 1,
+                    stroke_width_mpt: None,
                     },
                     kind: ShapeKind::Line,
                 }),
@@ -254,3 +260,5 @@ mod tests {
         assert!(save_as(&p, "qqq").is_err());
     }
 }
+
+mod pptx_geometry;

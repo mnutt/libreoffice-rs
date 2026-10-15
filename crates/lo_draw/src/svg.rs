@@ -74,6 +74,9 @@ pub fn render_svg(drawing: &Drawing) -> String {
                         Some(shape.style.fill.as_str())
                     };
                     match shape.kind {
+                        ShapeKind::Custom(ref paths) => {
+                            for path in paths {svg.push_str(&format!("<path d=\"{}\" fill=\"{}\" stroke=\"{}\"/>",path.svg_data(x,sy,w,h),lo_core::escape_attr(if path.fill{fill.unwrap_or("none")}else{"none"}),lo_core::escape_attr(if path.stroke{stroke}else{"none"})));}
+                        }
                         ShapeKind::Rectangle => {
                             svg.push_str(&svg_rect(
                                 Rect {

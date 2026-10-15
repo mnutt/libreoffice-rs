@@ -34,6 +34,35 @@ fn layout(runs: &[CellTextRun], width: f32) -> Vec<Line> {
         if line.width + w > width && !line.parts.is_empty() {
             lines.push(std::mem::take(line));
         }
+        if w > width {
+            for p in word.drain(..) {
+                for ch in p.text.chars() {
+                    let text = ch.to_string();
+                    let cw = lo_core::font_metrics::measure_base_font(&text, p.size, p.font);
+                    if line.width + cw > width && !line.parts.is_empty() {
+                        lines.push(std::mem::take(line));
+                    }
+                    line.width += cw;
+                    line.size = line.size.max(p.size);
+                    if let Some(last) = line.parts.last_mut().filter(|last| {
+                        last.font == p.font
+                            && last.size == p.size
+                            && last.color == p.color
+                            && last.underline == p.underline
+                    }) {
+                        last.text.push(ch);
+                        last.width += cw;
+                    } else {
+                        line.parts.push(Fragment {
+                            text,
+                            width: cw,
+                            ..p.clone()
+                        });
+                    }
+                }
+            }
+            return;
+        }
         for p in word.drain(..) {
             line.width += p.width;
             line.size = line.size.max(p.size);
@@ -60,6 +89,7 @@ fn layout(runs: &[CellTextRun], width: f32) -> Vec<Line> {
                 }
                 flush(&mut word, &mut line, &mut lines);
                 if ch == '\n' {
+                    line.size = line.size.max(size);
                     lines.push(std::mem::take(&mut line));
                 } else if !line.parts.is_empty() {
                     let p = fragment(" ".into());
@@ -98,7 +128,7 @@ pub(crate) fn render(
     height: f32,
     style: &TextBoxStyle,
 ) {
-    let lines = layout(&style.runs, width);
+    let lines = layout(&style.runs, if style.wrap_text { width } else { 1e8 });
     let spacing = if style.line_spacing > 0.0 {
         style.line_spacing
     } else {
@@ -169,5 +199,28 @@ mod tests {
         let lines = layout(&[run("Hel", false), run("lo", true)], 200.0);
         assert_eq!(lines.len(), 1);
         assert_eq!(lines[0].parts.len(), 2);
+    }
+    #[test]
+    fn long_words_wrap_without_splitting_pdf_runs_per_character() {
+        let run = CellTextRun {
+            text: "abcdefghijklmnopqrstuvwxyz".into(),
+            style: lo_core::style::CellStyle {
+                font_size_mpt: Some(12000),
+                ..Default::default()
+            },
+        };
+        let lines = layout(&[run], 45.0);
+        assert!(lines.len() > 1);
+        assert!(lines
+            .iter()
+            .all(|line| line.parts.len() == 1 && line.width <= 45.01));
+        assert_eq!(
+            lines
+                .iter()
+                .flat_map(|line| line.parts.iter())
+                .map(|p| p.text.as_str())
+                .collect::<String>(),
+            "abcdefghijklmnopqrstuvwxyz"
+        );
     }
 }
