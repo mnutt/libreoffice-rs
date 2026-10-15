@@ -1,0 +1,6639 @@
+{
+  "source_commit": "616bc522bf6ab1d5e770ca22055b423f28d48d26",
+  "manifest_sha256": "f12d8690c72a53576ac651eb11852fe87c585f8b0b266e8455f299e72f619ea5",
+  "candidate_source_sha256": "c9707cfd038385ec1e382100e5aa3c60d16b944a82532635f197908ff9c34afa",
+  "candidate_sha256": "50b4be370fd6a355798c6db86a38eb128d5efab39a6a410fddb96b47dc998729",
+  "baseline_candidate_sha256": "98c2187f6fa77a838e575cac34cc1cc061bda38d1c3eab0a5d2c5c6c09a12b2f",
+  "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
+  "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
+  "fonts": {
+    "LiberationMono-Bold.ttf": "1d8d631105d4cb6c562a0d90f591d6393007d71350c089aec81c37dc8da293ed",
+    "LiberationMono-BoldItalic.ttf": "bac30bbb26308b1a925d233a520fa764c80526f632b75defbf2b37e402eb6b1a",
+    "LiberationMono-Italic.ttf": "02312ecd02a6b7a96db60deb20468430abb7d3a91974ef9a90bd46ff78ea338d",
+    "LiberationMono-Regular.ttf": "47ed5b5fcfe6b3c9228937b05de9c769f5fa55b777d539af0f65172f0a24c90b",
+    "LiberationSans-Bold.ttf": "769673c4355020b1e28a14c366a152da410ab6b16239fe883ebc35b73624835b",
+    "LiberationSans-BoldItalic.ttf": "4b3d18cbd1b8c068115be4072f43418b194994313f47dbfd3588808903a55d34",
+    "LiberationSans-Italic.ttf": "8649cf5f2cbe4727549d78b714a3a7ee540718a13557769c4612fea105294c7e",
+    "LiberationSans-Regular.ttf": "baccc64becc3eb7d104b7c84d99f5314a0a1f896e2b3ea6c2f22fc08d2003bee",
+    "LiberationSerif-Bold.ttf": "28f2d4300ee366d1ff9ca95df967a27e77987c87857fad0d9c85034405aae39d",
+    "LiberationSerif-BoldItalic.ttf": "8de6363e9ca6c1e6f539ab032bd9ad6abfe138638f4fc53f3c26ea788b7724c5",
+    "LiberationSerif-Italic.ttf": "c7681827cba3bddb54f4673d0052cb944bdeac0b83c29c238240617e699311da",
+    "LiberationSerif-Regular.ttf": "86b9ea1c2f41bed9d7c09ccad4abc2894b33df5de60e5bbbece5d48610911870",
+    "NotoSans-Regular.ttf": "478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823"
+  },
+  "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
+  "cases": [
+    {
+      "id": "poi-Formatting",
+      "purpose": "cell styling",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.6721311475409836,
+          "precision": 0.7884615384615384,
+          "missing": [
+            [
+              "11",
+              6
+            ],
+            [
+              "24",
+              6
+            ],
+            [
+              "2006",
+              3
+            ],
+            [
+              "06",
+              3
+            ],
+            [
+              "520",
+              1
+            ],
+            [
+              "5",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "39045",
+              6
+            ],
+            [
+              "52",
+              2
+            ],
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.6721311475409836,
+          "precision": 0.7884615384615384,
+          "missing": [
+            [
+              "11",
+              6
+            ],
+            [
+              "24",
+              6
+            ],
+            [
+              "2006",
+              3
+            ],
+            [
+              "06",
+              3
+            ],
+            [
+              "520",
+              1
+            ],
+            [
+              "5",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "39045",
+              6
+            ],
+            [
+              "52",
+              2
+            ],
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.9836065573770492,
+          "precision": 0.9836065573770492,
+          "missing": [
+            [
+              "2006",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "06",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0883132
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.9836065573770492,
+          "precision": 0.9836065573770492,
+          "missing": [
+            [
+              "2006",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "06",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 4402,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 17935,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 28490,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "poi-WidthsAndHeights",
+      "purpose": "row and column dimensions",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.9166666666666666,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.9166666666666666,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0429638
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 2294,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 11370,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 16519,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "poi-NumberFormatTests",
+      "purpose": "number formats",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.7613019891500904,
+          "precision": 0.9622857142857143,
+          "missing": [
+            [
+              "1",
+              27
+            ],
+            [
+              "3",
+              24
+            ],
+            [
+              "4",
+              23
+            ],
+            [
+              "0",
+              13
+            ],
+            [
+              "a",
+              10
+            ],
+            [
+              "234",
+              10
+            ],
+            [
+              "b",
+              9
+            ],
+            [
+              "c",
+              9
+            ],
+            [
+              "12",
+              9
+            ],
+            [
+              "d",
+              8
+            ],
+            [
+              "e",
+              8
+            ],
+            [
+              "567",
+              8
+            ],
+            [
+              "2",
+              7
+            ],
+            [
+              "15",
+              7
+            ],
+            [
+              "23",
+              7
+            ],
+            [
+              "00",
+              4
+            ],
+            [
+              "159",
+              3
+            ],
+            [
+              "314",
+              3
+            ],
+            [
+              "34",
+              2
+            ],
+            [
+              "30",
+              2
+            ]
+          ],
+          "extra": [
+            [
+              "err",
+              64
+            ],
+            [
+              "flags",
+              1
+            ],
+            [
+              "tests",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.7478728168383341,
+          "precision": 0.9542857142857143,
+          "missing": [
+            [
+              "1",
+              27
+            ],
+            [
+              "3",
+              24
+            ],
+            [
+              "4",
+              23
+            ],
+            [
+              "0",
+              13
+            ],
+            [
+              "234",
+              10
+            ],
+            [
+              "a",
+              9
+            ],
+            [
+              "12",
+              9
+            ],
+            [
+              "b",
+              8
+            ],
+            [
+              "c",
+              8
+            ],
+            [
+              "t",
+              8
+            ],
+            [
+              "e",
+              8
+            ],
+            [
+              "d",
+              8
+            ],
+            [
+              "567",
+              8
+            ],
+            [
+              "2",
+              7
+            ],
+            [
+              "15",
+              7
+            ],
+            [
+              "23",
+              7
+            ],
+            [
+              "s",
+              6
+            ],
+            [
+              "00",
+              4
+            ],
+            [
+              "159",
+              3
+            ],
+            [
+              "314",
+              3
+            ]
+          ],
+          "extra": [
+            [
+              "err",
+              64
+            ],
+            [
+              "tests",
+              3
+            ],
+            [
+              "flags",
+              1
+            ],
+            [
+              "format",
+              1
+            ],
+            [
+              "only",
+              1
+            ],
+            [
+              "that",
+              1
+            ],
+            [
+              "have",
+              1
+            ],
+            [
+              "this",
+              1
+            ],
+            [
+              "category",
+              1
+            ],
+            [
+              "the",
+              1
+            ],
+            [
+              "with",
+              1
+            ],
+            [
+              "all",
+              1
+            ],
+            [
+              "standard",
+              1
+            ],
+            [
+              "colors",
+              1
+            ],
+            [
+              "specified",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.9829825347066726,
+          "precision": 0.9923146473779385,
+          "missing": [
+            [
+              "t",
+              8
+            ],
+            [
+              "s",
+              6
+            ],
+            [
+              "y",
+              2
+            ],
+            [
+              "for",
+              1
+            ],
+            [
+              "mat",
+              1
+            ],
+            [
+              "onl",
+              1
+            ],
+            [
+              "es",
+              1
+            ],
+            [
+              "hat",
+              1
+            ],
+            [
+              "hav",
+              1
+            ],
+            [
+              "hi",
+              1
+            ],
+            [
+              "cat",
+              1
+            ],
+            [
+              "egor",
+              1
+            ],
+            [
+              "he",
+              1
+            ],
+            [
+              "est",
+              1
+            ],
+            [
+              "wi",
+              1
+            ],
+            [
+              "h",
+              1
+            ],
+            [
+              "al",
+              1
+            ],
+            [
+              "l",
+              1
+            ],
+            [
+              "andar",
+              1
+            ],
+            [
+              "col",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "tests",
+              2
+            ],
+            [
+              "a",
+              1
+            ],
+            [
+              "b",
+              1
+            ],
+            [
+              "c",
+              1
+            ],
+            [
+              "format",
+              1
+            ],
+            [
+              "only",
+              1
+            ],
+            [
+              "that",
+              1
+            ],
+            [
+              "have",
+              1
+            ],
+            [
+              "this",
+              1
+            ],
+            [
+              "category",
+              1
+            ],
+            [
+              "the",
+              1
+            ],
+            [
+              "with",
+              1
+            ],
+            [
+              "all",
+              1
+            ],
+            [
+              "standard",
+              1
+            ],
+            [
+              "colors",
+              1
+            ],
+            [
+              "specified",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            0.333028
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.9963833634719711,
+          "precision": 1.0,
+          "missing": [
+            [
+              "e",
+              8
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            0.0952106,
+            0.291103
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.9793999104343932,
+          "precision": 0.9922867513611615,
+          "missing": [
+            [
+              "t",
+              8
+            ],
+            [
+              "e",
+              8
+            ],
+            [
+              "s",
+              6
+            ],
+            [
+              "y",
+              2
+            ],
+            [
+              "for",
+              1
+            ],
+            [
+              "mat",
+              1
+            ],
+            [
+              "onl",
+              1
+            ],
+            [
+              "es",
+              1
+            ],
+            [
+              "hat",
+              1
+            ],
+            [
+              "hav",
+              1
+            ],
+            [
+              "hi",
+              1
+            ],
+            [
+              "cat",
+              1
+            ],
+            [
+              "egor",
+              1
+            ],
+            [
+              "he",
+              1
+            ],
+            [
+              "est",
+              1
+            ],
+            [
+              "wi",
+              1
+            ],
+            [
+              "h",
+              1
+            ],
+            [
+              "al",
+              1
+            ],
+            [
+              "l",
+              1
+            ],
+            [
+              "andar",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "tests",
+              2
+            ],
+            [
+              "a",
+              1
+            ],
+            [
+              "b",
+              1
+            ],
+            [
+              "c",
+              1
+            ],
+            [
+              "format",
+              1
+            ],
+            [
+              "only",
+              1
+            ],
+            [
+              "that",
+              1
+            ],
+            [
+              "have",
+              1
+            ],
+            [
+              "this",
+              1
+            ],
+            [
+              "category",
+              1
+            ],
+            [
+              "the",
+              1
+            ],
+            [
+              "with",
+              1
+            ],
+            [
+              "all",
+              1
+            ],
+            [
+              "standard",
+              1
+            ],
+            [
+              "colors",
+              1
+            ],
+            [
+              "specified",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            0.262046
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.9829825347066726,
+          "precision": 0.9923146473779385,
+          "missing": [
+            [
+              "t",
+              8
+            ],
+            [
+              "s",
+              6
+            ],
+            [
+              "y",
+              2
+            ],
+            [
+              "for",
+              1
+            ],
+            [
+              "mat",
+              1
+            ],
+            [
+              "onl",
+              1
+            ],
+            [
+              "es",
+              1
+            ],
+            [
+              "hat",
+              1
+            ],
+            [
+              "hav",
+              1
+            ],
+            [
+              "hi",
+              1
+            ],
+            [
+              "cat",
+              1
+            ],
+            [
+              "egor",
+              1
+            ],
+            [
+              "he",
+              1
+            ],
+            [
+              "est",
+              1
+            ],
+            [
+              "wi",
+              1
+            ],
+            [
+              "h",
+              1
+            ],
+            [
+              "al",
+              1
+            ],
+            [
+              "l",
+              1
+            ],
+            [
+              "andar",
+              1
+            ],
+            [
+              "col",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "tests",
+              2
+            ],
+            [
+              "a",
+              1
+            ],
+            [
+              "b",
+              1
+            ],
+            [
+              "c",
+              1
+            ],
+            [
+              "format",
+              1
+            ],
+            [
+              "only",
+              1
+            ],
+            [
+              "that",
+              1
+            ],
+            [
+              "have",
+              1
+            ],
+            [
+              "this",
+              1
+            ],
+            [
+              "category",
+              1
+            ],
+            [
+              "the",
+              1
+            ],
+            [
+              "with",
+              1
+            ],
+            [
+              "all",
+              1
+            ],
+            [
+              "standard",
+              1
+            ],
+            [
+              "colors",
+              1
+            ],
+            [
+              "specified",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            0.333028
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 9,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 282076,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 9,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 80654,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 8,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 389233,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "poi-WithVariousData",
+      "purpose": "mixed cell types",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.8656716417910447,
+          "precision": 0.9666666666666667,
+          "missing": [
+            [
+              "1",
+              2
+            ],
+            [
+              "this",
+              1
+            ],
+            [
+              "is",
+              1
+            ],
+            [
+              "the",
+              1
+            ],
+            [
+              "header",
+              1
+            ],
+            [
+              "on",
+              1
+            ],
+            [
+              "sheet",
+              1
+            ],
+            [
+              "page",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.8656716417910447,
+          "precision": 0.9666666666666667,
+          "missing": [
+            [
+              "1",
+              2
+            ],
+            [
+              "this",
+              1
+            ],
+            [
+              "is",
+              1
+            ],
+            [
+              "the",
+              1
+            ],
+            [
+              "header",
+              1
+            ],
+            [
+              "on",
+              1
+            ],
+            [
+              "sheet",
+              1
+            ],
+            [
+              "page",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0902479
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 4652,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 15039,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 24963,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "poi-WithMoreVariousData",
+      "purpose": "mixed data and formatting",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.8928571428571429,
+          "precision": 0.974025974025974,
+          "missing": [
+            [
+              "1",
+              2
+            ],
+            [
+              "this",
+              1
+            ],
+            [
+              "is",
+              1
+            ],
+            [
+              "the",
+              1
+            ],
+            [
+              "header",
+              1
+            ],
+            [
+              "on",
+              1
+            ],
+            [
+              "sheet",
+              1
+            ],
+            [
+              "page",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.8928571428571429,
+          "precision": 0.974025974025974,
+          "missing": [
+            [
+              "1",
+              2
+            ],
+            [
+              "this",
+              1
+            ],
+            [
+              "is",
+              1
+            ],
+            [
+              "the",
+              1
+            ],
+            [
+              "header",
+              1
+            ],
+            [
+              "on",
+              1
+            ],
+            [
+              "sheet",
+              1
+            ],
+            [
+              "page",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.10675
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.105644
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0991243
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.10675
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 5206,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 16246,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 28135,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "merge_cells",
+      "purpose": "merged cells",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.8888888888888888,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.8888888888888888,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0382202
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 2287,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 10632,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 16202,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "SH008-Table-With-Tall-Row",
+      "purpose": "tall row",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.5454545454545454,
+          "precision": 0.8571428571428571,
+          "missing": [
+            [
+              "00",
+              5
+            ]
+          ],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.5454545454545454,
+          "precision": 0.8571428571428571,
+          "missing": [
+            [
+              "00",
+              5
+            ]
+          ],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0393368
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.039389
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0327055
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0393368
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 2531,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 13688,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 15680,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "SH109-CellWithBorder",
+      "purpose": "cell borders",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.5,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.5,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0193904
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 2212,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 7499,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 12826,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "date",
+      "purpose": "dates",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.3333333333333333,
+          "precision": 0.625,
+          "missing": [
+            [
+              "01",
+              3
+            ],
+            [
+              "2021",
+              2
+            ],
+            [
+              "15",
+              1
+            ],
+            [
+              "02",
+              1
+            ],
+            [
+              "10",
+              1
+            ],
+            [
+              "page",
+              1
+            ],
+            [
+              "1",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "44197",
+              1
+            ],
+            [
+              "44198",
+              1
+            ],
+            [
+              "6320601851852",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.3333333333333333,
+          "precision": 0.625,
+          "missing": [
+            [
+              "01",
+              3
+            ],
+            [
+              "2021",
+              2
+            ],
+            [
+              "02",
+              1
+            ],
+            [
+              "255",
+              1
+            ],
+            [
+              "10",
+              1
+            ],
+            [
+              "page",
+              1
+            ],
+            [
+              "1",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "44197",
+              1
+            ],
+            [
+              "44198",
+              1
+            ],
+            [
+              "6320601851852",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.9333333333333333,
+          "precision": 0.9333333333333333,
+          "missing": [
+            [
+              "255",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "15",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.9333333333333333,
+          "precision": 0.9333333333333333,
+          "missing": [
+            [
+              "15",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "255",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0370711
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.9333333333333333,
+          "precision": 0.9333333333333333,
+          "missing": [
+            [
+              "255",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "15",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 2686,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 14095,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 20840,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "date_1904",
+      "purpose": "1904 date system",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.3333333333333333,
+          "precision": 0.625,
+          "missing": [
+            [
+              "01",
+              2
+            ],
+            [
+              "2016",
+              1
+            ],
+            [
+              "12",
+              1
+            ],
+            [
+              "31",
+              1
+            ],
+            [
+              "15",
+              1
+            ],
+            [
+              "2017",
+              1
+            ],
+            [
+              "10",
+              1
+            ],
+            [
+              "page",
+              1
+            ],
+            [
+              "1",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "42735",
+              1
+            ],
+            [
+              "42736",
+              1
+            ],
+            [
+              "6320601851852",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.3333333333333333,
+          "precision": 0.625,
+          "missing": [
+            [
+              "01",
+              3
+            ],
+            [
+              "2021",
+              2
+            ],
+            [
+              "02",
+              1
+            ],
+            [
+              "255",
+              1
+            ],
+            [
+              "10",
+              1
+            ],
+            [
+              "page",
+              1
+            ],
+            [
+              "1",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "42735",
+              1
+            ],
+            [
+              "42736",
+              1
+            ],
+            [
+              "6320601851852",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.6666666666666666,
+          "precision": 0.6666666666666666,
+          "missing": [
+            [
+              "2021",
+              2
+            ],
+            [
+              "01",
+              1
+            ],
+            [
+              "02",
+              1
+            ],
+            [
+              "255",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "2016",
+              1
+            ],
+            [
+              "12",
+              1
+            ],
+            [
+              "31",
+              1
+            ],
+            [
+              "15",
+              1
+            ],
+            [
+              "2017",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.6666666666666666,
+          "precision": 0.6666666666666666,
+          "missing": [
+            [
+              "2016",
+              1
+            ],
+            [
+              "12",
+              1
+            ],
+            [
+              "31",
+              1
+            ],
+            [
+              "15",
+              1
+            ],
+            [
+              "2017",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "2021",
+              2
+            ],
+            [
+              "01",
+              1
+            ],
+            [
+              "02",
+              1
+            ],
+            [
+              "255",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0366766
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.6666666666666666,
+          "precision": 0.6666666666666666,
+          "missing": [
+            [
+              "2021",
+              2
+            ],
+            [
+              "01",
+              1
+            ],
+            [
+              "02",
+              1
+            ],
+            [
+              "255",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "2016",
+              1
+            ],
+            [
+              "12",
+              1
+            ],
+            [
+              "31",
+              1
+            ],
+            [
+              "15",
+              1
+            ],
+            [
+              "2017",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 2686,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 14260,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 20841,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "shared_formulas",
+      "purpose": "cached formula results",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.9879518072289156,
+          "missing": [],
+          "extra": [
+            [
+              "label",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.9879518072289156,
+          "missing": [],
+          "extra": [
+            [
+              "label",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.166199
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 11904,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 20473,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 46690,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "Booleans",
+      "purpose": "booleans",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.875,
+          "precision": 0.7368421052631579,
+          "missing": [
+            [
+              "true",
+              1
+            ],
+            [
+              "false",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "err",
+              2
+            ],
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.875,
+          "precision": 0.7368421052631579,
+          "missing": [
+            [
+              "true",
+              1
+            ],
+            [
+              "false",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "err",
+              2
+            ],
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0511092
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 2763,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 10674,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 17752,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "InlineString",
+      "purpose": "inline strings",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.6666666666666666,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.6666666666666666,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0125008
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 16794,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 8116,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 13700,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "GroupTest",
+      "purpose": "grouped rows and columns",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.9615384615384616,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.46153846153846156,
+          "missing": [],
+          "extra": [
+            [
+              "inner",
+              8
+            ],
+            [
+              "collapsed",
+              4
+            ],
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "expanded",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.48,
+          "missing": [],
+          "extra": [
+            [
+              "inner",
+              8
+            ],
+            [
+              "collapsed",
+              4
+            ],
+            [
+              "expanded",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.48,
+          "precision": 1.0,
+          "missing": [
+            [
+              "inner",
+              8
+            ],
+            [
+              "collapsed",
+              4
+            ],
+            [
+              "expanded",
+              1
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            0.0762424
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.48,
+          "missing": [],
+          "extra": [
+            [
+              "inner",
+              8
+            ],
+            [
+              "collapsed",
+              4
+            ],
+            [
+              "expanded",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 3295,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 9107,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 17960,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "issue_1065_hidden_sheet_probe",
+      "purpose": "hidden sheets",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.5833333333333334,
+          "missing": [],
+          "extra": [
+            [
+              "summary",
+              1
+            ],
+            [
+              "region",
+              1
+            ],
+            [
+              "north",
+              1
+            ],
+            [
+              "south",
+              1
+            ],
+            [
+              "data",
+              1
+            ],
+            [
+              "code",
+              1
+            ],
+            [
+              "n",
+              1
+            ],
+            [
+              "01",
+              1
+            ],
+            [
+              "s",
+              1
+            ],
+            [
+              "02",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.5833333333333334,
+          "missing": [],
+          "extra": [
+            [
+              "summary",
+              1
+            ],
+            [
+              "region",
+              1
+            ],
+            [
+              "north",
+              1
+            ],
+            [
+              "south",
+              1
+            ],
+            [
+              "data",
+              1
+            ],
+            [
+              "code",
+              1
+            ],
+            [
+              "n",
+              1
+            ],
+            [
+              "01",
+              1
+            ],
+            [
+              "s",
+              1
+            ],
+            [
+              "02",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.046424
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 3334,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 11024,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 19288,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "Themes",
+      "purpose": "theme colors",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.9230769230769231,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.9230769230769231,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0292343
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0293919
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0264065
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0292343
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 3268,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 9983,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 18754,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "WithChart",
+      "purpose": "charts",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.375,
+          "precision": 0.8,
+          "missing": [
+            [
+              "2",
+              2
+            ],
+            [
+              "4",
+              2
+            ],
+            [
+              "6",
+              2
+            ],
+            [
+              "column",
+              2
+            ],
+            [
+              "1",
+              1
+            ],
+            [
+              "10",
+              1
+            ],
+            [
+              "12",
+              1
+            ],
+            [
+              "3",
+              1
+            ],
+            [
+              "14",
+              1
+            ],
+            [
+              "5",
+              1
+            ],
+            [
+              "18",
+              1
+            ],
+            [
+              "16",
+              1
+            ],
+            [
+              "1st",
+              1
+            ],
+            [
+              "8",
+              1
+            ],
+            [
+              "2nd",
+              1
+            ],
+            [
+              "0",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.375,
+          "precision": 0.8,
+          "missing": [
+            [
+              "2",
+              2
+            ],
+            [
+              "4",
+              2
+            ],
+            [
+              "6",
+              2
+            ],
+            [
+              "column",
+              2
+            ],
+            [
+              "1",
+              1
+            ],
+            [
+              "10",
+              1
+            ],
+            [
+              "12",
+              1
+            ],
+            [
+              "3",
+              1
+            ],
+            [
+              "14",
+              1
+            ],
+            [
+              "5",
+              1
+            ],
+            [
+              "18",
+              1
+            ],
+            [
+              "16",
+              1
+            ],
+            [
+              "1st",
+              1
+            ],
+            [
+              "8",
+              1
+            ],
+            [
+              "2nd",
+              1
+            ],
+            [
+              "0",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.375,
+          "precision": 1.0,
+          "missing": [
+            [
+              "2",
+              2
+            ],
+            [
+              "4",
+              2
+            ],
+            [
+              "6",
+              2
+            ],
+            [
+              "column",
+              2
+            ],
+            [
+              "1",
+              1
+            ],
+            [
+              "10",
+              1
+            ],
+            [
+              "12",
+              1
+            ],
+            [
+              "3",
+              1
+            ],
+            [
+              "14",
+              1
+            ],
+            [
+              "5",
+              1
+            ],
+            [
+              "18",
+              1
+            ],
+            [
+              "16",
+              1
+            ],
+            [
+              "1st",
+              1
+            ],
+            [
+              "8",
+              1
+            ],
+            [
+              "2nd",
+              1
+            ],
+            [
+              "0",
+              1
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            0.0257366
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.375,
+          "precision": 1.0,
+          "missing": [
+            [
+              "2",
+              2
+            ],
+            [
+              "4",
+              2
+            ],
+            [
+              "6",
+              2
+            ],
+            [
+              "column",
+              2
+            ],
+            [
+              "1",
+              1
+            ],
+            [
+              "10",
+              1
+            ],
+            [
+              "12",
+              1
+            ],
+            [
+              "3",
+              1
+            ],
+            [
+              "14",
+              1
+            ],
+            [
+              "5",
+              1
+            ],
+            [
+              "18",
+              1
+            ],
+            [
+              "16",
+              1
+            ],
+            [
+              "1st",
+              1
+            ],
+            [
+              "8",
+              1
+            ],
+            [
+              "2nd",
+              1
+            ],
+            [
+              "0",
+              1
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 1,
+        "drawings": 1,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 3146,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 2,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 11536,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 2,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ],
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 22377,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "SimpleScatterChart",
+      "purpose": "scatter chart",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.2857142857142857,
+          "precision": 0.8,
+          "missing": [
+            [
+              "0",
+              4
+            ],
+            [
+              "5",
+              4
+            ],
+            [
+              "1",
+              4
+            ],
+            [
+              "y",
+              2
+            ],
+            [
+              "scatter",
+              2
+            ],
+            [
+              "chart",
+              2
+            ],
+            [
+              "category",
+              2
+            ]
+          ],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "chart1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.11764705882352941,
+          "precision": 0.8,
+          "missing": [
+            [
+              "0",
+              20
+            ],
+            [
+              "1",
+              12
+            ],
+            [
+              "2",
+              8
+            ],
+            [
+              "6",
+              6
+            ],
+            [
+              "4",
+              6
+            ],
+            [
+              "y",
+              4
+            ],
+            [
+              "8",
+              4
+            ]
+          ],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "chart1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.2647058823529412,
+          "precision": 0.6428571428571429,
+          "missing": [
+            [
+              "0",
+              16
+            ],
+            [
+              "1",
+              8
+            ],
+            [
+              "2",
+              8
+            ],
+            [
+              "6",
+              6
+            ],
+            [
+              "4",
+              6
+            ],
+            [
+              "8",
+              4
+            ],
+            [
+              "y",
+              2
+            ]
+          ],
+          "extra": [
+            [
+              "5",
+              4
+            ],
+            [
+              "scatter",
+              2
+            ],
+            [
+              "chart",
+              2
+            ],
+            [
+              "category",
+              2
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.2857142857142857,
+          "precision": 1.0,
+          "missing": [
+            [
+              "0",
+              4
+            ],
+            [
+              "5",
+              4
+            ],
+            [
+              "1",
+              4
+            ],
+            [
+              "y",
+              2
+            ],
+            [
+              "scatter",
+              2
+            ],
+            [
+              "chart",
+              2
+            ],
+            [
+              "category",
+              2
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            0.0511972
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.11764705882352941,
+          "precision": 1.0,
+          "missing": [
+            [
+              "0",
+              20
+            ],
+            [
+              "1",
+              12
+            ],
+            [
+              "2",
+              8
+            ],
+            [
+              "6",
+              6
+            ],
+            [
+              "4",
+              6
+            ],
+            [
+              "y",
+              4
+            ],
+            [
+              "8",
+              4
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.2647058823529412,
+          "precision": 0.6428571428571429,
+          "missing": [
+            [
+              "0",
+              16
+            ],
+            [
+              "1",
+              8
+            ],
+            [
+              "2",
+              8
+            ],
+            [
+              "6",
+              6
+            ],
+            [
+              "4",
+              6
+            ],
+            [
+              "8",
+              4
+            ],
+            [
+              "y",
+              2
+            ]
+          ],
+          "extra": [
+            [
+              "5",
+              4
+            ],
+            [
+              "scatter",
+              2
+            ],
+            [
+              "chart",
+              2
+            ],
+            [
+              "category",
+              2
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 2,
+        "drawings": 2,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 2479,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 2,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ],
+            [
+              792.0,
+              612.0
+            ]
+          ],
+          "bytes": 22023,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 2,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ],
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 26343,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "picture",
+      "purpose": "embedded images",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.8695652173913043,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.8695652173913043,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.405424
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 1,
+        "media": 1
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 4164,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 457118,
+          "image_count": 1,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 4,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ],
+            [
+              595.304,
+              841.89
+            ],
+            [
+              595.304,
+              841.89
+            ],
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 329996,
+          "image_count": 4,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "poi-WithConditionalFormatting",
+      "purpose": "conditional formatting",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.8571428571428571,
+          "missing": [],
+          "extra": [
+            [
+              "cf",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.9411764705882353,
+          "precision": 0.7619047619047619,
+          "missing": [
+            [
+              "2a",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "cf",
+              1
+            ],
+            [
+              "2",
+              1
+            ],
+            [
+              "a",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.9411764705882353,
+          "precision": 0.8888888888888888,
+          "missing": [
+            [
+              "2a",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "2",
+              1
+            ],
+            [
+              "a",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0449967
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.8888888888888888,
+          "precision": 0.9411764705882353,
+          "missing": [
+            [
+              "2",
+              1
+            ],
+            [
+              "a",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "2a",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0449345
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0366098
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.9411764705882353,
+          "precision": 0.8888888888888888,
+          "missing": [
+            [
+              "2a",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "2",
+              1
+            ],
+            [
+              "a",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0449967
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 3787,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 15982,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 35617,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "headerFooterTest",
+      "purpose": "headers and footers",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.14285714285714285,
+          "precision": 0.6666666666666666,
+          "missing": [
+            [
+              "top",
+              3
+            ],
+            [
+              "bottom",
+              3
+            ],
+            [
+              "left",
+              2
+            ],
+            [
+              "center",
+              2
+            ],
+            [
+              "right",
+              2
+            ]
+          ],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.14285714285714285,
+          "precision": 0.6666666666666666,
+          "missing": [
+            [
+              "top",
+              3
+            ],
+            [
+              "bottom",
+              3
+            ],
+            [
+              "left",
+              2
+            ],
+            [
+              "center",
+              2
+            ],
+            [
+              "right",
+              2
+            ]
+          ],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0440558
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0507195
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0487023
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0440558
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 2535,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 10505,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 15764,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "poi-RepeatingRowsCols",
+      "purpose": "print titles",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.9245283018867925,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ],
+            [
+              "sheet4",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 0.9245283018867925,
+          "missing": [],
+          "extra": [
+            [
+              "sheet1",
+              1
+            ],
+            [
+              "sheet2",
+              1
+            ],
+            [
+              "sheet3",
+              1
+            ],
+            [
+              "sheet4",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0364008,
+            0.0295551
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 4,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ],
+            [
+              595.28,
+              841.89
+            ],
+            [
+              595.28,
+              841.89
+            ],
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 7718,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 4,
+          "page_sizes_pt": [
+            [
+              595.28,
+              841.89
+            ],
+            [
+              595.28,
+              841.89
+            ],
+            [
+              595.28,
+              841.89
+            ],
+            [
+              595.28,
+              841.89
+            ]
+          ],
+          "bytes": 12887,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 4,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ],
+            [
+              595.304,
+              841.89
+            ],
+            [
+              595.304,
+              841.89
+            ],
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 28918,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "simple-monthly-budget",
+      "purpose": "budget template",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.4883720930232558,
+          "precision": 0.863013698630137,
+          "missing": [
+            [
+              "00",
+              16
+            ],
+            [
+              "500",
+              5
+            ],
+            [
+              "000",
+              5
+            ],
+            [
+              "1",
+              4
+            ],
+            [
+              "2",
+              4
+            ],
+            [
+              "3",
+              3
+            ],
+            [
+              "2336",
+              2
+            ],
+            [
+              "the",
+              2
+            ],
+            [
+              "income",
+              1
+            ],
+            [
+              "62",
+              1
+            ],
+            [
+              "expenses",
+              1
+            ],
+            [
+              "750",
+              1
+            ],
+            [
+              "336",
+              1
+            ],
+            [
+              "414",
+              1
+            ],
+            [
+              "4",
+              1
+            ],
+            [
+              "3750",
+              1
+            ],
+            [
+              "0",
+              1
+            ],
+            [
+              "need",
+              1
+            ],
+            [
+              "to",
+              1
+            ],
+            [
+              "add",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "err",
+              5
+            ],
+            [
+              "simple",
+              1
+            ],
+            [
+              "monthly",
+              1
+            ],
+            [
+              "budget",
+              1
+            ],
+            [
+              "2500",
+              1
+            ],
+            [
+              "1000",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.39622641509433965,
+          "precision": 0.863013698630137,
+          "missing": [
+            [
+              "00",
+              16
+            ],
+            [
+              "2",
+              7
+            ],
+            [
+              "1",
+              6
+            ],
+            [
+              "500",
+              6
+            ],
+            [
+              "t",
+              6
+            ],
+            [
+              "000",
+              5
+            ],
+            [
+              "3",
+              4
+            ],
+            [
+              "l",
+              4
+            ],
+            [
+              "750",
+              2
+            ],
+            [
+              "336",
+              2
+            ],
+            [
+              "0",
+              2
+            ],
+            [
+              "e",
+              2
+            ],
+            [
+              "ent",
+              2
+            ],
+            [
+              "r",
+              2
+            ],
+            [
+              "i",
+              2
+            ],
+            [
+              "he",
+              2
+            ],
+            [
+              "y",
+              2
+            ],
+            [
+              "62",
+              1
+            ],
+            [
+              "414",
+              1
+            ],
+            [
+              "4",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "err",
+              5
+            ],
+            [
+              "simple",
+              1
+            ],
+            [
+              "monthly",
+              1
+            ],
+            [
+              "budget",
+              1
+            ],
+            [
+              "2500",
+              1
+            ],
+            [
+              "1000",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.6981132075471698,
+          "precision": 0.8604651162790697,
+          "missing": [
+            [
+              "t",
+              6
+            ],
+            [
+              "l",
+              4
+            ],
+            [
+              "2",
+              3
+            ],
+            [
+              "1",
+              2
+            ],
+            [
+              "e",
+              2
+            ],
+            [
+              "ent",
+              2
+            ],
+            [
+              "r",
+              2
+            ],
+            [
+              "i",
+              2
+            ],
+            [
+              "he",
+              2
+            ],
+            [
+              "y",
+              2
+            ],
+            [
+              "500",
+              1
+            ],
+            [
+              "3",
+              1
+            ],
+            [
+              "750",
+              1
+            ],
+            [
+              "336",
+              1
+            ],
+            [
+              "0",
+              1
+            ],
+            [
+              "o",
+              1
+            ],
+            [
+              "mor",
+              1
+            ],
+            [
+              "es",
+              1
+            ],
+            [
+              "st",
+              1
+            ],
+            [
+              "ar",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "2336",
+              2
+            ],
+            [
+              "the",
+              2
+            ],
+            [
+              "income",
+              1
+            ],
+            [
+              "expenses",
+              1
+            ],
+            [
+              "3750",
+              1
+            ],
+            [
+              "to",
+              1
+            ],
+            [
+              "more",
+              1
+            ],
+            [
+              "entries",
+              1
+            ],
+            [
+              "start",
+              1
+            ],
+            [
+              "typing",
+              1
+            ],
+            [
+              "below",
+              1
+            ],
+            [
+              "last",
+              1
+            ],
+            [
+              "entry",
+              1
+            ],
+            [
+              "table",
+              1
+            ],
+            [
+              "will",
+              1
+            ],
+            [
+              "automatically",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.124635
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.7054263565891473,
+          "precision": 1.0,
+          "missing": [
+            [
+              "500",
+              4
+            ],
+            [
+              "000",
+              4
+            ],
+            [
+              "1",
+              2
+            ],
+            [
+              "2",
+              2
+            ],
+            [
+              "3",
+              2
+            ],
+            [
+              "the",
+              2
+            ],
+            [
+              "income",
+              1
+            ],
+            [
+              "2336",
+              1
+            ],
+            [
+              "expenses",
+              1
+            ],
+            [
+              "4",
+              1
+            ],
+            [
+              "3750",
+              1
+            ],
+            [
+              "0",
+              1
+            ],
+            [
+              "need",
+              1
+            ],
+            [
+              "to",
+              1
+            ],
+            [
+              "add",
+              1
+            ],
+            [
+              "more",
+              1
+            ],
+            [
+              "entries",
+              1
+            ],
+            [
+              "start",
+              1
+            ],
+            [
+              "typing",
+              1
+            ],
+            [
+              "below",
+              1
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            0.171785
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.5660377358490566,
+          "precision": 0.989010989010989,
+          "missing": [
+            [
+              "t",
+              6
+            ],
+            [
+              "2",
+              5
+            ],
+            [
+              "500",
+              5
+            ],
+            [
+              "1",
+              4
+            ],
+            [
+              "000",
+              4
+            ],
+            [
+              "l",
+              4
+            ],
+            [
+              "3",
+              3
+            ],
+            [
+              "0",
+              2
+            ],
+            [
+              "e",
+              2
+            ],
+            [
+              "ent",
+              2
+            ],
+            [
+              "r",
+              2
+            ],
+            [
+              "i",
+              2
+            ],
+            [
+              "he",
+              2
+            ],
+            [
+              "y",
+              2
+            ],
+            [
+              "750",
+              1
+            ],
+            [
+              "336",
+              1
+            ],
+            [
+              "4",
+              1
+            ],
+            [
+              "need",
+              1
+            ],
+            [
+              "o",
+              1
+            ],
+            [
+              "add",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "2336",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.162352
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.6981132075471698,
+          "precision": 0.8604651162790697,
+          "missing": [
+            [
+              "t",
+              6
+            ],
+            [
+              "l",
+              4
+            ],
+            [
+              "2",
+              3
+            ],
+            [
+              "1",
+              2
+            ],
+            [
+              "e",
+              2
+            ],
+            [
+              "ent",
+              2
+            ],
+            [
+              "r",
+              2
+            ],
+            [
+              "i",
+              2
+            ],
+            [
+              "he",
+              2
+            ],
+            [
+              "y",
+              2
+            ],
+            [
+              "500",
+              1
+            ],
+            [
+              "3",
+              1
+            ],
+            [
+              "750",
+              1
+            ],
+            [
+              "336",
+              1
+            ],
+            [
+              "0",
+              1
+            ],
+            [
+              "o",
+              1
+            ],
+            [
+              "mor",
+              1
+            ],
+            [
+              "es",
+              1
+            ],
+            [
+              "st",
+              1
+            ],
+            [
+              "ar",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "2336",
+              2
+            ],
+            [
+              "the",
+              2
+            ],
+            [
+              "income",
+              1
+            ],
+            [
+              "expenses",
+              1
+            ],
+            [
+              "3750",
+              1
+            ],
+            [
+              "to",
+              1
+            ],
+            [
+              "more",
+              1
+            ],
+            [
+              "entries",
+              1
+            ],
+            [
+              "start",
+              1
+            ],
+            [
+              "typing",
+              1
+            ],
+            [
+              "below",
+              1
+            ],
+            [
+              "last",
+              1
+            ],
+            [
+              "entry",
+              1
+            ],
+            [
+              "table",
+              1
+            ],
+            [
+              "will",
+              1
+            ],
+            [
+              "automatically",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.124635
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 1,
+        "drawings": 1,
+        "media": 1
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              792.0,
+              612.0
+            ]
+          ],
+          "bytes": 9416,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 1,
+          "page_sizes_pt": [
+            [
+              792.0,
+              612.0
+            ]
+          ],
+          "bytes": 44079,
+          "image_count": 0,
+          "previews": [
+            "page-1.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 2,
+          "page_sizes_pt": [
+            [
+              792.0,
+              612.0
+            ],
+            [
+              792.0,
+              612.0
+            ]
+          ],
+          "bytes": 66845,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": "100-customers",
+      "purpose": "wide multi-page table",
+      "before": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.9827213822894169,
+          "precision": 0.9650053022269353,
+          "missing": [
+            [
+              "com61",
+              2
+            ],
+            [
+              "com34",
+              1
+            ],
+            [
+              "com43",
+              1
+            ],
+            [
+              "com29",
+              1
+            ],
+            [
+              "com41",
+              1
+            ],
+            [
+              "com59",
+              1
+            ],
+            [
+              "com62",
+              1
+            ],
+            [
+              "com39",
+              1
+            ],
+            [
+              "com56",
+              1
+            ],
+            [
+              "com23",
+              1
+            ],
+            [
+              "com21",
+              1
+            ],
+            [
+              "com54",
+              1
+            ],
+            [
+              "com22",
+              1
+            ],
+            [
+              "com40",
+              1
+            ],
+            [
+              "com46",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "com",
+              16
+            ],
+            [
+              "61",
+              2
+            ],
+            [
+              "users",
+              1
+            ],
+            [
+              "56",
+              1
+            ],
+            [
+              "34",
+              1
+            ],
+            [
+              "43",
+              1
+            ],
+            [
+              "41",
+              1
+            ],
+            [
+              "46",
+              1
+            ],
+            [
+              "40",
+              1
+            ],
+            [
+              "29",
+              1
+            ],
+            [
+              "59",
+              1
+            ],
+            [
+              "62",
+              1
+            ],
+            [
+              "39",
+              1
+            ],
+            [
+              "23",
+              1
+            ],
+            [
+              "21",
+              1
+            ],
+            [
+              "22",
+              1
+            ],
+            [
+              "54",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.8818791946308725,
+          "precision": 0.6967126193001061,
+          "missing": [
+            [
+              "y",
+              3
+            ],
+            [
+              "h",
+              3
+            ],
+            [
+              "ya",
+              3
+            ],
+            [
+              "gm",
+              2
+            ],
+            [
+              "g",
+              2
+            ],
+            [
+              "ho",
+              2
+            ],
+            [
+              "cr",
+              2
+            ],
+            [
+              "namelast",
+              1
+            ],
+            [
+              "nameemail",
+              1
+            ],
+            [
+              "hot",
+              1
+            ],
+            [
+              "brice_tro",
+              1
+            ],
+            [
+              "cayla_run",
+              1
+            ],
+            [
+              "wat",
+              1
+            ],
+            [
+              "madison_k",
+              1
+            ],
+            [
+              "charity_k",
+              1
+            ],
+            [
+              "gabriella",
+              1
+            ],
+            [
+              "reinhold6",
+              1
+            ],
+            [
+              "aurelio_c",
+              1
+            ],
+            [
+              "buster_mc",
+              1
+            ],
+            [
+              "kasey_con",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "com",
+              100
+            ],
+            [
+              "yahoo",
+              39
+            ],
+            [
+              "gmail",
+              34
+            ],
+            [
+              "hotmail",
+              27
+            ],
+            [
+              "name",
+              2
+            ],
+            [
+              "users",
+              1
+            ],
+            [
+              "last",
+              1
+            ],
+            [
+              "email",
+              1
+            ],
+            [
+              "brice_tromp",
+              1
+            ],
+            [
+              "cayla_runte76",
+              1
+            ],
+            [
+              "watsica",
+              1
+            ],
+            [
+              "madison_kuhic56",
+              1
+            ],
+            [
+              "charity_keeling",
+              1
+            ],
+            [
+              "gabriella_denesik32",
+              1
+            ],
+            [
+              "reinhold62",
+              1
+            ],
+            [
+              "aurelio_conn",
+              1
+            ],
+            [
+              "buster_mcglynn",
+              1
+            ],
+            [
+              "marquardt40",
+              1
+            ],
+            [
+              "kasey_conroy",
+              1
+            ],
+            [
+              "ed_hegmann37",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.8604026845637583,
+          "precision": 0.6922246220302376,
+          "missing": [
+            [
+              "y",
+              3
+            ],
+            [
+              "h",
+              3
+            ],
+            [
+              "ya",
+              3
+            ],
+            [
+              "gm",
+              2
+            ],
+            [
+              "g",
+              2
+            ],
+            [
+              "61",
+              2
+            ],
+            [
+              "ho",
+              2
+            ],
+            [
+              "cr",
+              2
+            ],
+            [
+              "namelast",
+              1
+            ],
+            [
+              "nameemail",
+              1
+            ],
+            [
+              "hot",
+              1
+            ],
+            [
+              "56",
+              1
+            ],
+            [
+              "brice_tro",
+              1
+            ],
+            [
+              "34",
+              1
+            ],
+            [
+              "cayla_run",
+              1
+            ],
+            [
+              "43",
+              1
+            ],
+            [
+              "wat",
+              1
+            ],
+            [
+              "madison_k",
+              1
+            ],
+            [
+              "41",
+              1
+            ],
+            [
+              "charity_k",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "com",
+              84
+            ],
+            [
+              "yahoo",
+              39
+            ],
+            [
+              "gmail",
+              34
+            ],
+            [
+              "hotmail",
+              27
+            ],
+            [
+              "name",
+              2
+            ],
+            [
+              "com61",
+              2
+            ],
+            [
+              "last",
+              1
+            ],
+            [
+              "email",
+              1
+            ],
+            [
+              "brice_tromp",
+              1
+            ],
+            [
+              "com34",
+              1
+            ],
+            [
+              "cayla_runte76",
+              1
+            ],
+            [
+              "com43",
+              1
+            ],
+            [
+              "watsica",
+              1
+            ],
+            [
+              "madison_kuhic56",
+              1
+            ],
+            [
+              "charity_keeling",
+              1
+            ],
+            [
+              "gabriella_denesik32",
+              1
+            ],
+            [
+              "reinhold62",
+              1
+            ],
+            [
+              "com29",
+              1
+            ],
+            [
+              "aurelio_conn",
+              1
+            ],
+            [
+              "buster_mcglynn",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "after": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.9978401727861771,
+          "precision": 0.9989189189189189,
+          "missing": [
+            [
+              "com",
+              1
+            ],
+            [
+              "55",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "com55",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.8590604026845637,
+          "precision": 0.6918918918918919,
+          "missing": [
+            [
+              "y",
+              3
+            ],
+            [
+              "h",
+              3
+            ],
+            [
+              "ya",
+              3
+            ],
+            [
+              "gm",
+              2
+            ],
+            [
+              "g",
+              2
+            ],
+            [
+              "61",
+              2
+            ],
+            [
+              "ho",
+              2
+            ],
+            [
+              "cr",
+              2
+            ],
+            [
+              "namelast",
+              1
+            ],
+            [
+              "nameemail",
+              1
+            ],
+            [
+              "hot",
+              1
+            ],
+            [
+              "56",
+              1
+            ],
+            [
+              "brice_tro",
+              1
+            ],
+            [
+              "34",
+              1
+            ],
+            [
+              "cayla_run",
+              1
+            ],
+            [
+              "43",
+              1
+            ],
+            [
+              "wat",
+              1
+            ],
+            [
+              "madison_k",
+              1
+            ],
+            [
+              "41",
+              1
+            ],
+            [
+              "charity_k",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "com",
+              83
+            ],
+            [
+              "yahoo",
+              39
+            ],
+            [
+              "gmail",
+              34
+            ],
+            [
+              "hotmail",
+              27
+            ],
+            [
+              "name",
+              2
+            ],
+            [
+              "com61",
+              2
+            ],
+            [
+              "last",
+              1
+            ],
+            [
+              "email",
+              1
+            ],
+            [
+              "brice_tromp",
+              1
+            ],
+            [
+              "com34",
+              1
+            ],
+            [
+              "cayla_runte76",
+              1
+            ],
+            [
+              "com43",
+              1
+            ],
+            [
+              "watsica",
+              1
+            ],
+            [
+              "madison_kuhic56",
+              1
+            ],
+            [
+              "charity_keeling",
+              1
+            ],
+            [
+              "gabriella_denesik32",
+              1
+            ],
+            [
+              "reinhold62",
+              1
+            ],
+            [
+              "com29",
+              1
+            ],
+            [
+              "aurelio_conn",
+              1
+            ],
+            [
+              "buster_mcglynn",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.8604026845637583,
+          "precision": 0.6922246220302376,
+          "missing": [
+            [
+              "y",
+              3
+            ],
+            [
+              "h",
+              3
+            ],
+            [
+              "ya",
+              3
+            ],
+            [
+              "gm",
+              2
+            ],
+            [
+              "g",
+              2
+            ],
+            [
+              "61",
+              2
+            ],
+            [
+              "ho",
+              2
+            ],
+            [
+              "cr",
+              2
+            ],
+            [
+              "namelast",
+              1
+            ],
+            [
+              "nameemail",
+              1
+            ],
+            [
+              "hot",
+              1
+            ],
+            [
+              "56",
+              1
+            ],
+            [
+              "brice_tro",
+              1
+            ],
+            [
+              "34",
+              1
+            ],
+            [
+              "cayla_run",
+              1
+            ],
+            [
+              "43",
+              1
+            ],
+            [
+              "wat",
+              1
+            ],
+            [
+              "madison_k",
+              1
+            ],
+            [
+              "41",
+              1
+            ],
+            [
+              "charity_k",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "com",
+              84
+            ],
+            [
+              "yahoo",
+              39
+            ],
+            [
+              "gmail",
+              34
+            ],
+            [
+              "hotmail",
+              27
+            ],
+            [
+              "name",
+              2
+            ],
+            [
+              "com61",
+              2
+            ],
+            [
+              "last",
+              1
+            ],
+            [
+              "email",
+              1
+            ],
+            [
+              "brice_tromp",
+              1
+            ],
+            [
+              "com34",
+              1
+            ],
+            [
+              "cayla_runte76",
+              1
+            ],
+            [
+              "com43",
+              1
+            ],
+            [
+              "watsica",
+              1
+            ],
+            [
+              "madison_kuhic56",
+              1
+            ],
+            [
+              "charity_keeling",
+              1
+            ],
+            [
+              "gabriella_denesik32",
+              1
+            ],
+            [
+              "reinhold62",
+              1
+            ],
+            [
+              "com29",
+              1
+            ],
+            [
+              "aurelio_conn",
+              1
+            ],
+            [
+              "buster_mcglynn",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "pdfs": {
+        "candidate": {
+          "pages": 3,
+          "page_sizes_pt": [
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              612.0,
+              792.0
+            ]
+          ],
+          "bytes": 63394,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        },
+        "office2pdf": {
+          "pages": 3,
+          "page_sizes_pt": [
+            [
+              626.0,
+              841.89
+            ],
+            [
+              626.0,
+              841.89
+            ],
+            [
+              626.0,
+              841.89
+            ]
+          ],
+          "bytes": 28999,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        },
+        "libreoffice": {
+          "pages": 3,
+          "page_sizes_pt": [
+            [
+              595.304,
+              841.89
+            ],
+            [
+              595.304,
+              841.89
+            ],
+            [
+              595.304,
+              841.89
+            ]
+          ],
+          "bytes": 148679,
+          "image_count": 0,
+          "previews": [
+            "page-1.png",
+            "page-2.png"
+          ]
+        }
+      }
+    }
+  ]
+}
