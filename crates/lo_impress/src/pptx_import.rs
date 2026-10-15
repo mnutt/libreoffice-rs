@@ -56,6 +56,29 @@ fn num(n: Option<&XmlNode>, key: &str, default: f32) -> f32 {
 fn pt(n: Option<&XmlNode>, key: &str, default: f32) -> f32 {
     num(n, key, default * 12700.0) / 12700.0
 }
+fn color_alpha(n: &XmlNode) -> f32 {
+    let color = if matches!(n.local_name(), "srgbClr" | "schemeClr" | "sysClr") {
+        Some(n)
+    } else {
+        n.children
+            .iter()
+            .find(|c| matches!(c.local_name(), "srgbClr" | "schemeClr" | "sysClr"))
+            .map(|n| n.as_ref())
+    };
+    let mut alpha = 1.0;
+    if let Some(color) = color {
+        for transform in &color.children {
+            let value = num(Some(transform), "val", 100000.0) / 100000.0;
+            match transform.local_name() {
+                "alpha" => alpha = value,
+                "alphaMod" => alpha *= value,
+                "alphaOff" => alpha += value,
+                _ => {}
+            }
+        }
+    }
+    alpha.clamp(0.0, 1.0)
+}
 fn png_density(data: &[u8]) -> Option<(f32, f32)> {
     if !data.starts_with(b"\x89PNG\r\n\x1a\n") {
         return None;
@@ -818,7 +841,13 @@ impl Context<'_> {
                     theme
                         .color(n)
                         .and_then(|c| crate::pdf::parse_color(&c))
-                        .map(|c| ((num(Some(n), "pos", 0.0) / 100000.0).clamp(0.0, 1.0), c))
+                        .map(|c| {
+                            (
+                                (num(Some(n), "pos", 0.0) / 100000.0).clamp(0.0, 1.0),
+                                c,
+                                color_alpha(n),
+                            )
+                        })
                 })
                 .collect();
             stops.sort_by(|a, b| a.0.total_cmp(&b.0));
@@ -834,8 +863,28 @@ impl Context<'_> {
                         / (dx.abs() + dy.abs()).max(0.001)
                         + 0.5)
                         .clamp(0.0, 1.0);
-                    let upper = stops.partition_point(|s| s.0 < t).min(stops.len() - 1);
-                    let lower = upper.saturating_sub(1);
+                    let t = if let Some(path) = fill.child("path") {
+                        let target = path.child("fillToRect");
+                        let cx = (num(target, "l", 0.0) / 100000.0 + 1.0
+                            - num(target, "r", 0.0) / 100000.0)
+                            / 2.0;
+                        let cy = (num(target, "t", 0.0) / 100000.0 + 1.0
+                            - num(target, "b", 0.0) / 100000.0)
+                            / 2.0;
+                        let (px, py) = (x as f32 / 255.0 - cx, y as f32 / 255.0 - cy);
+                        if path.attr("path") == Some("rect") {
+                            (px.abs().max(py.abs()) * 2.0).clamp(0.0, 1.0)
+                        } else {
+                            (px.hypot(py) * std::f32::consts::SQRT_2).clamp(0.0, 1.0)
+                        }
+                    } else {
+                        t
+                    };
+                    // Equal-position stops create a hard edge; samples beyond the
+                    // final stop must use its color, not the preceding stop's color.
+                    let next = stops.partition_point(|s| s.0 <= t);
+                    let upper = next.min(stops.len() - 1);
+                    let lower = next.saturating_sub(1).min(stops.len() - 1);
                     let (a, b) = (stops[lower], stops[upper]);
                     let t = if b.0 > a.0 {
                         ((t - a.0) / (b.0 - a.0)).clamp(0.0, 1.0)
@@ -851,6 +900,7 @@ impl Context<'_> {
                     for (i, v) in rgb.iter().enumerate() {
                         image.pixels[offset + i] = (v * 255.0).round() as u8;
                     }
+                    image.pixels[offset + 3] = ((a.2 + (b.2 - a.2) * t) * 255.0).round() as u8;
                 }
             }
             slide
@@ -900,28 +950,32 @@ impl Context<'_> {
             .iter()
             .filter_map(|n| n.child("spPr"))
             .collect::<Vec<_>>();
-        let fill = props
+        let referenced_fill = chain
+            .iter()
+            .find_map(|n| n.child("style").and_then(|n| n.child("fillRef")))
+            .and_then(|n| self.theme_fill(n));
+        let effective_fill = props
             .iter()
             .find_map(|n| {
-                if n.child("noFill").is_some() || n.child("blipFill").is_some() {
-                    Some("none".into())
-                } else {
-                    n.child("solidFill").and_then(|n| self.theme.color(n))
-                }
-            })
-            .or_else(|| {
-                chain
+                n.children
                     .iter()
-                    .find_map(|n| n.child("style").and_then(|n| n.child("fillRef")))
-                    .and_then(|n| self.theme_fill(n))
-                    .and_then(|n| {
-                        if n.local_name() == "solidFill" {
-                            self.theme.color(&n)
-                        } else {
-                            None
-                        }
+                    .find(|n| {
+                        matches!(
+                            n.local_name(),
+                            "noFill" | "solidFill" | "gradFill" | "blipFill" | "pattFill"
+                        )
                     })
-            });
+                    .map(|n| n.as_ref())
+            })
+            .or(referenced_fill.as_ref());
+        let fill = effective_fill.map(|n| {
+            if n.local_name() == "solidFill" {
+                self.theme.color(n).unwrap_or_else(|| "none".into())
+            } else {
+                "none".into()
+            }
+        });
+        let fill_start = slide.elements.len();
         let uses_background = chain[0]
             .attr("useBgFill")
             .is_some_and(|v| matches!(v, "1" | "true"));
@@ -964,16 +1018,8 @@ impl Context<'_> {
                     },
                 }));
             }
-        } else if let Some(gradient) = props.iter().find_map(|n| n.child("gradFill")) {
-            // Until curved path clipping is supported, only rectangular gradients are painted.
-            if props
-                .iter()
-                .find_map(|n| n.child("prstGeom"))
-                .and_then(|n| n.attr("prst"))
-                .is_none_or(|v| matches!(v, "rect" | "roundRect"))
-            {
-                self.paint_fill(gradient, slide, f);
-            }
+        } else if let Some(gradient) = effective_fill.filter(|n| n.local_name() == "gradFill") {
+            self.paint_fill(gradient, slide, f);
         }
         let theme_line = chain
             .iter()
@@ -1012,6 +1058,23 @@ impl Context<'_> {
             .find_map(|n| xfrm(n))
             .map(|n| num(Some(n), "rot", 0.0) / 60000.0)
             .unwrap_or(0.0);
+        for element in &mut slide.elements[fill_start..] {
+            match element {
+                SlideElement::Image(image) => {
+                    image.clip_paths = if let ShapeKind::Custom(paths) = &kind {
+                        paths.clone()
+                    } else {
+                        Vec::new()
+                    };
+                    image.rotation = angle;
+                }
+                SlideElement::Shape(shape) => {
+                    shape.kind = kind.clone();
+                    shape.style.rotation_millidegrees = (-angle * 1000.0) as i32;
+                }
+                _ => {}
+            }
+        }
         if fill.is_some() || stroke != "none" {
             slide.elements.push(SlideElement::Shape(Shape {
                 frame: f,
@@ -1245,6 +1308,7 @@ impl Context<'_> {
             if let Some(n) = master_style.and_then(|n| n.child(&key)) {
                 properties.push(n);
             }
+            let inherited_count = properties.len();
             for n in chain.iter().rev() {
                 if let Some(tx) = n.child("txBody") {
                     if let Some(n) = tx.child("lstStyle").and_then(|n| n.child(&key)) {
@@ -1273,29 +1337,35 @@ impl Context<'_> {
                 .get("tx1")
                 .map(|s| format!("#{s}"))
                 .unwrap_or_else(|| "#000000".into());
-            for n in chain
-                .iter()
-                .rev()
-                .filter_map(|n| n.child("style").and_then(|n| n.child("fontRef")))
-            {
-                if let Some(color) = self.theme.color(n) {
-                    base.foreground = color;
+            let apply_font_ref = |base: &mut lo_core::style::CellStyle| {
+                for n in chain
+                    .iter()
+                    .rev()
+                    .filter_map(|n| n.child("style").and_then(|n| n.child("fontRef")))
+                {
+                    if let Some(color) = self.theme.color(n) {
+                        base.foreground = color;
+                    }
+                    if let Some(index) = n.attr("idx") {
+                        base.font_family = if index == "major" {
+                            self.theme.major.clone()
+                        } else {
+                            self.theme.minor.clone()
+                        };
+                    }
                 }
-                if let Some(index) = n.attr("idx") {
-                    base.font_family = if index == "major" {
-                        self.theme.major.clone()
-                    } else {
-                        self.theme.minor.clone()
-                    };
-                }
-            }
+            };
             let mut alignment = Alignment::Start;
             let mut indent = 0.0;
             let mut before = 0.0;
             let mut after = 0.0;
             let mut spacing = 1.2;
             let mut marker = None;
-            for pr in properties {
+            let property_count = properties.len();
+            for (index, pr) in properties.into_iter().enumerate() {
+                if index == inherited_count {
+                    apply_font_ref(&mut base);
+                }
                 if let Some(n) = pr.child("defRPr") {
                     self.run_style(n, &mut base);
                 }
@@ -1330,6 +1400,9 @@ impl Context<'_> {
                         num(Some(n), "startAt", 1.0) as u32 + paragraphs.len() as u32
                     ));
                 }
+            }
+            if inherited_count == property_count {
+                apply_font_ref(&mut base);
             }
             let mut runs = vec![];
             for n in &p.children {
@@ -2034,5 +2107,113 @@ mod tests {
             })
             .collect();
         assert_eq!(colors, vec!["#FFFFFF", "#000000"]);
+    }
+    #[test]
+    fn local_gradient_clips_to_shape_and_suppresses_theme_solid_fill() {
+        let zip = ZipArchive::new(&package(&[("a", "b")])).unwrap();
+        let theme = Theme::new(None, None);
+        let mut budget = 100;
+        let root=parse_xml_document(r#"<theme><themeElements><fmtScheme><fillStyleLst><solidFill><srgbClr val="0000FF"/></solidFill></fillStyleLst></fmtScheme></themeElements></theme>"#).unwrap();
+        let ctx = Context {
+            zip: &zip,
+            theme: &theme,
+            theme_root: Some(&root),
+            master: None,
+            layout: None,
+            default_text: None,
+            table_styles: None,
+            background: None,
+            background_theme: None,
+            slide_number: 1,
+            budget: &mut budget,
+            diagram_depth: 0,
+        };
+        let shape=parse_xml_document(r#"<sp><spPr><prstGeom prst="ellipse"/><gradFill><gsLst><gs pos="0"><srgbClr val="FF0000"/></gs><gs pos="100000"><srgbClr val="FFFF00"/></gs></gsLst><lin ang="0"/></gradFill></spPr><style><fillRef idx="1"/></style></sp>"#).unwrap();
+        let mut slide = Slide::default();
+        ctx.shape(&[&shape], &mut slide, Transform::identity());
+        let SlideElement::Image(image) = &slide.elements[0] else {
+            panic!()
+        };
+        assert_eq!(image.clip_paths.len(), 1);
+        assert!(!slide
+            .elements
+            .iter()
+            .any(|e| matches!(e,SlideElement::Shape(s) if s.style.fill!="none")));
+    }
+    #[test]
+    fn gradient_alpha_and_equal_position_stops_are_preserved() {
+        let zip = ZipArchive::new(&package(&[("a", "b")])).unwrap();
+        let theme = Theme::new(None, None);
+        let mut budget = 100;
+        let ctx = Context {
+            zip: &zip,
+            theme: &theme,
+            theme_root: None,
+            master: None,
+            layout: None,
+            default_text: None,
+            table_styles: None,
+            background: None,
+            background_theme: None,
+            slide_number: 1,
+            budget: &mut budget,
+            diagram_depth: 0,
+        };
+        let fill=parse_xml_document(r#"<gradFill><gsLst><gs pos="50000"><srgbClr val="000000"><alpha val="0"/></srgbClr></gs><gs pos="50000"><srgbClr val="0000FF"/></gs></gsLst><lin ang="0"/></gradFill>"#).unwrap();
+        let mut slide = Slide::default();
+        ctx.paint_fill(&fill, &mut slide, rect(0.0, 0.0, 100.0, 100.0));
+        let SlideElement::Image(image) = &slide.elements[0] else {
+            panic!()
+        };
+        let raster = lo_core::decode_png(&image.data).unwrap();
+        assert_eq!(&raster.pixels[..4], &[0, 0, 0, 0]);
+        assert_eq!(&raster.pixels[255 * 4..256 * 4], &[0, 0, 255, 255]);
+        let color=parse_xml_document(r#"<srgbClr val="000000"><alpha val="50000"/><alphaMod val="50000"/><alphaOff val="10000"/></srgbClr>"#).unwrap();
+        assert!((color_alpha(&color) - 0.35).abs() < 0.00001);
+        let radial=parse_xml_document(r#"<gradFill><gsLst><gs pos="50000"><srgbClr val="000000"><alpha val="0"/></srgbClr></gs><gs pos="50000"><srgbClr val="0000FF"/></gs></gsLst><path path="circle"><fillToRect l="100000" t="100000"/></path></gradFill>"#).unwrap();
+        let mut slide = Slide::default();
+        ctx.paint_fill(&radial, &mut slide, rect(0.0, 0.0, 100.0, 100.0));
+        let SlideElement::Image(image) = &slide.elements[0] else {
+            panic!()
+        };
+        let raster = lo_core::decode_png(&image.data).unwrap();
+        assert_eq!(&raster.pixels[..4], &[0, 0, 255, 255]);
+        assert_eq!(&raster.pixels[raster.pixels.len() - 4..], &[0, 0, 0, 0]);
+    }
+    #[test]
+    fn shape_font_reference_overrides_global_defaults_but_not_paragraph_color() {
+        let zip = ZipArchive::new(&package(&[("a", "b")])).unwrap();
+        let theme = Theme::new(None, None);
+        let mut budget = 100;
+        let defaults=parse_xml_document(r#"<defaultTextStyle><lvl1pPr><defRPr><solidFill><srgbClr val="000000"/></solidFill></defRPr></lvl1pPr></defaultTextStyle>"#).unwrap();
+        let ctx = Context {
+            zip: &zip,
+            theme: &theme,
+            theme_root: None,
+            master: None,
+            layout: None,
+            default_text: Some(&defaults),
+            table_styles: None,
+            background: None,
+            background_theme: None,
+            slide_number: 1,
+            budget: &mut budget,
+            diagram_depth: 0,
+        };
+        let shape=parse_xml_document(r#"<sp><style><fontRef idx="minor"><srgbClr val="FFFFFF"/></fontRef></style><txBody><bodyPr/><p><r><t>White</t></r></p><p><pPr><defRPr><solidFill><srgbClr val="FF0000"/></solidFill></defRPr></pPr><r><t>Red</t></r></p></txBody></sp>"#).unwrap();
+        let mut slide = Slide::default();
+        ctx.shape(&[&shape], &mut slide, Transform::identity());
+        let colors: Vec<_> = slide
+            .elements
+            .iter()
+            .filter_map(|e| {
+                if let SlideElement::TextBox(t) = e {
+                    Some(t.style.runs[0].style.foreground.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        assert_eq!(colors, vec!["#FFFFFF", "#FF0000"]);
     }
 }

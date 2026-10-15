@@ -152,12 +152,28 @@ comparisons are in `fourth-pass-results.json` and `fourth-visual-audit.json`.
 The crop-to-shape fixture improves from 0.382520 to 0.004914, and negative cropping
 corrects the SVG clipping probe from 0.138974 to 0.007454 mean pixel error.
 
+## Gradient fills and font-reference precedence
+
+Local gradient fills now override theme solid fills, respect shape clipping and
+rotation, and preserve alpha, coincident hard stops and radial focal points.
+Shape font references override global defaults while explicit paragraph styles
+retain precedence. Radial gradients remain an approximation for complex paths.
+
+All 627 feature checks pass (`fifth-feature-checks.json`); conversion statuses and
+mean text recall are unchanged. Exact-size mean RMSE falls from 0.100248 to
+0.094450, with 26 improvements over 0.01 and no regressions at that threshold.
+The broader 579-deck audit falls from 0.088917 to 0.084886, with 42 improvements
+over 0.01 and one regression: `lo-tdf107608-620cb9` increases by 0.029786.
+That remaining mismatch is retained in `fifth-visual-audit.json`; the strict
+dimension metric alone does not capture it. Full comparisons are recorded in
+`fifth-pass-results.json`. Workspace tests and the release build pass.
+
 ## Remaining work, in priority order
 
 1. SmartArt layout for files without usable cached drawing shapes. Those diagrams
    still require a layout engine; cached drawing fallbacks are now supported.
 2. Remaining preset geometry, connector routing, line caps/arrowheads, gradient
-   clipping, and exact group scaling of fonts. Common presets and custom paths,
+   fidelity, and exact group scaling of fonts. Common presets and custom paths,
    plus group rotation/flips, are now supported.
 3. Text columns, hanging bullets, automatic fit calculation, East Asian vertical text,
    per-character fallback/shaping, superscripts and more exact font baselines.
