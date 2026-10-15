@@ -227,8 +227,8 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
     let mut widths = widths;
     let mut heights = heights;
     // Drawing-only areas must participate in pagination too.
-    let drawing_width = layout.images.iter().map(|i| i.frame.origin.x.as_pt()+i.frame.size.width.as_pt()).fold(0.0_f32,f32::max);
-    let drawing_height = layout.images.iter().map(|i| i.frame.origin.y.as_pt()+i.frame.size.height.as_pt()).fold(0.0_f32,f32::max);
+    let drawing_width = layout.images.iter().map(|i| i.frame).chain(layout.charts.iter().map(|c|c.frame)).map(|f| f.origin.x.as_pt()+f.size.width.as_pt()).fold(0.0_f32,f32::max);
+    let drawing_height = layout.images.iter().map(|i| i.frame).chain(layout.charts.iter().map(|c|c.frame)).map(|f| f.origin.y.as_pt()+f.size.height.as_pt()).fold(0.0_f32,f32::max);
     extend_drawing_grid(&mut widths, drawing_width, layout.default_column_width, available_w);
     extend_drawing_grid(&mut heights, drawing_height, layout.default_row_height, available_h);
     let images: Vec<_> = layout.images.iter().filter_map(|i| register_image(pdf,i).map(|name|(i.frame,name))).collect();
@@ -240,7 +240,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
             let oy: f32 = heights[..rows.start].iter().sum();
             let tw: f32 = widths[columns.clone()].iter().sum();
             let th: f32 = heights[rows.clone()].iter().sum();
-            let image_present = images.iter().any(|(f,_)| f.origin.x.as_pt() < ox+tw && f.origin.x.as_pt()+f.size.width.as_pt()>ox && f.origin.y.as_pt()<oy+th && f.origin.y.as_pt()+f.size.height.as_pt()>oy);
+            let image_present = images.iter().map(|(f,_)| f).chain(layout.charts.iter().map(|c| &c.frame)).any(|f| f.origin.x.as_pt() < ox+tw && f.origin.x.as_pt()+f.size.width.as_pt()>ox && f.origin.y.as_pt()<oy+th && f.origin.y.as_pt()+f.size.height.as_pt()>oy);
             // Empty page tiles do not need a printed page.
             if !sheet.cells.keys().any(|a| {
                 columns.contains(&(a.col as usize))
@@ -428,13 +428,13 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                 page.image(name,left+heading_w+f.origin.x.as_pt()-ox,layout.page_height-top_margin-layout.header_height-heading_h-f.origin.y.as_pt()+oy-f.size.height.as_pt(),f.size.width.as_pt(),f.size.height.as_pt());
             }
             page.raw("Q");
-            if columns.start == 0 && rows.start == 0 {
+            {
                 page.raw(&format!(
                     "q {} {} {} {} re W n",
                     left, bottom, available_w, available_h
                 ));
                 for chart in &layout.charts {
-                    chart.render(page, layout.page_height, left, top_margin);
+                    chart.render(page, layout.page_height, left+heading_w-ox, top_margin+layout.header_height+heading_h-oy);
                 }
                 page.raw("Q");
             }
@@ -552,7 +552,7 @@ pub fn to_pdf_preview(workbook: &Workbook) -> Vec<u8> {
                     .unwrap_or(layout.default_column_width)
             })
             .sum::<f32>();
-        let width = layout.images.iter().map(|i|i.frame.origin.x.as_pt()+i.frame.size.width.as_pt()).fold(width,f32::max);
+        let width = layout.images.iter().map(|i|i.frame).chain(layout.charts.iter().map(|c|c.frame)).map(|f|f.origin.x.as_pt()+f.size.width.as_pt()).fold(width,f32::max);
         let margins = layout.margins.unwrap_or([layout.margin; 4]);
         layout.page_width = layout.page_width.max(
             (width + margins[0] + margins[1] + if layout.print_headings { 24.0 } else { 0.0 })

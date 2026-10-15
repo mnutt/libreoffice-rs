@@ -87,6 +87,19 @@ pub(crate) fn import(
             let Some(frame) = frame(anchor, layout) else {
                 continue;
             };
+            if let Some(chart) = anchor
+                .child("graphicFrame")
+                .and_then(|n| n.child("graphic"))
+                .and_then(|n| n.child("graphicData"))
+                .and_then(|n| n.child("chart"))
+            {
+                if let Some(path) = chart.attr("id").and_then(|id| rels.get(id)) {
+                    let xml = lo_core::parse_xml_document(&zip.read_string(path)?)?;
+                    if let Some(chart) = lo_core::odf_chart::OdfChart::from_ooxml(&xml, frame) {
+                        layout.charts.push(chart);
+                    }
+                }
+            }
             let Some(pic) = anchor.child("pic") else {
                 continue;
             };

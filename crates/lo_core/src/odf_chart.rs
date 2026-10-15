@@ -1,6 +1,6 @@
 //! Cached ODF bar/line charts. Unsupported chart types are left unsupported.
-use crate::{XmlNode, Rect, PdfPage, PdfFont};
-use crate::style::{OdfStyles, odf_length};
+use crate::style::{odf_length, OdfStyles};
+use crate::{PdfFont, PdfPage, Rect, XmlNode};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct OdfChart {
@@ -9,6 +9,10 @@ pub struct OdfChart {
     title: String,
     categories: Vec<String>,
     series: Vec<(String, Vec<Option<f64>>, String)>,
+    x_values: Option<Vec<Vec<Option<f64>>>>,
+    connect_points: bool,
+    series_lines: Vec<bool>,
+    value_labels: Vec<bool>,
     horizontal: bool,
     line: bool,
     legend: bool,
@@ -250,9 +254,206 @@ impl OdfChart {
                 .unwrap_or_default(),
             categories,
             series,
+            x_values: None,
+            connect_points: true,
+            series_lines: Vec::new(),
+            value_labels: Vec::new(),
             horizontal,
             line: kind == "line",
             legend: chart.child("legend").is_some(),
+        })
+    }
+    /// Import cached OOXML chart values without executing formulas or external links.
+    pub fn from_ooxml(root: &XmlNode, frame: Rect) -> Option<Self> {
+        fn cached(node: &XmlNode) -> Vec<String> {
+            let cache = ["numCache", "strCache", "numLit", "strLit"]
+                .iter()
+                .find_map(|k| node.child(k));
+            if let Some(cache) = cache {
+                let mut values = Vec::new();
+                for point in cache.children_named("pt").take(10000) {
+                    let Some(i) = point
+                        .attr("idx")
+                        .and_then(|s| s.parse::<usize>().ok())
+                        .filter(|i| *i < 10000)
+                    else {
+                        continue;
+                    };
+                    values.resize(values.len().max(i + 1), String::new());
+                    values[i] = point
+                        .child("v")
+                        .map(|n| n.text_content())
+                        .unwrap_or_default();
+                }
+                return values;
+            }
+            for key in ["numRef", "strRef"] {
+                if let Some(n) = node.child(key) {
+                    return cached(n);
+                }
+            }
+            node.child("v")
+                .map(|n| vec![n.text_content()])
+                .unwrap_or_default()
+        }
+        fn text(node: &XmlNode) -> String {
+            if node.local_name() == "t" {
+                return node.text_content();
+            }
+            node.children.iter().map(|n| text(n)).collect()
+        }
+        let chart = root.child("chart")?;
+        let plot = chart.child("plotArea")?;
+        let kinds: Vec<_> = plot
+            .children
+            .iter()
+            .filter(|n| n.local_name().ends_with("Chart"))
+            .collect();
+        if kinds.len() != 1 {
+            return None;
+        }
+        let data = kinds[0];
+        let kind = data.local_name();
+        if !matches!(kind, "barChart" | "lineChart" | "scatterChart") {
+            return None;
+        }
+        if data
+            .child("grouping")
+            .and_then(|n| n.attr("val"))
+            .is_some_and(|v| !matches!(v, "standard" | "clustered"))
+        {
+            return None;
+        }
+        if plot.children_named("valAx").any(|a| {
+            a.child("scaling")
+                .is_some_and(|n| n.child("logBase").is_some())
+        }) {
+            return None;
+        }
+        let mut series = Vec::new();
+        let mut categories = Vec::new();
+        let mut xs = Vec::new();
+        let mut series_lines = Vec::new();
+        let mut value_labels = Vec::new();
+        let palette = [
+            "#4472C4", "#ED7D31", "#A5A5A5", "#FFC000", "#5B9BD5", "#70AD47",
+        ];
+        for (i, ser) in data.children_named("ser").take(64).enumerate() {
+            let name = ser.child("tx").map(cached).unwrap_or_default().join("");
+            let values = cached(ser.child(if kind == "scatterChart" {
+                "yVal"
+            } else {
+                "val"
+            })?)
+            .iter()
+            .map(|v| {
+                v.parse::<f64>()
+                    .ok()
+                    .filter(|v| v.is_finite() && v.abs() < 1e100)
+            })
+            .collect::<Vec<_>>();
+            if categories.is_empty() {
+                categories = ser.child("cat").map(cached).unwrap_or_default();
+            }
+            if kind == "scatterChart" {
+                xs.push(
+                    cached(ser.child("xVal")?)
+                        .iter()
+                        .map(|v| {
+                            v.parse::<f64>()
+                                .ok()
+                                .filter(|v| v.is_finite() && v.abs() < 1e100)
+                        })
+                        .collect(),
+                );
+            }
+            let paint = ser
+                .child("spPr")
+                .and_then(|n| {
+                    n.child("solidFill")
+                        .or_else(|| n.child("ln").and_then(|n| n.child("solidFill")))
+                })
+                .and_then(|n| n.child("srgbClr"))
+                .and_then(|n| n.attr("val"))
+                .filter(|s| s.len() == 6 && s.is_ascii())
+                .map(|s| format!("#{s}"))
+                .unwrap_or_else(|| palette[i % palette.len()].into());
+            series_lines.push(
+                !ser.child("spPr")
+                    .and_then(|n| n.child("ln"))
+                    .is_some_and(|n| n.child("noFill").is_some()),
+            );
+            value_labels.push(
+                ser.child("dLbls")
+                    .or_else(|| data.child("dLbls"))
+                    .and_then(|n| n.child("showVal"))
+                    .and_then(|n| n.attr("val"))
+                    == Some("1"),
+            );
+            series.push((name, values, paint));
+        }
+        if series.is_empty() {
+            return None;
+        }
+        if categories.is_empty() && kind != "scatterChart" {
+            categories = (1..=series.iter().map(|s| s.1.len()).max().unwrap_or(0))
+                .map(|i| i.to_string())
+                .collect();
+        }
+        let axis = plot.children_named("valAx").last();
+        let axis_number = |key| {
+            axis.and_then(|n| n.child("scaling"))
+                .and_then(|n| n.child(key))
+                .and_then(|n| n.attr("val"))
+                .and_then(|v| v.parse::<f64>().ok())
+                .filter(|v| v.is_finite() && v.abs() < 1e100)
+        };
+        let mut title = chart.child("title").map(text).unwrap_or_default();
+        if title.is_empty()
+            && chart.child("autoTitleDeleted").and_then(|n| n.attr("val")) == Some("0")
+            && series.len() == 1
+        {
+            title = series[0].0.clone();
+        }
+        let legend_position = match chart
+            .child("legend")
+            .and_then(|n| n.child("legendPos"))
+            .and_then(|n| n.attr("val"))
+        {
+            Some("b") => [0.45, 0.9],
+            Some("t") => [0.45, 0.04],
+            Some("l") => [0.01, 0.4],
+            _ => [0.82, 0.4],
+        };
+        Some(Self {
+            frame,
+            series_lines,
+            value_labels,
+            plot: [0.15, 0.12, 0.65, 0.7],
+            title,
+            categories,
+            series,
+            x_values: if kind == "scatterChart" {
+                Some(xs)
+            } else {
+                None
+            },
+            connect_points: data.child("scatterStyle").and_then(|n| n.attr("val"))
+                != Some("marker"),
+            horizontal: data.child("barDir").and_then(|n| n.attr("val")) == Some("bar"),
+            line: kind != "barChart",
+            legend: chart.child("legend").is_some(),
+            font_size: 10.0,
+            title_size: 14.0,
+            title_position: [0.3, 0.02],
+            legend_position,
+            axis_min: axis_number("min"),
+            axis_max: axis_number("max"),
+            axis_step: axis
+                .and_then(|n| n.child("majorUnit"))
+                .and_then(|n| n.attr("val"))
+                .and_then(|v| v.parse::<f64>().ok())
+                .filter(|v| v.is_finite() && *v > 0.0),
         })
     }
     pub fn render(&self, page: &mut PdfPage, page_height: f32, dx: f32, dy: f32) {
@@ -339,6 +540,44 @@ impl OdfChart {
                 );
             }
         }
+        let (xmin, xmax) = if let Some(xs) = &self.x_values {
+            let min = xs
+                .iter()
+                .flatten()
+                .flatten()
+                .copied()
+                .fold(f64::INFINITY, f64::min);
+            let max = xs
+                .iter()
+                .flatten()
+                .flatten()
+                .copied()
+                .fold(f64::NEG_INFINITY, f64::max);
+            if min.is_finite() && max.is_finite() {
+                (min, max.max(min + 1e-12))
+            } else {
+                (0.0, 1.0)
+            }
+        } else {
+            (0.0, 1.0)
+        };
+        if self.x_values.is_some() {
+            for i in 0..=5 {
+                let v = xmin + (xmax - xmin) * i as f64 / 5.0;
+                let label = format!("{v:.2}")
+                    .trim_end_matches('0')
+                    .trim_end_matches('.')
+                    .to_string();
+                let cx = left + pw * i as f32 / 5.0;
+                page.text(
+                    cx - 5.0,
+                    bottom - self.font_size - 3.0,
+                    self.font_size,
+                    PdfFont::Helvetica,
+                    &label,
+                );
+            }
+        }
         let count = self.categories.len().max(1);
         for (i, label) in self.categories.iter().enumerate() {
             if self.horizontal {
@@ -372,9 +611,19 @@ impl OdfChart {
                     continue;
                 };
                 if self.line {
-                    let cx = left + pw * (i as f32 + 0.5) / count as f32;
+                    let cx = if let Some(xs) = &self.x_values {
+                        let Some(Some(v)) = xs.get(si).and_then(|v| v.get(i)) else {
+                            previous = None;
+                            continue;
+                        };
+                        left + pw * ((v - xmin) / (xmax - xmin)) as f32
+                    } else {
+                        left + pw * (i as f32 + 0.5) / count as f32
+                    };
                     let cy = bottom + ph * fraction(*value);
-                    if let Some((px, py)) = previous {
+                    if let Some((px, py)) = previous.filter(|_| {
+                        self.connect_points && self.series_lines.get(si).copied().unwrap_or(true)
+                    }) {
                         page.line_rgb(px, py, cx, cy, r, g, b);
                     }
                     previous = Some((cx, cy));
@@ -396,6 +645,25 @@ impl OdfChart {
                 }
             }
             page.raw("Q");
+            if self.value_labels.get(si) == Some(&true) && !self.horizontal && !self.line {
+                for (i, value) in data.iter().enumerate() {
+                    if let Some(value) = value {
+                        let label = format!("{value}");
+                        let cx = left + pw * (i as f32 + 0.5) / count as f32;
+                        page.text(
+                            cx - crate::font_metrics::measure_helvetica(
+                                &label,
+                                self.font_size,
+                                false,
+                            ) / 2.0,
+                            bottom + ph * fraction(*value) + 3.0,
+                            self.font_size,
+                            PdfFont::Helvetica,
+                            &label,
+                        );
+                    }
+                }
+            }
             if self.legend {
                 let lx = x + self.legend_position[0] * w;
                 let ly = page_height
@@ -427,6 +695,17 @@ fn plot_axis_font(chart: &XmlNode, styles: &OdfStyles) -> Option<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn ooxml_scatter_preserves_sparse_numeric_coordinates_and_no_fill() {
+        let xml=r#"<chartSpace><chart><autoTitleDeleted val="0"/><plotArea><scatterChart><ser><tx><v>Series</v></tx><spPr><ln><noFill/></ln></spPr><xVal><numLit><pt idx="1"><v>9</v></pt><pt idx="0"><v>2</v></pt></numLit></xVal><yVal><numRef><numCache><pt idx="0"><v>5</v></pt><pt idx="2"><v>NaN</v></pt></numCache></numRef></yVal></ser></scatterChart></plotArea></chart></chartSpace>"#;
+        let root=crate::parse_xml_document(xml).unwrap();
+        let c=OdfChart::from_ooxml(&root,Rect::default()).unwrap();
+        assert_eq!(c.x_values.unwrap()[0],vec![Some(2.0),Some(9.0)]);
+        assert_eq!(c.series[0].1,vec![Some(5.0),None,None]);
+        assert_eq!(c.title,"Series");assert!(!c.series_lines[0]);
+        let root=crate::parse_xml_document(&xml.replace("scatterChart","pieChart")).unwrap();
+        assert!(OdfChart::from_ooxml(&root,Rect::default()).is_none());
+    }
     #[test]
     fn cached_ranges_select_the_actual_series_column() {
         let xml = r#"<document><body><chart><chart class="chart:bar"><plot-area><series values-cell-range-address="local-table.$C$2:.$C$3"/></plot-area><table><table-header-rows><table-row><table-cell/><table-cell><p>Other</p></table-cell><table-cell><p>Selected</p></table-cell></table-row></table-header-rows><table-rows><table-row><table-cell><p>A</p></table-cell><table-cell value="99"/><table-cell value="-2"/></table-row><table-row><table-cell><p>B</p></table-cell><table-cell value="98"/><table-cell value="5"/></table-row></table-rows></table></chart></chart></body></document>"#;
