@@ -1,6 +1,6 @@
 # XLSX preview development corpus
 
-This opt-in corpus compares three independent paths using the same 24 inputs:
+This opt-in corpus compares three independent paths using the same 24 upstream inputs, plus eight authored probes:
 
 - **candidate:** this fork's `lo_calc::from_xlsx_bytes` and `to_pdf_preview`;
 - **office2pdf:** Davros's existing packaged converter (currently office2pdf 0.8.1 with Davros patches);
@@ -83,8 +83,8 @@ missing score means incomparable geometry, not a perfect match.
 `to_pdf_preview` widens the sheet at natural column widths and retains vertical
 pagination, matching Davros's preview policy. `to_pdf` retains source paper size
 and tiles horizontally, honoring explicit scale and fit-to-page settings. Both
-paths honor repeated print titles and horizontal centering. Print areas and
-manual page breaks remain unsupported.
+paths honor repeated print titles and horizontal centering. Single rectangular print areas and manual page breaks are honored.
+Disjoint print areas remain unsupported.
 Real LibreOffice follows its own print settings and font substitutions; it is an
 independent comparison, not an authoritative Microsoft Excel export. Differences
 between the two reference renderers are useful evidence, not automatic failures.
@@ -96,7 +96,9 @@ independent margins, explicit/default row and column dimensions, hidden dimensio
 and sheets, merges, source font sizes/styles, solid fills, theme/RGB colors,
 per-edge borders, alignment, wrapping, printed headings/gridlines, and basic
 header/footer fields. Missing `sheetFormatPr` uses Normal-font metrics instead of
-fixed dimensions. Widths and font substitution remain approximate.
+fixed dimensions. Declared widths use SpreadsheetML pixel rounding with the Normal font’s maximum
+digit advance. Font substitution still changes metrics when the requested face
+is unavailable.
 
 Formula expressions remain in the workbook model, while previews use the file's
 saved results. This includes shared formula cells, string results and errors.
@@ -127,15 +129,16 @@ See `FEATURES.md` for the current milestone and remaining limitations.
 
 The importer follows internal drawing relationships and resolves absolute,
 one-cell and two-cell anchors using visible row/column dimensions and EMU offsets.
-It imports embedded PNG/JPEG pictures, drawing text, cached bar/line/scatter charts,
+It imports embedded PNG/JPEG pictures and source crops, drawing text, cached bar/line/scatter charts,
 and drawing-only chart sheets. Drawing bounds participate in pagination; preview
 width includes drawings, avoiding the cropped picture in the office2pdf reference.
 No new runtime dependency was added.
 
 Charts use cached indexed points (including gaps), numeric scatter coordinates,
-series/point colors from the workbook theme, named series, legends, data labels,
+series/point colors from the workbook theme, clustered and stacked bars (including
+separate positive/negative accumulators), named series, legends, data labels,
 number formats and explicit value-axis bounds. Scatter series with no line remain
-unconnected. These are preview charts: combination/stacked/logarithmic charts,
+unconnected. These are preview charts: combination/percent-stacked/logarithmic charts,
 full source plot layout, marker families beyond circle/square, smoothing, and chart style extensions are not
 complete. Unsupported chart families are not approximated as a different type.
 
@@ -148,6 +151,57 @@ Other expression syntax, color scales, icon sets, percentile bounds and negative
 bar axes remain outside this implementation. Rule processing is bounded.
 
 Cell styling also includes the complete indexed palette, underline, indentation,
-shrink-to-fit, and rotation through 90 degrees in either direction. Exact font
-metrics, vertical stacked text, complex rich text and table-style overrides still
-need broader coverage.
+shrink-to-fit, and rotation through 90 degrees in either direction. Bundled source fonts are measured and subset-embedded from the same face. Inline
+and shared-string rich runs retain family, size, bold, italic, underline and color,
+with word wrapping across run boundaries, automatic row heights, and uniform
+shrink-to-fit when wrapping is disabled. Advanced
+shaping, vertical stacked text, rotated rich text and table-style
+overrides still need broader coverage.
+
+## Authored probes and release measurements
+
+`generated.json` pins eight deterministic probes from `generate.py`: font variants,
+print areas, manual breaks, inline/shared and shrink-to-fit rich text, stacked bars, and image crops.
+They are authored in this repository and carry its MIT license. The generator hash
+and ZIP hashes are pinned; the ZIP timestamps are fixed. Generate and compare them:
+
+```sh
+python3 tests/xlsx_corpus/run.py fetch --manifest tests/xlsx_corpus/generated.json
+python3 tests/xlsx_corpus/run.py evaluate \
+  --manifest tests/xlsx_corpus/generated.json \
+  --bundle /path/to/preserved-baseline-bundle \
+  --output tests/xlsx_corpus/runs/authored --preview-pages 10
+```
+
+Visual feature checks count color pixels at a fixed raster size and check PDF font
+variants, in addition to text, page count and image-object checks. For example, the
+crop probe must retain blue and remove red; the stacked chart must contain both
+series colors. These are semantic feature checks, not pixel-equivalence claims.
+
+Build and measure a release candidate with the same profile used by Davros:
+
+```sh
+CARGO_PROFILE_RELEASE_OPT_LEVEL=s CARGO_PROFILE_RELEASE_LTO=thin \
+CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_STRIP=symbols \
+CARGO_PROFILE_RELEASE_PANIC=abort cargo build --release -p lo_calc --example xlsx-preview
+python3 tests/xlsx_corpus/benchmark.py \
+  --candidate target/release/examples/xlsx-preview \
+  --bundle /path/to/preserved-baseline-bundle \
+  --output tests/xlsx_corpus/runs/benchmark --repetitions 5
+```
+
+Each engine gets one warmup, followed by alternating measured runs per document.
+A `wait4` supervisor inside Bubblewrap records elapsed time and converter peak RSS.
+The candidate is an XLSX-only adapter; the baseline is the complete Davros converter
+and additionally installs its own hardening. Binary sizes therefore cover different
+capabilities. Preserve the old bundle before rebuilding Davros, so its binary/fonts
+remain an immutable baseline. `benchmark.json` records raw samples and hashes.
+
+Run the bundled-font regression explicitly (ordinary unit tests do not require fonts):
+
+```sh
+DAVROS_PREVIEW_FONTS=/path/to/bundle/fonts cargo test -p lo_core source_fonts
+```
+
+For low-disk development, `CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_DEV_INCREMENTAL=false`
+keeps the workspace debug artifacts much smaller; it does not change release builds.

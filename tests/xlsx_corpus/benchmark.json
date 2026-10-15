@@ -1,0 +1,1455 @@
+{
+  "candidate_sha256": "1d075bd831ea94a108a4ebf98ae409b43988cdd1c381ebe34f1f01945a33bc2f",
+  "baseline_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
+  "manifest_sha256": "f12d8690c72a53576ac651eb11852fe87c585f8b0b266e8455f299e72f619ea5",
+  "fonts": {
+    "LiberationMono-Bold.ttf": "1d8d631105d4cb6c562a0d90f591d6393007d71350c089aec81c37dc8da293ed",
+    "LiberationMono-BoldItalic.ttf": "bac30bbb26308b1a925d233a520fa764c80526f632b75defbf2b37e402eb6b1a",
+    "LiberationMono-Italic.ttf": "02312ecd02a6b7a96db60deb20468430abb7d3a91974ef9a90bd46ff78ea338d",
+    "LiberationMono-Regular.ttf": "47ed5b5fcfe6b3c9228937b05de9c769f5fa55b777d539af0f65172f0a24c90b",
+    "LiberationSans-Bold.ttf": "769673c4355020b1e28a14c366a152da410ab6b16239fe883ebc35b73624835b",
+    "LiberationSans-BoldItalic.ttf": "4b3d18cbd1b8c068115be4072f43418b194994313f47dbfd3588808903a55d34",
+    "LiberationSans-Italic.ttf": "8649cf5f2cbe4727549d78b714a3a7ee540718a13557769c4612fea105294c7e",
+    "LiberationSans-Regular.ttf": "baccc64becc3eb7d104b7c84d99f5314a0a1f896e2b3ea6c2f22fc08d2003bee",
+    "LiberationSerif-Bold.ttf": "28f2d4300ee366d1ff9ca95df967a27e77987c87857fad0d9c85034405aae39d",
+    "LiberationSerif-BoldItalic.ttf": "8de6363e9ca6c1e6f539ab032bd9ad6abfe138638f4fc53f3c26ea788b7724c5",
+    "LiberationSerif-Italic.ttf": "c7681827cba3bddb54f4673d0052cb944bdeac0b83c29c238240617e699311da",
+    "LiberationSerif-Regular.ttf": "86b9ea1c2f41bed9d7c09ccad4abc2894b33df5de60e5bbbece5d48610911870",
+    "NotoSans-Regular.ttf": "478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823"
+  },
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18) (Arch Linux rust 1:1.98.0-1)",
+  "repetitions": 5,
+  "methodology": "One unmeasured warmup per engine/document, alternating engine order, wait4 resource accounting inside identical Bubblewrap limits; process-per-document. Candidate is a release XLSX-only adapter; baseline is the full Davros executable and additionally installs its own hardening.",
+  "binary_bytes": {
+    "candidate": 1261096,
+    "office2pdf": 40932816
+  },
+  "cases": [
+    {
+      "id": "poi-Formatting",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.006697207922115922,
+            "peak_rss_kib": 9124
+          },
+          {
+            "seconds": 0.006486966973170638,
+            "peak_rss_kib": 8988
+          },
+          {
+            "seconds": 0.006628289120271802,
+            "peak_rss_kib": 9008
+          },
+          {
+            "seconds": 0.006146022817119956,
+            "peak_rss_kib": 8828
+          },
+          {
+            "seconds": 0.006108091911301017,
+            "peak_rss_kib": 9184
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.028178742853924632,
+            "peak_rss_kib": 28548
+          },
+          {
+            "seconds": 0.02772202482447028,
+            "peak_rss_kib": 28052
+          },
+          {
+            "seconds": 0.02842779690399766,
+            "peak_rss_kib": 28072
+          },
+          {
+            "seconds": 0.02758471993729472,
+            "peak_rss_kib": 28136
+          },
+          {
+            "seconds": 0.02824541716836393,
+            "peak_rss_kib": 28568
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.006486966973170638,
+          "peak_rss_kib": 9008
+        },
+        "office2pdf": {
+          "seconds": 0.028178742853924632,
+          "peak_rss_kib": 28136
+        }
+      }
+    },
+    {
+      "id": "poi-WidthsAndHeights",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.006158827105537057,
+            "peak_rss_kib": 8952
+          },
+          {
+            "seconds": 0.005909834057092667,
+            "peak_rss_kib": 8960
+          },
+          {
+            "seconds": 0.0057877469807863235,
+            "peak_rss_kib": 8940
+          },
+          {
+            "seconds": 0.005686078919097781,
+            "peak_rss_kib": 9216
+          },
+          {
+            "seconds": 0.005877062911167741,
+            "peak_rss_kib": 9000
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.012020871974527836,
+            "peak_rss_kib": 26452
+          },
+          {
+            "seconds": 0.012790232198312879,
+            "peak_rss_kib": 26296
+          },
+          {
+            "seconds": 0.012131799012422562,
+            "peak_rss_kib": 26640
+          },
+          {
+            "seconds": 0.011875542113557458,
+            "peak_rss_kib": 26532
+          },
+          {
+            "seconds": 0.012458786135539412,
+            "peak_rss_kib": 26740
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.005877062911167741,
+          "peak_rss_kib": 8960
+        },
+        "office2pdf": {
+          "seconds": 0.012131799012422562,
+          "peak_rss_kib": 26532
+        }
+      }
+    },
+    {
+      "id": "poi-NumberFormatTests",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.026828314177691936,
+            "peak_rss_kib": 14112
+          },
+          {
+            "seconds": 0.02718116994947195,
+            "peak_rss_kib": 13980
+          },
+          {
+            "seconds": 0.027945289853960276,
+            "peak_rss_kib": 14036
+          },
+          {
+            "seconds": 0.025738416938111186,
+            "peak_rss_kib": 14404
+          },
+          {
+            "seconds": 0.02682151203043759,
+            "peak_rss_kib": 14212
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.5666363839991391,
+            "peak_rss_kib": 162876
+          },
+          {
+            "seconds": 0.5584857850335538,
+            "peak_rss_kib": 162652
+          },
+          {
+            "seconds": 0.566039304016158,
+            "peak_rss_kib": 162280
+          },
+          {
+            "seconds": 0.5592833568807691,
+            "peak_rss_kib": 160652
+          },
+          {
+            "seconds": 0.5648179340641946,
+            "peak_rss_kib": 160212
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.026828314177691936,
+          "peak_rss_kib": 14112
+        },
+        "office2pdf": {
+          "seconds": 0.5648179340641946,
+          "peak_rss_kib": 162280
+        }
+      }
+    },
+    {
+      "id": "poi-WithVariousData",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.007573557086288929,
+            "peak_rss_kib": 9008
+          },
+          {
+            "seconds": 0.006813613930717111,
+            "peak_rss_kib": 8856
+          },
+          {
+            "seconds": 0.006265525007620454,
+            "peak_rss_kib": 8824
+          },
+          {
+            "seconds": 0.006507765036076307,
+            "peak_rss_kib": 9300
+          },
+          {
+            "seconds": 0.0064118970185518265,
+            "peak_rss_kib": 9172
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.01792869297787547,
+            "peak_rss_kib": 28000
+          },
+          {
+            "seconds": 0.01728630904108286,
+            "peak_rss_kib": 28596
+          },
+          {
+            "seconds": 0.016997712198644876,
+            "peak_rss_kib": 28472
+          },
+          {
+            "seconds": 0.017203083029016852,
+            "peak_rss_kib": 28012
+          },
+          {
+            "seconds": 0.01773308916017413,
+            "peak_rss_kib": 28380
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.006507765036076307,
+          "peak_rss_kib": 9008
+        },
+        "office2pdf": {
+          "seconds": 0.01728630904108286,
+          "peak_rss_kib": 28380
+        }
+      }
+    },
+    {
+      "id": "poi-WithMoreVariousData",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.006547038909047842,
+            "peak_rss_kib": 9192
+          },
+          {
+            "seconds": 0.006363697815686464,
+            "peak_rss_kib": 9116
+          },
+          {
+            "seconds": 0.006630392977967858,
+            "peak_rss_kib": 9088
+          },
+          {
+            "seconds": 0.007166620111092925,
+            "peak_rss_kib": 9056
+          },
+          {
+            "seconds": 0.006509077036753297,
+            "peak_rss_kib": 9212
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.020534354960545897,
+            "peak_rss_kib": 28612
+          },
+          {
+            "seconds": 0.02017632988281548,
+            "peak_rss_kib": 29244
+          },
+          {
+            "seconds": 0.019657696830108762,
+            "peak_rss_kib": 28936
+          },
+          {
+            "seconds": 0.020400086184963584,
+            "peak_rss_kib": 28932
+          },
+          {
+            "seconds": 0.02049258816987276,
+            "peak_rss_kib": 28648
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.006547038909047842,
+          "peak_rss_kib": 9116
+        },
+        "office2pdf": {
+          "seconds": 0.020400086184963584,
+          "peak_rss_kib": 28932
+        }
+      }
+    },
+    {
+      "id": "merge_cells",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.006007265066727996,
+            "peak_rss_kib": 9120
+          },
+          {
+            "seconds": 0.006048873066902161,
+            "peak_rss_kib": 8956
+          },
+          {
+            "seconds": 0.005618952913209796,
+            "peak_rss_kib": 9212
+          },
+          {
+            "seconds": 0.006421404890716076,
+            "peak_rss_kib": 8956
+          },
+          {
+            "seconds": 0.005695065949112177,
+            "peak_rss_kib": 9180
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.012773480964824557,
+            "peak_rss_kib": 26572
+          },
+          {
+            "seconds": 0.01294931792654097,
+            "peak_rss_kib": 26588
+          },
+          {
+            "seconds": 0.013499279972165823,
+            "peak_rss_kib": 26928
+          },
+          {
+            "seconds": 0.012415915960446,
+            "peak_rss_kib": 26296
+          },
+          {
+            "seconds": 0.012661803048104048,
+            "peak_rss_kib": 26552
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.006007265066727996,
+          "peak_rss_kib": 9120
+        },
+        "office2pdf": {
+          "seconds": 0.012773480964824557,
+          "peak_rss_kib": 26572
+        }
+      }
+    },
+    {
+      "id": "SH008-Table-With-Tall-Row",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.0060844088438898325,
+            "peak_rss_kib": 8956
+          },
+          {
+            "seconds": 0.0056719009298831224,
+            "peak_rss_kib": 8824
+          },
+          {
+            "seconds": 0.005415274994447827,
+            "peak_rss_kib": 8876
+          },
+          {
+            "seconds": 0.005763191031292081,
+            "peak_rss_kib": 8864
+          },
+          {
+            "seconds": 0.006390116177499294,
+            "peak_rss_kib": 9000
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.020219169789925218,
+            "peak_rss_kib": 28716
+          },
+          {
+            "seconds": 0.02027133689261973,
+            "peak_rss_kib": 28400
+          },
+          {
+            "seconds": 0.020039577037096024,
+            "peak_rss_kib": 28600
+          },
+          {
+            "seconds": 0.02064117300324142,
+            "peak_rss_kib": 28460
+          },
+          {
+            "seconds": 0.02094712294638157,
+            "peak_rss_kib": 28528
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.005763191031292081,
+          "peak_rss_kib": 8876
+        },
+        "office2pdf": {
+          "seconds": 0.02027133689261973,
+          "peak_rss_kib": 28528
+        }
+      }
+    },
+    {
+      "id": "SH109-CellWithBorder",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.005135734798386693,
+            "peak_rss_kib": 8928
+          },
+          {
+            "seconds": 0.005204974208027124,
+            "peak_rss_kib": 9076
+          },
+          {
+            "seconds": 0.005207127891480923,
+            "peak_rss_kib": 8940
+          },
+          {
+            "seconds": 0.005454367958009243,
+            "peak_rss_kib": 8932
+          },
+          {
+            "seconds": 0.005158497020602226,
+            "peak_rss_kib": 9136
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.011926947860047221,
+            "peak_rss_kib": 26564
+          },
+          {
+            "seconds": 0.011499563930556178,
+            "peak_rss_kib": 26568
+          },
+          {
+            "seconds": 0.01130059384740889,
+            "peak_rss_kib": 26060
+          },
+          {
+            "seconds": 0.01276431418955326,
+            "peak_rss_kib": 26680
+          },
+          {
+            "seconds": 0.012148117879405618,
+            "peak_rss_kib": 26528
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.005204974208027124,
+          "peak_rss_kib": 8940
+        },
+        "office2pdf": {
+          "seconds": 0.011926947860047221,
+          "peak_rss_kib": 26564
+        }
+      }
+    },
+    {
+      "id": "date",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.004961831960827112,
+            "peak_rss_kib": 8724
+          },
+          {
+            "seconds": 0.005380410933867097,
+            "peak_rss_kib": 8504
+          },
+          {
+            "seconds": 0.0049500910099595785,
+            "peak_rss_kib": 8956
+          },
+          {
+            "seconds": 0.004920535022392869,
+            "peak_rss_kib": 8752
+          },
+          {
+            "seconds": 0.005183533998206258,
+            "peak_rss_kib": 8832
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.018512808019295335,
+            "peak_rss_kib": 28068
+          },
+          {
+            "seconds": 0.017264127964153886,
+            "peak_rss_kib": 28732
+          },
+          {
+            "seconds": 0.017632202012464404,
+            "peak_rss_kib": 28508
+          },
+          {
+            "seconds": 0.017396413953974843,
+            "peak_rss_kib": 28496
+          },
+          {
+            "seconds": 0.018115910002961755,
+            "peak_rss_kib": 28480
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.004961831960827112,
+          "peak_rss_kib": 8752
+        },
+        "office2pdf": {
+          "seconds": 0.017632202012464404,
+          "peak_rss_kib": 28496
+        }
+      }
+    },
+    {
+      "id": "date_1904",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.005601881071925163,
+            "peak_rss_kib": 8512
+          },
+          {
+            "seconds": 0.0053063430823385715,
+            "peak_rss_kib": 8608
+          },
+          {
+            "seconds": 0.005005592945963144,
+            "peak_rss_kib": 8736
+          },
+          {
+            "seconds": 0.004722557961940765,
+            "peak_rss_kib": 8892
+          },
+          {
+            "seconds": 0.005257922923192382,
+            "peak_rss_kib": 8796
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.019378387136384845,
+            "peak_rss_kib": 28120
+          },
+          {
+            "seconds": 0.018206548877060413,
+            "peak_rss_kib": 28200
+          },
+          {
+            "seconds": 0.018222368089482188,
+            "peak_rss_kib": 28436
+          },
+          {
+            "seconds": 0.017920566955581307,
+            "peak_rss_kib": 28712
+          },
+          {
+            "seconds": 0.018757191952317953,
+            "peak_rss_kib": 28048
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.005257922923192382,
+          "peak_rss_kib": 8736
+        },
+        "office2pdf": {
+          "seconds": 0.018222368089482188,
+          "peak_rss_kib": 28200
+        }
+      }
+    },
+    {
+      "id": "shared_formulas",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.0060294559225440025,
+            "peak_rss_kib": 9404
+          },
+          {
+            "seconds": 0.0064838610123842955,
+            "peak_rss_kib": 9104
+          },
+          {
+            "seconds": 0.005936114117503166,
+            "peak_rss_kib": 9520
+          },
+          {
+            "seconds": 0.006390206981450319,
+            "peak_rss_kib": 9200
+          },
+          {
+            "seconds": 0.00664482987485826,
+            "peak_rss_kib": 9264
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.03700855514034629,
+            "peak_rss_kib": 32484
+          },
+          {
+            "seconds": 0.03648600401356816,
+            "peak_rss_kib": 31896
+          },
+          {
+            "seconds": 0.037003615871071815,
+            "peak_rss_kib": 32212
+          },
+          {
+            "seconds": 0.0373705979436636,
+            "peak_rss_kib": 31744
+          },
+          {
+            "seconds": 0.03646682784892619,
+            "peak_rss_kib": 32112
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.006390206981450319,
+          "peak_rss_kib": 9264
+        },
+        "office2pdf": {
+          "seconds": 0.037003615871071815,
+          "peak_rss_kib": 32112
+        }
+      }
+    },
+    {
+      "id": "Booleans",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.00609549880027771,
+            "peak_rss_kib": 8972
+          },
+          {
+            "seconds": 0.006484683137387037,
+            "peak_rss_kib": 8956
+          },
+          {
+            "seconds": 0.006340293912217021,
+            "peak_rss_kib": 9092
+          },
+          {
+            "seconds": 0.005805751075968146,
+            "peak_rss_kib": 8968
+          },
+          {
+            "seconds": 0.0062356689013540745,
+            "peak_rss_kib": 8924
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.013979051960632205,
+            "peak_rss_kib": 26804
+          },
+          {
+            "seconds": 0.012928569922223687,
+            "peak_rss_kib": 26624
+          },
+          {
+            "seconds": 0.013125505996868014,
+            "peak_rss_kib": 26492
+          },
+          {
+            "seconds": 0.01361245010048151,
+            "peak_rss_kib": 26152
+          },
+          {
+            "seconds": 0.014125083107501268,
+            "peak_rss_kib": 26836
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.0062356689013540745,
+          "peak_rss_kib": 8968
+        },
+        "office2pdf": {
+          "seconds": 0.01361245010048151,
+          "peak_rss_kib": 26624
+        }
+      }
+    },
+    {
+      "id": "InlineString",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.006314065773040056,
+            "peak_rss_kib": 9272
+          },
+          {
+            "seconds": 0.005877944873645902,
+            "peak_rss_kib": 9352
+          },
+          {
+            "seconds": 0.0058159001637250185,
+            "peak_rss_kib": 9068
+          },
+          {
+            "seconds": 0.0058168210089206696,
+            "peak_rss_kib": 9252
+          },
+          {
+            "seconds": 0.006469475105404854,
+            "peak_rss_kib": 9124
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.011419093003496528,
+            "peak_rss_kib": 25384
+          },
+          {
+            "seconds": 0.011502709006890655,
+            "peak_rss_kib": 25776
+          },
+          {
+            "seconds": 0.011668266961351037,
+            "peak_rss_kib": 25972
+          },
+          {
+            "seconds": 0.011419355170801282,
+            "peak_rss_kib": 26188
+          },
+          {
+            "seconds": 0.011552592040970922,
+            "peak_rss_kib": 25448
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.005877944873645902,
+          "peak_rss_kib": 9252
+        },
+        "office2pdf": {
+          "seconds": 0.011502709006890655,
+          "peak_rss_kib": 25776
+        }
+      }
+    },
+    {
+      "id": "GroupTest",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.005493610864505172,
+            "peak_rss_kib": 9180
+          },
+          {
+            "seconds": 0.005436074221506715,
+            "peak_rss_kib": 9056
+          },
+          {
+            "seconds": 0.006176589988172054,
+            "peak_rss_kib": 9044
+          },
+          {
+            "seconds": 0.005604666890576482,
+            "peak_rss_kib": 8920
+          },
+          {
+            "seconds": 0.005532694049179554,
+            "peak_rss_kib": 8932
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.013809567084535956,
+            "peak_rss_kib": 27148
+          },
+          {
+            "seconds": 0.014243262819945812,
+            "peak_rss_kib": 27288
+          },
+          {
+            "seconds": 0.014083555899560452,
+            "peak_rss_kib": 26900
+          },
+          {
+            "seconds": 0.013168926117941737,
+            "peak_rss_kib": 26564
+          },
+          {
+            "seconds": 0.013953013811260462,
+            "peak_rss_kib": 26936
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.005532694049179554,
+          "peak_rss_kib": 9044
+        },
+        "office2pdf": {
+          "seconds": 0.013953013811260462,
+          "peak_rss_kib": 26936
+        }
+      }
+    },
+    {
+      "id": "issue_1065_hidden_sheet_probe",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.005657224915921688,
+            "peak_rss_kib": 9064
+          },
+          {
+            "seconds": 0.00543315801769495,
+            "peak_rss_kib": 9280
+          },
+          {
+            "seconds": 0.0058580071199685335,
+            "peak_rss_kib": 9128
+          },
+          {
+            "seconds": 0.005689805140718818,
+            "peak_rss_kib": 9044
+          },
+          {
+            "seconds": 0.005954628111794591,
+            "peak_rss_kib": 9264
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.012866924982517958,
+            "peak_rss_kib": 26812
+          },
+          {
+            "seconds": 0.013083817902952433,
+            "peak_rss_kib": 26820
+          },
+          {
+            "seconds": 0.013208830961957574,
+            "peak_rss_kib": 26724
+          },
+          {
+            "seconds": 0.01294763502664864,
+            "peak_rss_kib": 27060
+          },
+          {
+            "seconds": 0.013010381953790784,
+            "peak_rss_kib": 27172
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.005689805140718818,
+          "peak_rss_kib": 9128
+        },
+        "office2pdf": {
+          "seconds": 0.013010381953790784,
+          "peak_rss_kib": 26820
+        }
+      }
+    },
+    {
+      "id": "Themes",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.006644970970228314,
+            "peak_rss_kib": 8812
+          },
+          {
+            "seconds": 0.005439110100269318,
+            "peak_rss_kib": 9008
+          },
+          {
+            "seconds": 0.005526472115889192,
+            "peak_rss_kib": 9120
+          },
+          {
+            "seconds": 0.005339663941413164,
+            "peak_rss_kib": 8900
+          },
+          {
+            "seconds": 0.005927728023380041,
+            "peak_rss_kib": 9076
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.012409684946760535,
+            "peak_rss_kib": 26480
+          },
+          {
+            "seconds": 0.013231312157586217,
+            "peak_rss_kib": 26180
+          },
+          {
+            "seconds": 0.013015671167522669,
+            "peak_rss_kib": 26476
+          },
+          {
+            "seconds": 0.013819143874570727,
+            "peak_rss_kib": 26592
+          },
+          {
+            "seconds": 0.0129851249512285,
+            "peak_rss_kib": 27008
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.005526472115889192,
+          "peak_rss_kib": 9008
+        },
+        "office2pdf": {
+          "seconds": 0.013015671167522669,
+          "peak_rss_kib": 26480
+        }
+      }
+    },
+    {
+      "id": "WithChart",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.006474593887105584,
+            "peak_rss_kib": 8804
+          },
+          {
+            "seconds": 0.006721683079376817,
+            "peak_rss_kib": 9168
+          },
+          {
+            "seconds": 0.006276445928961039,
+            "peak_rss_kib": 9296
+          },
+          {
+            "seconds": 0.006361092906445265,
+            "peak_rss_kib": 9276
+          },
+          {
+            "seconds": 0.006278900196775794,
+            "peak_rss_kib": 9328
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.017102316953241825,
+            "peak_rss_kib": 28260
+          },
+          {
+            "seconds": 0.01637980411760509,
+            "peak_rss_kib": 28136
+          },
+          {
+            "seconds": 0.01641548005864024,
+            "peak_rss_kib": 28268
+          },
+          {
+            "seconds": 0.01621898519806564,
+            "peak_rss_kib": 28424
+          },
+          {
+            "seconds": 0.016443351982161403,
+            "peak_rss_kib": 27916
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.006361092906445265,
+          "peak_rss_kib": 9276
+        },
+        "office2pdf": {
+          "seconds": 0.01641548005864024,
+          "peak_rss_kib": 28260
+        }
+      }
+    },
+    {
+      "id": "SimpleScatterChart",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.007131934864446521,
+            "peak_rss_kib": 9316
+          },
+          {
+            "seconds": 0.007776664104312658,
+            "peak_rss_kib": 9156
+          },
+          {
+            "seconds": 0.00690566492266953,
+            "peak_rss_kib": 9048
+          },
+          {
+            "seconds": 0.006655780132859945,
+            "peak_rss_kib": 9140
+          },
+          {
+            "seconds": 0.007107991026714444,
+            "peak_rss_kib": 9124
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.016842793906107545,
+            "peak_rss_kib": 30432
+          },
+          {
+            "seconds": 0.01717611402273178,
+            "peak_rss_kib": 30268
+          },
+          {
+            "seconds": 0.016703977016732097,
+            "peak_rss_kib": 30580
+          },
+          {
+            "seconds": 0.016246255952864885,
+            "peak_rss_kib": 30516
+          },
+          {
+            "seconds": 0.01796492002904415,
+            "peak_rss_kib": 31012
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.007107991026714444,
+          "peak_rss_kib": 9140
+        },
+        "office2pdf": {
+          "seconds": 0.016842793906107545,
+          "peak_rss_kib": 30516
+        }
+      }
+    },
+    {
+      "id": "picture",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.04619926703162491,
+            "peak_rss_kib": 11740
+          },
+          {
+            "seconds": 0.0506918269675225,
+            "peak_rss_kib": 11704
+          },
+          {
+            "seconds": 0.046837793895974755,
+            "peak_rss_kib": 11424
+          },
+          {
+            "seconds": 0.04681125492788851,
+            "peak_rss_kib": 11972
+          },
+          {
+            "seconds": 0.04578408505767584,
+            "peak_rss_kib": 11928
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.03497382393106818,
+            "peak_rss_kib": 37208
+          },
+          {
+            "seconds": 0.0363194840028882,
+            "peak_rss_kib": 36924
+          },
+          {
+            "seconds": 0.03554436285048723,
+            "peak_rss_kib": 36820
+          },
+          {
+            "seconds": 0.03645356395281851,
+            "peak_rss_kib": 37260
+          },
+          {
+            "seconds": 0.03582967398688197,
+            "peak_rss_kib": 37388
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.04681125492788851,
+          "peak_rss_kib": 11740
+        },
+        "office2pdf": {
+          "seconds": 0.03582967398688197,
+          "peak_rss_kib": 37208
+        }
+      }
+    },
+    {
+      "id": "poi-WithConditionalFormatting",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.006437926087528467,
+            "peak_rss_kib": 9120
+          },
+          {
+            "seconds": 0.005864900071173906,
+            "peak_rss_kib": 9208
+          },
+          {
+            "seconds": 0.006605287082493305,
+            "peak_rss_kib": 9040
+          },
+          {
+            "seconds": 0.0058887440245598555,
+            "peak_rss_kib": 9148
+          },
+          {
+            "seconds": 0.006684002932161093,
+            "peak_rss_kib": 9284
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.01641954784281552,
+            "peak_rss_kib": 28140
+          },
+          {
+            "seconds": 0.01619988912716508,
+            "peak_rss_kib": 28344
+          },
+          {
+            "seconds": 0.014864718075841665,
+            "peak_rss_kib": 28532
+          },
+          {
+            "seconds": 0.018272781977429986,
+            "peak_rss_kib": 28012
+          },
+          {
+            "seconds": 0.01507324492558837,
+            "peak_rss_kib": 28520
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.006437926087528467,
+          "peak_rss_kib": 9148
+        },
+        "office2pdf": {
+          "seconds": 0.01619988912716508,
+          "peak_rss_kib": 28344
+        }
+      }
+    },
+    {
+      "id": "headerFooterTest",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.006107110995799303,
+            "peak_rss_kib": 8892
+          },
+          {
+            "seconds": 0.00537961907684803,
+            "peak_rss_kib": 9300
+          },
+          {
+            "seconds": 0.005815859185531735,
+            "peak_rss_kib": 9016
+          },
+          {
+            "seconds": 0.005602593068033457,
+            "peak_rss_kib": 9096
+          },
+          {
+            "seconds": 0.005448315991088748,
+            "peak_rss_kib": 9292
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.012700274819508195,
+            "peak_rss_kib": 26348
+          },
+          {
+            "seconds": 0.012497227871790528,
+            "peak_rss_kib": 26892
+          },
+          {
+            "seconds": 0.012494221795350313,
+            "peak_rss_kib": 27128
+          },
+          {
+            "seconds": 0.013323162915185094,
+            "peak_rss_kib": 26308
+          },
+          {
+            "seconds": 0.012841306859627366,
+            "peak_rss_kib": 26912
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.005602593068033457,
+          "peak_rss_kib": 9096
+        },
+        "office2pdf": {
+          "seconds": 0.012700274819508195,
+          "peak_rss_kib": 26892
+        }
+      }
+    },
+    {
+      "id": "poi-RepeatingRowsCols",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.007232161937281489,
+            "peak_rss_kib": 8908
+          },
+          {
+            "seconds": 0.007130983984097838,
+            "peak_rss_kib": 9100
+          },
+          {
+            "seconds": 0.0070342139806598425,
+            "peak_rss_kib": 8876
+          },
+          {
+            "seconds": 0.006538462126627564,
+            "peak_rss_kib": 8744
+          },
+          {
+            "seconds": 0.006622227840125561,
+            "peak_rss_kib": 9212
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.01803613197989762,
+            "peak_rss_kib": 27860
+          },
+          {
+            "seconds": 0.017039831029251218,
+            "peak_rss_kib": 28804
+          },
+          {
+            "seconds": 0.01759480219334364,
+            "peak_rss_kib": 28864
+          },
+          {
+            "seconds": 0.01755240303464234,
+            "peak_rss_kib": 28108
+          },
+          {
+            "seconds": 0.017636860022321343,
+            "peak_rss_kib": 28528
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.0070342139806598425,
+          "peak_rss_kib": 8908
+        },
+        "office2pdf": {
+          "seconds": 0.01759480219334364,
+          "peak_rss_kib": 28528
+        }
+      }
+    },
+    {
+      "id": "simple-monthly-budget",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.007231191033497453,
+            "peak_rss_kib": 9456
+          },
+          {
+            "seconds": 0.007622537901625037,
+            "peak_rss_kib": 9564
+          },
+          {
+            "seconds": 0.007412606850266457,
+            "peak_rss_kib": 9600
+          },
+          {
+            "seconds": 0.006882421905174851,
+            "peak_rss_kib": 9596
+          },
+          {
+            "seconds": 0.007019626908004284,
+            "peak_rss_kib": 9628
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.07731709396466613,
+            "peak_rss_kib": 35560
+          },
+          {
+            "seconds": 0.07704173098318279,
+            "peak_rss_kib": 35964
+          },
+          {
+            "seconds": 0.07713634800165892,
+            "peak_rss_kib": 36036
+          },
+          {
+            "seconds": 0.07747470587491989,
+            "peak_rss_kib": 35700
+          },
+          {
+            "seconds": 0.07661814405582845,
+            "peak_rss_kib": 35956
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.007231191033497453,
+          "peak_rss_kib": 9596
+        },
+        "office2pdf": {
+          "seconds": 0.07713634800165892,
+          "peak_rss_kib": 35956
+        }
+      }
+    },
+    {
+      "id": "100-customers",
+      "samples": {
+        "candidate": [
+          {
+            "seconds": 0.01028687902726233,
+            "peak_rss_kib": 10376
+          },
+          {
+            "seconds": 0.009368072031065822,
+            "peak_rss_kib": 10500
+          },
+          {
+            "seconds": 0.009707091143354774,
+            "peak_rss_kib": 10264
+          },
+          {
+            "seconds": 0.010263084899634123,
+            "peak_rss_kib": 10044
+          },
+          {
+            "seconds": 0.010682886000722647,
+            "peak_rss_kib": 10212
+          }
+        ],
+        "office2pdf": [
+          {
+            "seconds": 0.09665724984370172,
+            "peak_rss_kib": 50012
+          },
+          {
+            "seconds": 0.09569610306061804,
+            "peak_rss_kib": 49808
+          },
+          {
+            "seconds": 0.09592793392948806,
+            "peak_rss_kib": 50372
+          },
+          {
+            "seconds": 0.09616098692640662,
+            "peak_rss_kib": 49716
+          },
+          {
+            "seconds": 0.09599146200343966,
+            "peak_rss_kib": 49972
+          }
+        ]
+      },
+      "medians": {
+        "candidate": {
+          "seconds": 0.010263084899634123,
+          "peak_rss_kib": 10264
+        },
+        "office2pdf": {
+          "seconds": 0.09599146200343966,
+          "peak_rss_kib": 49972
+        }
+      }
+    }
+  ],
+  "summary": {
+    "candidate": {
+      "sum_document_median_seconds": 0.21154447318986058,
+      "max_document_median_rss_kib": 14112
+    },
+    "office2pdf": {
+      "sum_document_median_seconds": 1.1144497729837894,
+      "max_document_median_rss_kib": 162280
+    }
+  }
+}

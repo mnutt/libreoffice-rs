@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "checkout_source_sha256": "5ca82153e699b3f69c07b2ba99e0ae286b5142ba79fec5ee8984b95fe8d58cf0",
+  "checkout_source_sha256": "61c06033f049c6c1761fae3cbae4b0da6f87d111d2f14356a1557e0061ecd350",
   "manifest_sha256": "f12d8690c72a53576ac651eb11852fe87c585f8b0b266e8455f299e72f619ea5",
-  "runner_sha256": "1e09680121ca59749b7c0af1375697f56d16e9fb64fe26173d8390b7d329a9d7",
-  "candidate_sha256": "d46ef42e6a9f9e49e4786d15d6e7886fe90919369c9554d6afec46a10dd27315",
-  "expectations_sha256": "5683af88373065d1404eff4fb1fee28b31ee7ee98f0a3fd84d73794124f76548",
+  "runner_sha256": "91dcee520d4a150b02aeb8ea6159db1119fdd89b5003ca8766806738d50114a5",
+  "candidate_sha256": "c357ced547d88e20da25a3ab60a8877eaceeeb39e4fe1b1e514ca09301b05059",
+  "expectations_sha256": "40b57a7251a7a5356f11400e9c1e34aa773218a3a06c8d462ac9ee6450f6d9a1",
   "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
   "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
   "fonts": {
@@ -24,7 +24,7 @@
   },
   "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
   "checkout_tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "checkout_revision": "e45b651b4541ce4388f18df5e7313b60e27855a1",
+  "checkout_revision": "f18b7dbbb867084db9c3d5e84a9fcb912c844f78",
   "cases": [
     {
       "id": "poi-Formatting",
@@ -44,7 +44,7 @@
                 792.0
               ]
             ],
-            "bytes": 4459,
+            "bytes": 25605,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -113,7 +113,7 @@
             ]
           ],
           "raster_rmse": [
-            0.0883132
+            0.0882068
           ]
         },
         "candidate_vs_libreoffice": {
@@ -159,7 +159,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.017,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -170,7 +170,7 @@
                 792.0
               ]
             ],
-            "bytes": 2351,
+            "bytes": 14352,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -229,7 +229,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0429638
+            0.0426042
           ]
         },
         "candidate_vs_libreoffice": {
@@ -308,7 +308,7 @@
                 792.0
               ]
             ],
-            "bytes": 283076,
+            "bytes": 373813,
             "image_count": 0,
             "previews": [
               "page-1.png",
@@ -455,15 +455,15 @@
           ],
           "extra": [],
           "raster_rmse": [
-            0.0918512,
-            0.283596,
-            0.286898,
-            0.279733,
-            0.285862,
-            0.278545,
-            0.278081,
-            0.278195,
-            0.059818
+            0.0938736,
+            0.306089,
+            0.31029,
+            0.30584,
+            0.313443,
+            0.305365,
+            0.305389,
+            0.304639,
+            0.0604188
           ]
         },
         "candidate_vs_libreoffice": {
@@ -619,13 +619,13 @@
           ],
           "raster_rmse": [
             null,
-            0.254284,
-            0.258803,
-            0.259295,
-            0.26899,
-            0.255719,
-            0.255272,
-            0.242551
+            0.264634,
+            0.267912,
+            0.265823,
+            0.27464,
+            0.262541,
+            0.263151,
+            0.251011
           ]
         },
         "office2pdf_vs_libreoffice": {
@@ -816,7 +816,7 @@
                 792.0
               ]
             ],
-            "bytes": 4773,
+            "bytes": 21704,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -875,7 +875,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0911919
+            0.0912061
           ]
         },
         "candidate_vs_libreoffice": {
@@ -922,7 +922,7 @@
                 792.0
               ]
             ],
-            "bytes": 5519,
+            "bytes": 24081,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -981,7 +981,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.107849
+            0.10791
           ]
         },
         "candidate_vs_libreoffice": {
@@ -990,7 +990,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.100523
+            0.0939559
           ]
         },
         "office2pdf_vs_libreoffice": {
@@ -1028,7 +1028,7 @@
                 792.0
               ]
             ],
-            "bytes": 2344,
+            "bytes": 13171,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -1087,7 +1087,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0382202
+            0.0392936
           ]
         },
         "candidate_vs_libreoffice": {
@@ -1123,7 +1123,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.017,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -1134,7 +1134,7 @@
                 792.0
               ]
             ],
-            "bytes": 2588,
+            "bytes": 11660,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -1193,7 +1193,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0389422
+            0.0390303
           ]
         },
         "candidate_vs_libreoffice": {
@@ -1202,7 +1202,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0316784
+            0.032195
           ]
         },
         "office2pdf_vs_libreoffice": {
@@ -1240,7 +1240,7 @@
                 792.0
               ]
             ],
-            "bytes": 2269,
+            "bytes": 9258,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -1299,7 +1299,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0193904
+            0.0202282
           ]
         },
         "candidate_vs_libreoffice": {
@@ -1346,7 +1346,7 @@
                 841.89
               ]
             ],
-            "bytes": 2743,
+            "bytes": 10356,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -1415,7 +1415,7 @@
             ]
           ],
           "raster_rmse": [
-            0.0370711
+            0.0375126
           ]
         },
         "candidate_vs_libreoffice": {
@@ -1472,7 +1472,7 @@
                 841.89
               ]
             ],
-            "bytes": 2743,
+            "bytes": 10356,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -1569,7 +1569,7 @@
             ]
           ],
           "raster_rmse": [
-            0.0366766
+            0.0369626
           ]
         },
         "candidate_vs_libreoffice": {
@@ -1654,7 +1654,7 @@
                 841.89
               ]
             ],
-            "bytes": 11957,
+            "bytes": 39955,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -1713,7 +1713,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.166199
+            0.167116
           ]
         },
         "candidate_vs_libreoffice": {
@@ -1760,7 +1760,7 @@
                 792.0
               ]
             ],
-            "bytes": 2820,
+            "bytes": 14488,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -1819,7 +1819,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0511092
+            0.0501551
           ]
         },
         "candidate_vs_libreoffice": {
@@ -1866,7 +1866,7 @@
                 841.89
               ]
             ],
-            "bytes": 16847,
+            "bytes": 17285,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -1925,7 +1925,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0125008
+            0.0136267
           ]
         },
         "candidate_vs_libreoffice": {
@@ -1961,7 +1961,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.017,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -1972,7 +1972,7 @@
                 792.0
               ]
             ],
-            "bytes": 3352,
+            "bytes": 12780,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -2044,7 +2044,7 @@
           ],
           "extra": [],
           "raster_rmse": [
-            0.0762424
+            0.0759661
           ]
         },
         "candidate_vs_libreoffice": {
@@ -2104,7 +2104,7 @@
                 841.89
               ]
             ],
-            "bytes": 3391,
+            "bytes": 15487,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -2163,7 +2163,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.046424
+            0.0497896
           ]
         },
         "candidate_vs_libreoffice": {
@@ -2199,7 +2199,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.017,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2210,7 +2210,7 @@
                 792.0
               ]
             ],
-            "bytes": 3325,
+            "bytes": 13600,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -2269,7 +2269,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0293919
+            0.0291881
           ]
         },
         "candidate_vs_libreoffice": {
@@ -2278,7 +2278,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0264065
+            0.0265756
           ]
         },
         "office2pdf_vs_libreoffice": {
@@ -2320,7 +2320,7 @@
                 792.0
               ]
             ],
-            "bytes": 7608,
+            "bytes": 15706,
             "image_count": 0,
             "previews": [
               "page-1.png",
@@ -2390,8 +2390,8 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0257366,
-            0.0669796
+            0.0273198,
+            0.0670041
           ]
         },
         "candidate_vs_libreoffice": {
@@ -2444,7 +2444,7 @@
                 792.0
               ]
             ],
-            "bytes": 9888,
+            "bytes": 17654,
             "image_count": 0,
             "previews": [
               "page-1.png",
@@ -2560,7 +2560,7 @@
             ]
           ],
           "raster_rmse": [
-            0.0590331,
+            0.058997,
             null
           ]
         },
@@ -2645,7 +2645,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.516,
+          "seconds": 0.366,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2656,7 +2656,7 @@
                 841.89
               ]
             ],
-            "bytes": 435994,
+            "bytes": 463685,
             "image_count": 1,
             "previews": [
               "page-1.png"
@@ -2777,7 +2777,7 @@
                 792.0
               ]
             ],
-            "bytes": 3905,
+            "bytes": 35825,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -2850,7 +2850,7 @@
             ]
           ],
           "raster_rmse": [
-            0.0459428
+            0.0449239
           ]
         },
         "candidate_vs_libreoffice": {
@@ -2859,7 +2859,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0334952
+            0.0325048
           ]
         },
         "office2pdf_vs_libreoffice": {
@@ -2911,7 +2911,7 @@
                 792.0
               ]
             ],
-            "bytes": 2579,
+            "bytes": 10144,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -2970,7 +2970,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0507195
+            0.0506865
           ]
         },
         "candidate_vs_libreoffice": {
@@ -2979,7 +2979,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0487023
+            0.0486066
           ]
         },
         "office2pdf_vs_libreoffice": {
@@ -3029,7 +3029,7 @@
                 841.89
               ]
             ],
-            "bytes": 7994,
+            "bytes": 21145,
             "image_count": 0,
             "previews": [
               "page-1.png",
@@ -3121,10 +3121,10 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.0364008,
-            0.0295551,
-            0.0314794,
-            0.0361861
+            0.0369809,
+            0.0302767,
+            0.032222,
+            0.0367352
           ]
         },
         "candidate_vs_libreoffice": {
@@ -3181,7 +3181,7 @@
                 612.0
               ]
             ],
-            "bytes": 13381,
+            "bytes": 44678,
             "image_count": 0,
             "previews": [
               "page-1.png",
@@ -3280,7 +3280,7 @@
             ]
           ],
           "raster_rmse": [
-            0.122921
+            0.126526
           ]
         },
         "candidate_vs_libreoffice": {
@@ -3443,8 +3443,8 @@
             ]
           ],
           "raster_rmse": [
-            0.121629,
-            0.0233035
+            0.126172,
+            0.0242552
           ]
         },
         "office2pdf_vs_libreoffice": {
@@ -3617,7 +3617,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.017,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -3636,7 +3636,7 @@
                 792.0
               ]
             ],
-            "bytes": 63616,
+            "bytes": 112680,
             "image_count": 0,
             "previews": [
               "page-1.png",
@@ -3712,21 +3712,153 @@
       },
       "comparisons": {
         "candidate_vs_office2pdf": {
-          "recall": 0.9978401727861771,
-          "precision": 0.9989189189189189,
+          "recall": 0.978401727861771,
+          "precision": 0.978401727861771,
           "missing": [
             [
-              "com",
+              "com61",
+              2
+            ],
+            [
+              "57",
+              2
+            ],
+            [
+              "com34",
+              1
+            ],
+            [
+              "com43",
+              1
+            ],
+            [
+              "com29",
+              1
+            ],
+            [
+              "37",
+              1
+            ],
+            [
+              "25",
+              1
+            ],
+            [
+              "com41",
+              1
+            ],
+            [
+              "com59",
               1
             ],
             [
               "55",
               1
+            ],
+            [
+              "63",
+              1
+            ],
+            [
+              "com23",
+              1
+            ],
+            [
+              "com21",
+              1
+            ],
+            [
+              "18",
+              1
+            ],
+            [
+              "58",
+              1
+            ],
+            [
+              "47",
+              1
+            ],
+            [
+              "51",
+              1
+            ],
+            [
+              "com40",
+              1
             ]
           ],
           "extra": [
             [
+              "61",
+              2
+            ],
+            [
+              "com57",
+              2
+            ],
+            [
+              "34",
+              1
+            ],
+            [
+              "43",
+              1
+            ],
+            [
+              "41",
+              1
+            ],
+            [
+              "40",
+              1
+            ],
+            [
+              "29",
+              1
+            ],
+            [
+              "com37",
+              1
+            ],
+            [
+              "com25",
+              1
+            ],
+            [
+              "59",
+              1
+            ],
+            [
+              "com63",
+              1
+            ],
+            [
               "com55",
+              1
+            ],
+            [
+              "23",
+              1
+            ],
+            [
+              "21",
+              1
+            ],
+            [
+              "com18",
+              1
+            ],
+            [
+              "com58",
+              1
+            ],
+            [
+              "com47",
+              1
+            ],
+            [
+              "com51",
               1
             ]
           ],
@@ -3737,8 +3869,8 @@
           ]
         },
         "candidate_vs_libreoffice": {
-          "recall": 0.8590604026845637,
-          "precision": 0.6918918918918919,
+          "recall": 0.8604026845637583,
+          "precision": 0.6922246220302376,
           "missing": [
             [
               "y",
@@ -3761,7 +3893,7 @@
               2
             ],
             [
-              "61",
+              "57",
               2
             ],
             [
@@ -3793,15 +3925,7 @@
               1
             ],
             [
-              "34",
-              1
-            ],
-            [
               "cayla_run",
-              1
-            ],
-            [
-              "43",
               1
             ],
             [
@@ -3813,18 +3937,26 @@
               1
             ],
             [
-              "41",
+              "charity_k",
               1
             ],
             [
-              "charity_k",
+              "46",
+              1
+            ],
+            [
+              "gabriella",
+              1
+            ],
+            [
+              "reinhold6",
               1
             ]
           ],
           "extra": [
             [
               "com",
-              83
+              84
             ],
             [
               "yahoo",
@@ -3843,7 +3975,7 @@
               2
             ],
             [
-              "com61",
+              "com57",
               2
             ],
             [
@@ -3859,15 +3991,7 @@
               1
             ],
             [
-              "com34",
-              1
-            ],
-            [
               "cayla_runte76",
-              1
-            ],
-            [
-              "com43",
               1
             ],
             [
@@ -3891,15 +4015,23 @@
               1
             ],
             [
-              "com29",
-              1
-            ],
-            [
               "aurelio_conn",
               1
             ],
             [
+              "com37",
+              1
+            ],
+            [
+              "com25",
+              1
+            ],
+            [
               "buster_mcglynn",
+              1
+            ],
+            [
+              "marquardt40",
               1
             ]
           ],

@@ -1,0 +1,1511 @@
+{
+  "schema_version": 1,
+  "checkout_source_sha256": "61c06033f049c6c1761fae3cbae4b0da6f87d111d2f14356a1557e0061ecd350",
+  "manifest_sha256": "4ffd73f152a3c8161b2a2cfeff45c21b3dec7c9be9f5d9ce8fa845bef6d1873c",
+  "runner_sha256": "91dcee520d4a150b02aeb8ea6159db1119fdd89b5003ca8766806738d50114a5",
+  "candidate_sha256": "c357ced547d88e20da25a3ab60a8877eaceeeb39e4fe1b1e514ca09301b05059",
+  "expectations_sha256": "40b57a7251a7a5356f11400e9c1e34aa773218a3a06c8d462ac9ee6450f6d9a1",
+  "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
+  "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
+  "fonts": {
+    "LiberationMono-Bold.ttf": "1d8d631105d4cb6c562a0d90f591d6393007d71350c089aec81c37dc8da293ed",
+    "LiberationMono-BoldItalic.ttf": "bac30bbb26308b1a925d233a520fa764c80526f632b75defbf2b37e402eb6b1a",
+    "LiberationMono-Italic.ttf": "02312ecd02a6b7a96db60deb20468430abb7d3a91974ef9a90bd46ff78ea338d",
+    "LiberationMono-Regular.ttf": "47ed5b5fcfe6b3c9228937b05de9c769f5fa55b777d539af0f65172f0a24c90b",
+    "LiberationSans-Bold.ttf": "769673c4355020b1e28a14c366a152da410ab6b16239fe883ebc35b73624835b",
+    "LiberationSans-BoldItalic.ttf": "4b3d18cbd1b8c068115be4072f43418b194994313f47dbfd3588808903a55d34",
+    "LiberationSans-Italic.ttf": "8649cf5f2cbe4727549d78b714a3a7ee540718a13557769c4612fea105294c7e",
+    "LiberationSans-Regular.ttf": "baccc64becc3eb7d104b7c84d99f5314a0a1f896e2b3ea6c2f22fc08d2003bee",
+    "LiberationSerif-Bold.ttf": "28f2d4300ee366d1ff9ca95df967a27e77987c87857fad0d9c85034405aae39d",
+    "LiberationSerif-BoldItalic.ttf": "8de6363e9ca6c1e6f539ab032bd9ad6abfe138638f4fc53f3c26ea788b7724c5",
+    "LiberationSerif-Italic.ttf": "c7681827cba3bddb54f4673d0052cb944bdeac0b83c29c238240617e699311da",
+    "LiberationSerif-Regular.ttf": "86b9ea1c2f41bed9d7c09ccad4abc2894b33df5de60e5bbbece5d48610911870",
+    "NotoSans-Regular.ttf": "478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823"
+  },
+  "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
+  "checkout_tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "checkout_revision": "f18b7dbbb867084db9c3d5e84a9fcb912c844f78",
+  "cases": [
+    {
+      "id": "authored-font-variants",
+      "purpose": "real font variants, Unicode widths and automatic wrapping",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 61804,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 45039,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-font-variants/office2pdf"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 53052,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-font-variants/libreoffice"
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.112586
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.116704
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.114787
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "authored-print-area",
+      "purpose": "print area excludes outside cells",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 9664,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 7619,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-print-area/office2pdf"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 13489,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-print-area/libreoffice"
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0380325
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0382868
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.034926
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "authored-manual-break",
+      "purpose": "explicit horizontal page break after row five",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 12793,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 9352,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-manual-break/office2pdf"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 17443,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-manual-break/libreoffice"
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0353354,
+            0.0362538
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0353523,
+            0.0364594
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0320922,
+            0.0332178
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "authored-rich-text",
+      "purpose": "mixed rich-text styles within one cell",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 18503,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 91,
+              "blue": 0,
+              "orange": 25
+            },
+            "font_names": [
+              "Helvetica",
+              "Helvetica-Bold",
+              "Helvetica-Oblique",
+              "Courier",
+              "Times-Roman",
+              "Times-Bold",
+              "Times-Italic",
+              "Helvetica-BoldOblique",
+              "LOUNIC+LiberationSans-Bold",
+              "LOUNIC+LiberationSans-Italic"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 8151,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 0,
+              "blue": 0,
+              "orange": 0
+            },
+            "font_names": [
+              "IJHFVX+LiberationSans"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-text/office2pdf"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 19660,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 69,
+              "blue": 0,
+              "orange": 12
+            },
+            "font_names": [
+              "BAAAAA+LiberationSans-Bold",
+              "CAAAAA+LiberationSans-Italic"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-text/libreoffice"
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.5,
+          "missing": [],
+          "extra": [
+            [
+              "bold",
+              1
+            ],
+            [
+              "red",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.03085
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.0,
+          "precision": 0.0,
+          "missing": [
+            [
+              "i",
+              2
+            ],
+            [
+              "bol",
+              1
+            ],
+            [
+              "d",
+              1
+            ],
+            [
+              "r",
+              1
+            ],
+            [
+              "ed",
+              1
+            ],
+            [
+              "l",
+              1
+            ],
+            [
+              "ar",
+              1
+            ],
+            [
+              "ge",
+              1
+            ],
+            [
+              "t",
+              1
+            ],
+            [
+              "al",
+              1
+            ],
+            [
+              "c",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "bold",
+              1
+            ],
+            [
+              "red",
+              1
+            ],
+            [
+              "large",
+              1
+            ],
+            [
+              "italic",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0336719
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.0,
+          "precision": 0.0,
+          "missing": [
+            [
+              "i",
+              2
+            ],
+            [
+              "bol",
+              1
+            ],
+            [
+              "d",
+              1
+            ],
+            [
+              "r",
+              1
+            ],
+            [
+              "ed",
+              1
+            ],
+            [
+              "l",
+              1
+            ],
+            [
+              "ar",
+              1
+            ],
+            [
+              "ge",
+              1
+            ],
+            [
+              "t",
+              1
+            ],
+            [
+              "al",
+              1
+            ],
+            [
+              "c",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "large",
+              1
+            ],
+            [
+              "italic",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0303044
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "authored-rich-shrink",
+      "purpose": "shrink mixed-size rich text uniformly; blue tail must remain visible",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 31101,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 71,
+              "blue": 27,
+              "orange": 20
+            },
+            "font_names": [
+              "Helvetica",
+              "Helvetica-Bold",
+              "Helvetica-Oblique",
+              "Courier",
+              "Times-Roman",
+              "Times-Bold",
+              "Times-Italic",
+              "Helvetica-BoldOblique",
+              "LOUNIC+LiberationSans-Bold",
+              "LOUNIC+LiberationSans-Italic",
+              "LOUNIC+LiberationSans"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 8593,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 0,
+              "blue": 0,
+              "orange": 0
+            },
+            "font_names": [
+              "PIFYGT+LiberationSans"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-shrink/office2pdf"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 28205,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 387,
+              "blue": 0,
+              "orange": 36
+            },
+            "font_names": [
+              "BAAAAA+LiberationSans",
+              "CAAAAA+LiberationSans-Bold",
+              "DAAAAA+LiberationSans-Italic"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-shrink/libreoffice"
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.2,
+          "missing": [],
+          "extra": [
+            [
+              "a",
+              1
+            ],
+            [
+              "wide",
+              1
+            ],
+            [
+              "heading",
+              1
+            ],
+            [
+              "needs",
+              1
+            ],
+            [
+              "smaller",
+              1
+            ],
+            [
+              "styled",
+              1
+            ],
+            [
+              "text",
+              1
+            ],
+            [
+              "and",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0278222
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.17647058823529413,
+          "precision": 0.3,
+          "missing": [
+            [
+              "l",
+              2
+            ],
+            [
+              "smal",
+              1
+            ],
+            [
+              "er",
+              1
+            ],
+            [
+              "st",
+              1
+            ],
+            [
+              "yl",
+              1
+            ],
+            [
+              "ed",
+              1
+            ],
+            [
+              "t",
+              1
+            ],
+            [
+              "ext",
+              1
+            ],
+            [
+              "tai",
+              1
+            ],
+            [
+              "wi",
+              1
+            ],
+            [
+              "de",
+              1
+            ],
+            [
+              "headi",
+              1
+            ],
+            [
+              "ngneighbor",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "wide",
+              1
+            ],
+            [
+              "heading",
+              1
+            ],
+            [
+              "smaller",
+              1
+            ],
+            [
+              "styled",
+              1
+            ],
+            [
+              "text",
+              1
+            ],
+            [
+              "tail",
+              1
+            ],
+            [
+              "neighbor",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0396665
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.0,
+          "precision": 0.0,
+          "missing": [
+            [
+              "l",
+              2
+            ],
+            [
+              "needs",
+              1
+            ],
+            [
+              "smal",
+              1
+            ],
+            [
+              "er",
+              1
+            ],
+            [
+              "st",
+              1
+            ],
+            [
+              "yl",
+              1
+            ],
+            [
+              "ed",
+              1
+            ],
+            [
+              "t",
+              1
+            ],
+            [
+              "ext",
+              1
+            ],
+            [
+              "and",
+              1
+            ],
+            [
+              "tai",
+              1
+            ],
+            [
+              "a",
+              1
+            ],
+            [
+              "wi",
+              1
+            ],
+            [
+              "de",
+              1
+            ],
+            [
+              "headi",
+              1
+            ],
+            [
+              "ngneighbor",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "tail",
+              1
+            ],
+            [
+              "neighbor",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0375557
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "authored-rich-shared",
+      "purpose": "shared rich text, mixed-size wrapping and automatic row height",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 33786,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 391,
+              "blue": 0,
+              "orange": 22
+            },
+            "font_names": [
+              "Helvetica",
+              "Helvetica-Bold",
+              "Helvetica-Oblique",
+              "Courier",
+              "Times-Roman",
+              "Times-Bold",
+              "Times-Italic",
+              "Helvetica-BoldOblique",
+              "LOUNIC+LiberationSans-Bold",
+              "LOUNIC+LiberationSans-Italic",
+              "LOUNIC+LiberationSans"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 24500,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 392,
+              "blue": 0,
+              "orange": 37
+            },
+            "font_names": [
+              "QUMWAL+LiberationSans-Bold",
+              "OOADVO+LiberationSans-Italic",
+              "UKXZET+LiberationSans"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-shared/office2pdf"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 21981,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 366,
+              "blue": 0,
+              "orange": 21
+            },
+            "font_names": [
+              "BAAAAA+LiberationSans",
+              "CAAAAA+LiberationSans-Bold"
+            ]
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-shared/libreoffice"
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.9230769230769231,
+          "precision": 0.8571428571428571,
+          "missing": [
+            [
+              "stringneighbor",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "string",
+              1
+            ],
+            [
+              "neighbor",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0613523
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.375,
+          "precision": 0.21428571428571427,
+          "missing": [
+            [
+              "l",
+              1
+            ],
+            [
+              "ar",
+              1
+            ],
+            [
+              "ge",
+              1
+            ],
+            [
+              "shar",
+              1
+            ],
+            [
+              "edneighbor",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "large",
+              1
+            ],
+            [
+              "shared",
+              1
+            ],
+            [
+              "string",
+              1
+            ],
+            [
+              "wraps",
+              1
+            ],
+            [
+              "across",
+              1
+            ],
+            [
+              "styled",
+              1
+            ],
+            [
+              "runs",
+              1
+            ],
+            [
+              "and",
+              1
+            ],
+            [
+              "keeps",
+              1
+            ],
+            [
+              "tail",
+              1
+            ],
+            [
+              "neighbor",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0571536
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.375,
+          "precision": 0.23076923076923078,
+          "missing": [
+            [
+              "l",
+              1
+            ],
+            [
+              "ar",
+              1
+            ],
+            [
+              "ge",
+              1
+            ],
+            [
+              "shar",
+              1
+            ],
+            [
+              "edneighbor",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "large",
+              1
+            ],
+            [
+              "shared",
+              1
+            ],
+            [
+              "stringneighbor",
+              1
+            ],
+            [
+              "wraps",
+              1
+            ],
+            [
+              "across",
+              1
+            ],
+            [
+              "styled",
+              1
+            ],
+            [
+              "runs",
+              1
+            ],
+            [
+              "and",
+              1
+            ],
+            [
+              "keeps",
+              1
+            ],
+            [
+              "tail",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0513303
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "authored-stacked-chart",
+      "purpose": "stacked columns must accumulate rather than cluster",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 13305,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 0,
+              "blue": 2765,
+              "orange": 5372
+            }
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 15709,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 0,
+              "blue": 2607,
+              "orange": 5293
+            }
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-stacked-chart/office2pdf"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 17468,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 0,
+              "blue": 2997,
+              "orange": 5832
+            }
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-stacked-chart/libreoffice"
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 0.7894736842105263,
+          "missing": [],
+          "extra": [
+            [
+              "5",
+              4
+            ]
+          ],
+          "raster_rmse": [
+            0.0647478
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0519533
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.7894736842105263,
+          "precision": 1.0,
+          "missing": [
+            [
+              "5",
+              4
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            0.0571926
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 1,
+        "drawings": 1,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "authored-cropped-image",
+      "purpose": "image source crop removes left red half",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 13410,
+            "image_count": 1,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 0,
+              "blue": 34656,
+              "orange": 0
+            }
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 10023,
+            "image_count": 1,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 17328,
+              "blue": 17328,
+              "orange": 0
+            }
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-cropped-image/office2pdf"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 15045,
+            "image_count": 1,
+            "previews": [
+              "page-1.png"
+            ],
+            "colors": {
+              "red": 0,
+              "blue": 34656,
+              "orange": 0
+            }
+          },
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-cropped-image/libreoffice"
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.230092
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0740839
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.223307
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 1,
+        "media": 1
+      },
+      "expectation_failures": []
+    }
+  ],
+  "summary": {
+    "candidate": {
+      "ok": 8
+    },
+    "office2pdf": {
+      "ok": 8
+    },
+    "libreoffice": {
+      "ok": 8
+    },
+    "expectation_failures": 0
+  }
+}

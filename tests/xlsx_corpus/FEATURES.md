@@ -1,109 +1,120 @@
-# XLSX drawings and formatting milestone
+# XLSX fidelity milestone
 
-Implementation: `e45b651` on `davros-fixes`. This is a development milestone,
-not a production switch or a claim of complete Excel fidelity.
+Implementation: `f18b7db` on `davros-fixes`. This is progress toward a replacement,
+not a claim of complete Excel fidelity or a production renderer switch.
 
-The [all-page comparison report](runs/chart-layout-verified/report.html) contains the
-candidate, office2pdf and real LibreOffice PDFs. Generated binaries and images
-remain ignored. `features.json` records the final measurements, source/binary
-hashes, font configuration, reference provenance and expectation results.
-The original `baseline.json` remains the grid-only comparison.
+`features.json` records the 24 upstream fixtures; `authored-results.json` records
+eight deterministic authored probes. Reports include source and binary hashes,
+font configuration, reference provenance, and feature expectations. PDFs, PNGs,
+and HTML comparisons remain local ignored artifacts under `runs/`. The latest
+[original](runs/rich-shrink-originals/report.html) and
+[authored](runs/rich-shrink-final/report.html) reports show all three engines.
+`baseline.json` preserves the original grid-only measurements.
 
-## Changes driven by this corpus
+## Supported and tested improvements
 
-- Imported internal drawing relationships and absolute/one-cell/two-cell anchors.
-  PNG/JPEG pictures, chart sheets and drawing text now contribute to page bounds.
-  Drawings are clipped across paper tiles; natural-width preview includes their
-  full width. External image relationships are ignored.
-- Added cached line, clustered bar and scatter charts to the existing PDF chart
-  renderer. Numeric X coordinates, cache indexes/gaps, no-line series, workbook
-  theme and individual point colors, currency labels, titles, legends, axis
-  bounds, and circle/square marker sizes/colors are retained.
-- Chart layout now respects source font sizes, title weight, grid visibility and
-  bar gap width. Plot margins use measured labels, and top/bottom legends wrap
-  into centered rows. Legend symbols retain scatter marker shape and color.
-  Chart-only sheets fit their source paper size even in natural-width preview.
-- Automatic wrapped row heights use the rendered cell font and indentation,
-  preventing bold or indented text from being clipped by underestimated heights.
-- Applied scalar conditional comparisons, relative and absolute references,
-  priority/stop rules, differential fonts/fills, and cached numeric/named data
-  bars. The budget's hidden bar value stays hidden.
-- Preserved drawing text, repeated print-title rows/columns, horizontal centering,
-  explicit print scaling and fit-to-page output. Natural-width preview continues
-  to use source scale with vertical pagination for ordinary worksheets.
-- Added indexed cell colors, negative number-section colors, underline,
-  indentation, shrink-to-fit, rotation, and Typewriter font-family mapping.
-- Added PDF feature expectations. A missing image or chart page now fails the
-  runner even if word recall is perfect. Synthetic tests exercise multi-page
-  print titles because the existing repeating-title fixture has short sheets.
+- Bundled source fonts are measured and subset-embedded from the same face,
+  including real bold/italic variants. Distinct Unicode characters that share a
+  glyph retain distinct PDF text mappings. No host font discovery is required.
+- Column widths use SpreadsheetML pixel rounding and the Normal font's maximum
+  digit advance. Wrapped row heights use actual font and indentation metrics.
+- Inline and shared rich text preserve size, family, bold, italic, underline,
+  color, words spanning style boundaries, and automatic row height. Shrink-to-fit
+  scales all runs uniformly when wrapping is disabled. A visible blue tail in the
+  new probe catches clipping that a text-extraction check would miss; the previous
+  renderer fails this check and the current one passes.
+- Single rectangular print areas, manual breaks, repeated print titles, source
+  scale, fit-to-page, and horizontal centering are retained. Ordinary previews
+  widen naturally rather than printing horizontal tiles; chart sheets fit paper.
+- Internal PNG/JPEG pictures, drawing text, and chart sheets contribute to bounds.
+  Source image crops clip the expanded image to its destination frame. The crop
+  probe requires visible blue pixels and zero red pixels. External images are not
+  fetched.
+- Cached line, clustered/stacked bar, and scatter charts retain indexed gaps,
+  numeric scatter coordinates, colors, titles, labels, legends, axis bounds,
+  selected markers, and source gap width. Stacks accumulate positive and negative
+  values separately. Automatic value axes leave headroom at exact tick maxima.
+- Scalar conditional comparisons, relative references, priorities/stop rules,
+  differential fonts/fills, and cached numeric/named data bars are supported.
+  Hidden bar values stay hidden. Indexed colors, negative number-section colors,
+  indentation, underline, plain-text rotation and shrink-to-fit are retained.
 
-No new runtime dependency was added. Formula previews still consume saved
-results rather than recalculating spreadsheets.
+No new runtime dependency was added. Formulas use saved results without
+recalculation; missing or stale caches remain a limitation.
 
-## Results
+## Comparison results
 
-All 24 documents convert with all three engines, and all candidate feature
-expectations pass. Twenty cases have 100% word recall against LibreOffice,
-up from eighteen. This measures retained text, not twenty visual passes.
+All 32 inputs convert with the candidate, office2pdf, and real LibreOffice. All
+candidate feature expectations pass. Twenty of the original 24 cases have 100%
+word recall against LibreOffice; that is not twenty visual-fidelity passes.
 
-| Case | Grid-only recall vs LO | Current recall vs LO | Current recall vs office2pdf | Current candidate / office2pdf / LO pages |
-| --- | ---: | ---: | ---: | --- |
-| WithChart | 37.5% | 100% | 100% | 2 / 2 / 2 |
-| SimpleScatterChart | 11.8% | 100% | 64.3% | 2 / 2 / 2 |
-| picture | 100% | 100% | 100% | 1 / 1 / 4 |
-| simple-monthly-budget | 56.6% | 71.7% | 99.2% | 2 / 1 / 2 |
+| Case | Candidate recall vs LO | Candidate recall vs office2pdf | Candidate / office2pdf / LO pages |
+| --- | ---: | ---: | --- |
+| WithChart | 100% | 100% | 2 / 2 / 2 |
+| SimpleScatterChart | 100% | 64.3% | 2 / 2 / 2 |
+| picture | 100% | 100% | 1 / 1 / 4 |
+| simple-monthly-budget | 71.7% | 99.2% | 2 / 1 / 2 |
+| 100-customers | 86.0% | 97.8% | 3 / 3 / 3 |
 
-The picture now appears; the initial grid renderer had zero PDF image objects.
-The one-page preview shows the complete picture, while office2pdf's one-page
-reference clips it. LibreOffice tiles the picture across four paper pages.
+The candidate shows the complete picture; office2pdf clips it and LibreOffice
+prints four tiles. The budget's missing office2pdf value, `2336`, is explicitly
+hidden by the source. Scatter labels and coordinates agree better with
+LibreOffice than with office2pdf. Authored cropped-image and rich-text cases
+also expose reference-renderer defects; neither reference is an oracle.
 
-The scatter fixture illustrates why both references matter: LibreOffice has the
-numeric chart and its labels, while office2pdf's output differs substantially.
-The candidate now follows the numeric coordinates and retains both chart pages.
+The customer-sheet word score against office2pdf fell from 99.8% to 97.8% after
+pixel width rounding. Before/after extracted non-whitespace character counts are
+identical: different spacing joins email suffixes and adjacent ages into different
+tokens. This does not establish visual equivalence. Narrow cells visibly clip,
+and PDF extraction still includes clipped characters. Font substitution and
+layout differences remain visible in the images; the raw scores are retained.
+Other imperfect LO comparisons are `poi-Formatting` (98.4%, locale-dependent
+year formatting), `poi-NumberFormatTests` (97.9%, font/layout/extraction), and
+the budget. Pixel comparisons improve for some cases and worsen for others.
 
-The budget's only missing office2pdf word is the data-bar value `2336`, which the
-source explicitly hides with `showValue=0`. Its remaining deficit against
-LibreOffice includes text extraction splitting the reference's narrow text into
-fragments. These metrics do not prove equivalent typography or chart geometry.
+## Release benchmark
 
-The other three imperfect LibreOffice text comparisons remain:
-`poi-Formatting` (98.4%, locale-dependent year formatting),
-`poi-NumberFormatTests` (97.9%, font/layout and extraction differences), and
-`100-customers` (85.9% vs LibreOffice, 99.8% vs office2pdf, narrow-cell clipping).
-These cases remain visible; thresholds were not loosened to conceal them.
+`benchmark.json` preserves measurements of implementation `581f7ae`, immediately
+before rich-text shrink-to-fit, across the original 24 fixtures. Each engine gets
+one warmup and five measured runs per document, alternating order under identical
+Bubblewrap limits and using the same font bundle. The release profile is `opt-level=s`,
+thin LTO, one codegen unit, stripped symbols, and abort-on-panic.
 
-## Remaining fidelity work
+| Measurement | XLSX-only candidate | Full Davros office2pdf baseline |
+| --- | ---: | ---: |
+| Executable bytes | 1,261,096 | 40,932,816 |
+| Sum of per-document median elapsed time | 0.212 s | 1.114 s |
+| Highest per-document median peak RSS | 13.8 MiB | 158.5 MiB |
 
-The current examples now exercise pictures, chart sheets, conditional styles,
-data bars, drawing text, rotated text and repeated titles successfully. They are
-still insufficient to establish replacement readiness for arbitrary XLSX input.
+The aggregate time is about 5.3 times lower in this sample. This is not a universal
+speed claim: the picture case is slower (46.8 ms versus 35.8 ms). Executable sizes
+cover different capabilities; the baseline supports other document formats and
+also installs its own hardening. Shared font assets are excluded from both
+executable sizes. These measurements do not establish full-production bundle
+size or arbitrary-document throughput.
 
-- Font substitution, exact line metrics and chart plot/legend geometry still
-  differ. Chart sheets now fit paper, but source defaults and chart styling are
-  not identical to LibreOffice. Very large legends can still exhaust the space
-  available inside small chart frames.
-- The default paper size differs when a workbook omits it: this implementation
-  uses Letter, while the installed LibreOffice uses A4. Number-format test output
-  consequently has nine pages versus LibreOffice's eight; office2pdf also has nine.
-- The corpus has no meaningful coverage for print areas, manual breaks,
-  combination/stacked/log charts, advanced marker shapes, cropped/rotated images,
-  complex conditional formulas, color scales/icon sets, or full rich text.
-  These remain unsupported or partial; broader fixtures are needed before making
-  wider compatibility claims.
-- Cached values can be stale or missing. Named data-bar bounds are resolved only
-  from same-sheet formula cells that already cache the named value. Conditional
-  work is bounded and produces a diagnostic when its limit is reached.
-- No release-size, memory or throughput benchmark was performed. Debug corpus
-  timings are not performance comparisons.
+## Remaining parity work
+
+- Font substitution, line metrics, chart plot/legend geometry and locale defaults
+  still differ. Missing source fonts cannot be reconstructed from a workbook.
+- Omitted paper size defaults to Letter here and A4 in the installed LibreOffice.
+  Number-format output has nine pages versus LO's eight; office2pdf also has nine.
+- Disjoint print areas, rotated images, rotated rich text, superscript/subscript,
+  strike-through, advanced shaping, and table-style overrides need work.
+- Combination/percent-stacked/logarithmic charts, more marker shapes, smoothing,
+  complex conditional formulas, color scales/icon sets, and negative data-bar axes
+  remain unsupported or partial.
+- The 32 cases are a development sample, not representative coverage of arbitrary
+  Excel files. Feature gates complement manual inspection; they do not certify
+  equivalent pixels, pagination, or typography.
 
 ## Validation
 
-All affected tests pass (23 Calc unit, ten XLSX integration and 30 core unit
-tests), including chart-sheet page fitting, horizontal legend wrapping and
-indented bold row-height regressions. Workspace all-target/all-feature checking
-and five corpus-runner tests pass. The earlier workspace all-feature test suite
-also passed before these refinements. Final corpus runs render every page (up
-to ten per fixture) and preserve the exact implementation hash.
+The affected Calc tests pass (28 unit and ten XLSX integration tests), as do eight
+corpus-runner tests. The full workspace all-feature suite passed at the preceding
+font/crop/rich-text/chart milestone. The source-font embedding regression was
+also run with the bundled fonts. Every corpus page is rendered, up to ten per
+fixture, and provenance stays attached to each measurement.
 
-Davros production dispatch and dependency pins remain unchanged. The fork's
-commits are local until explicitly published.
+The fork changes are published on `davros-fixes`. Davros integration changes remain
+uncommitted, and its optional renderer pin is an earlier fork milestone.
