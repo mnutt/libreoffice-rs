@@ -318,7 +318,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                         let h = heights[r..(r + row_span as usize).min(rows.end)]
                             .iter()
                             .sum::<f32>();
-                        let text = sheet
+                        let mut text = sheet
                             .display_values
                             .get(&addr)
                             .cloned()
@@ -328,6 +328,10 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                             style.and_then(|s| grid_color(&s.background))
                         {
                             page.rect_fill_rgb(x, top - h, w, h, red, green, blue);
+                        }
+                        if let Some((fraction,paint,show))=layout.data_bars.get(&addr) {
+                            if let Some((red,green,blue))=grid_color(paint) {page.rect_fill_rgb(x+2.0,top-h+2.0,(w-4.0).max(0.0)*fraction,(h-4.0).max(0.0),red,green,blue);}
+                            if !show {text.clear();}
                         }
                         if let Some(style) = style {
                             let edges = [
@@ -406,6 +410,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                             if y < top - h {
                                 break;
                             }
+                            if style.is_some_and(|s|s.underline) {page.line_rgb(x+offset,y-1.0,x+offset+lo_core::font_metrics::measure_base_font(line,size,font),y-1.0,color.0,color.1,color.2);}
                             page.text_rgb(
                                 x + offset,
                                 y,

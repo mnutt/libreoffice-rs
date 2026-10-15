@@ -31,7 +31,7 @@ fn enabled(node: Option<&XmlNode>) -> bool {
     node.is_some_and(|n| !matches!(n.attr("val"), Some("0" | "false")))
 }
 
-fn theme_colors(theme: Option<&XmlNode>) -> Vec<String> {
+pub(crate) fn theme_colors(theme: Option<&XmlNode>) -> Vec<String> {
     let default = [
         "FFFFFF", "000000", "EEECE1", "1F497D", "4F81BD", "C0504D", "9BBB59", "8064A2", "4BACC6",
         "F79646", "0000FF", "800080",
@@ -57,7 +57,7 @@ fn theme_colors(theme: Option<&XmlNode>) -> Vec<String> {
         .collect()
 }
 
-fn color(node: Option<&XmlNode>, theme: &[String], indexed: &[String]) -> String {
+pub(crate) fn color(node: Option<&XmlNode>, theme: &[String], indexed: &[String]) -> String {
     let Some(node) = node else {
         return String::new();
     };
@@ -174,6 +174,7 @@ pub(crate) fn parse(root: Option<&XmlNode>, theme: Option<&XmlNode>) -> Styles {
                 .clamp(1.0, 409.0);
             style.font_size_mpt = Some((size * 1000.0).round() as u32);
             style.font_size_pt = size.round() as u16;
+            style.underline = enabled(font.child("u"));
             style.bold = enabled(font.child("b"));
             style.italic = enabled(font.child("i"));
             style.foreground = color(font.child("color"), &colors, &indexed);

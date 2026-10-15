@@ -61,6 +61,7 @@ pub struct PageStyle {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CellStyle {
+    pub underline: bool,
     /// Per-edge borders (left, right, top, bottom), overriding the common border.
     pub borders: [String; 4],
     pub font_family: String,

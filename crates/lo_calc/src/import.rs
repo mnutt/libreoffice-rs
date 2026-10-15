@@ -88,6 +88,7 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
             sheet.layout.as_mut().unwrap().hidden =
                 matches!(sheet_node.attr("state"), Some("hidden" | "veryHidden"));
             crate::xlsx_drawings::import(&zip, &target, &sheet_xml, sheet.layout.as_mut().unwrap())?;
+            crate::xlsx_conditional::apply(&mut sheet, &sheet_xml, styles_xml.as_ref(), theme_xml.as_ref());
             workbook.sheets.push(sheet);
         }
     }

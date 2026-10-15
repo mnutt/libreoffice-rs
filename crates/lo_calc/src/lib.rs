@@ -4,6 +4,7 @@ pub mod markdown;
 pub mod pdf;
 pub mod svg;
 pub mod xlsx;
+mod xlsx_conditional;
 mod xlsx_drawings;
 mod xlsx_format;
 mod xlsx_styles;

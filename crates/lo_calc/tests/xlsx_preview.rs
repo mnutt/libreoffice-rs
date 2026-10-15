@@ -136,3 +136,14 @@ fn style_only_column_preserves_the_sheet_default_width() {
     let layout = book.sheets[0].layout.as_ref().unwrap();
     assert_eq!(layout.columns[&0], layout.default_column_width);
 }
+
+#[test]
+fn conditional_priority_uses_cached_values_and_preserves_base_styles() {
+    let styles=r##"<styleSheet><fonts><font><name val="Arial"/><sz val="10"/></font></fonts><cellXfs><xf/></cellXfs><dxfs><dxf><font><b/><color rgb="FF00B050"/></font></dxf><dxf><font><i/><color rgb="FFFF0000"/></font></dxf></dxfs></styleSheet>"##;
+    let xml=r#"<worksheet><sheetData><row r="1"><c r="A1"><f>UNKNOWN()</f><v>6</v></c><c r="B1"><f>Total</f><v>10</v></c><c r="C1"><v>4</v></c></row></sheetData><conditionalFormatting sqref="A1"><cfRule type="cellIs" operator="greaterThan" priority="1" dxfId="0" stopIfTrue="1"><formula>3</formula></cfRule><cfRule type="cellIs" operator="greaterThan" priority="2" dxfId="1"><formula>0</formula></cfRule></conditionalFormatting><conditionalFormatting sqref="C1"><cfRule type="expression" priority="1" dxfId="1"><formula>$A$1&gt;5</formula></cfRule><cfRule type="dataBar" priority="2"><dataBar showValue="0"><cfvo type="num" val="0"/><cfvo type="num" val="Total"/><color rgb="FF112233"/></dataBar></cfRule></conditionalFormatting></worksheet>"#;
+    let book=lo_calc::from_xlsx_bytes("",&workbook(xml,styles,"")).unwrap();
+    let sheet=&book.sheets[0];let style=sheet.get(CellAddr::new(0,0)).unwrap().style.as_ref().unwrap();
+    assert!(style.bold);assert!(!style.italic);assert_eq!(style.foreground,"#00B050");assert_eq!(style.font_family,"Arial");
+    assert!(sheet.get(CellAddr::new(0,2)).unwrap().style.as_ref().unwrap().italic);
+    assert_eq!(sheet.layout.as_ref().unwrap().data_bars[&CellAddr::new(0,2)],(0.4,"#112233".into(),false));
+}
