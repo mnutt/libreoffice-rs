@@ -577,6 +577,7 @@ fn mark_workbook_recalculated(root: &mut XmlNode) {
     for item in &mut root.items {
         if let XmlItem::Node(node) = item {
             if node.local_name() == "calcPr" {
+                let node = std::sync::Arc::make_mut(node);
                 node.attributes
                     .insert("calcCompleted".to_string(), "1".to_string());
                 node.attributes
@@ -590,13 +591,16 @@ fn mark_workbook_recalculated(root: &mut XmlNode) {
         let mut attrs = BTreeMap::new();
         attrs.insert("calcCompleted".to_string(), "1".to_string());
         attrs.insert("fullCalcOnLoad".to_string(), "0".to_string());
-        root.items.push(XmlItem::Node(XmlNode {
-            name: "calcPr".to_string(),
-            attributes: attrs,
-            children: Vec::new(),
-            items: Vec::new(),
-            text: String::new(),
-        }));
+        root.items.push(XmlItem::Node(
+            XmlNode {
+                name: "calcPr".to_string(),
+                attributes: attrs,
+                children: Vec::new(),
+                items: Vec::new(),
+                text: String::new(),
+            }
+            .into(),
+        ));
     }
     sync_node_children(root);
 }
@@ -615,6 +619,7 @@ fn patch_xlsx_sheet_formula_cache(
         if row.local_name() != "row" {
             continue;
         }
+        let row = std::sync::Arc::make_mut(row);
         let row_number = row
             .attr("r")
             .and_then(|value| value.parse::<usize>().ok())
@@ -622,7 +627,7 @@ fn patch_xlsx_sheet_formula_cache(
         for cell in &mut row.children {
             if cell.local_name() == "c" {
                 patch_formula_cell(
-                    cell,
+                    std::sync::Arc::make_mut(cell),
                     row_number,
                     workbook,
                     sheet_index,
@@ -718,7 +723,7 @@ fn patch_formula_cell(
             XmlItem::Node(node) => new_items.push(XmlItem::Node(node.clone())),
         }
     }
-    new_items.push(XmlItem::Node(make_value_node(&value)));
+    new_items.push(XmlItem::Node(make_value_node(&value).into()));
     cell.items = new_items;
     sync_node_children(cell);
     apply_formula_cache_type(cell, &value);
@@ -978,11 +983,9 @@ fn accept_revision_node(node: &XmlNode) -> Vec<XmlItem> {
         return Vec::new();
     }
     let items = accept_revision_items(&node.items);
-    vec![XmlItem::Node(rebuild_node(
-        node,
-        items,
-        node.attributes.clone(),
-    ))]
+    vec![XmlItem::Node(
+        rebuild_node(node, items, node.attributes.clone()).into(),
+    )]
 }
 
 fn row_deleted(node: &XmlNode) -> bool {
@@ -1035,7 +1038,8 @@ fn filter_comment_part(root: &XmlNode, live_comment_ids: &BTreeSet<String>) -> X
         .iter()
         .filter_map(|item| match item {
             XmlItem::Text(text) => Some(XmlItem::Text(text.clone())),
-            XmlItem::Node(node) => filter_comment_node(node, live_comment_ids).map(XmlItem::Node),
+            XmlItem::Node(node) => filter_comment_node(node, live_comment_ids)
+                .map(|node| XmlItem::Node(node.into())),
         })
         .collect();
     rebuild_node(root, items, root.attributes.clone())
@@ -1055,7 +1059,8 @@ fn filter_comment_node(node: &XmlNode, live_comment_ids: &BTreeSet<String>) -> O
         .iter()
         .filter_map(|item| match item {
             XmlItem::Text(text) => Some(XmlItem::Text(text.clone())),
-            XmlItem::Node(child) => filter_comment_node(child, live_comment_ids).map(XmlItem::Node),
+            XmlItem::Node(child) => filter_comment_node(child, live_comment_ids)
+                .map(|node| XmlItem::Node(node.into())),
         })
         .collect();
     Some(rebuild_node(node, items, node.attributes.clone()))
@@ -1138,6 +1143,7 @@ fn child_mut<'a>(node: &'a mut XmlNode, name: &str) -> Option<&'a mut XmlNode> {
     node.children
         .iter_mut()
         .find(|child| child.local_name() == name || child.name == name)
+        .map(std::sync::Arc::make_mut)
 }
 
 #[allow(dead_code)]
