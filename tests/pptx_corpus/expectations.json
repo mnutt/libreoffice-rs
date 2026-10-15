@@ -108,5 +108,24 @@
     "min_colors": {
       "blue": 2000
     }
+  },
+  "lo-tdf105150-2a2fb4": {
+    "pages": 1,
+    "max_colors": {
+      "red": 0
+    },
+    "reason": "An opaque implicit-background shape covers the preceding red outline."
+  },
+  "lo-smartart-background-drawingml-fallback-cbb8fd": {
+    "pages": 1,
+    "text": [
+      "should",
+      "green"
+    ],
+    "min_colors": {
+      "green": 10000,
+      "blue": 50000
+    },
+    "reason": "Render the cached SmartArt drawing, including its background and labeled blue shapes."
   }
 }

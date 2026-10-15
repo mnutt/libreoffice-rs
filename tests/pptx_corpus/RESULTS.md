@@ -70,21 +70,45 @@ recall alone could not detect.
   check and process limit were updated to the same value in its working tree,
   without committing Davros.
 
+## Second fidelity pass
+
+Commit `a9605d6` adds cached SmartArt drawings, bounded custom DrawingML paths and
+common preset geometry, theme line widths, group rotation/flipping, vertical text,
+and long-word wrapping. Background-filled shapes now also cover preceding content
+when the slide uses its implicit white background.
+
+The complete 627-deck rerun retains 614 successful conversions and 13 expected
+parser rejections. Mean LibreOffice text recall increases from 65.705% to 72.602%
+(424 paired nonempty references). On 239 decks with exactly matching page sizes,
+mean raster RMSE decreases from 0.119912 to 0.105821. There are 45 text improvements
+and five regressions above one percentage point; 33 visual improvements and three
+regressions above 0.01 RMSE. These are separate metrics, not a parity score.
+`second-pass-results.json` preserves every comparison, including regressions.
+
+All 627 updated feature checks pass. The prior renderer fails the new SmartArt
+and background-coverage checks (`second-negative-controls.json`). All 54 XLSX
+PDFs remain byte-identical (`xlsx-second-regression.json`). Workspace all-feature
+tests pass, followed by all 30 Impress tests including the added regression tests.
+
+Remaining visual regressions include a binary-digit text slide (line breaks/font
+metrics), a SmartArt slide whose newly visible text improves recall but increases
+pixel error, and a rotated-shape fixture. Word-level recall also penalizes some
+changed line breaks; do not interpret it as a count of missing rendered glyphs.
+
 ## Remaining work, in priority order
 
-1. SmartArt layout and cached drawing fallbacks. Several SmartArt fixtures still
-   produce blank or incomplete diagrams.
-2. Preset/custom vector geometry, connectors, line dashes/arrowheads, gradient
-   clipping, background-fill inheritance, and shape/group rotation. Most preset
-   shapes currently fall back to rectangles; group transforms cover scale and
-   translation, not rotation/flips.
-3. Text columns, hanging bullets, automatic fit calculation, vertical text,
+1. SmartArt layout for files without usable cached drawing shapes. Those diagrams
+   still require a layout engine; cached drawing fallbacks are now supported.
+2. Remaining preset geometry, connector routing, line dashes/arrowheads, gradient
+   clipping, and exact group scaling of fonts. Common presets and custom paths,
+   plus group rotation/flips, are now supported.
+3. Text columns, hanging bullets, automatic fit calculation, East Asian vertical text,
    per-character fallback/shaping, superscripts and more exact font baselines.
 4. Full chart axis/legend/layout semantics, hierarchical category placement in the
    shared engine, and advanced chart types. The remaining text regressions are
    mostly chart ticks/labels, plus complex text and SmartArt cases; they are
    preserved in the report rather than excluded from the score.
-5. Exact table border styles, theme line-reference widths and corner-cell styling.
+5. Exact table border styles and corner-cell styling.
 6. Inspect later slides: all-page text/page counts are measured, but raster review
    covers only the first two pages. Conversion success does not imply that later
    slides or every image, object, animation or embedded media item is supported.
