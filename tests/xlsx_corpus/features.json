@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "checkout_source_sha256": "cd2fb509a822cb353ae4be11609c4ad865fab46ba253aab02b5a561ca9e8c4ad",
+  "checkout_source_sha256": "5ca82153e699b3f69c07b2ba99e0ae286b5142ba79fec5ee8984b95fe8d58cf0",
   "manifest_sha256": "f12d8690c72a53576ac651eb11852fe87c585f8b0b266e8455f299e72f619ea5",
   "runner_sha256": "1e09680121ca59749b7c0af1375697f56d16e9fb64fe26173d8390b7d329a9d7",
-  "candidate_sha256": "050674f4610ba99c3bd13991291c98c89686c983bbf4209e8b9ac975b1d3a9cf",
+  "candidate_sha256": "d46ef42e6a9f9e49e4786d15d6e7886fe90919369c9554d6afec46a10dd27315",
   "expectations_sha256": "5683af88373065d1404eff4fb1fee28b31ee7ee98f0a3fd84d73794124f76548",
   "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
   "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
@@ -24,7 +24,7 @@
   },
   "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
   "checkout_tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "checkout_revision": "368daa86fc4ebdfd657f7100d1640a49e0f0e83a",
+  "checkout_revision": "e45b651b4541ce4388f18df5e7313b60e27855a1",
   "cases": [
     {
       "id": "poi-Formatting",
@@ -1017,7 +1017,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.017,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2320,7 +2320,7 @@
                 792.0
               ]
             ],
-            "bytes": 7366,
+            "bytes": 7608,
             "image_count": 0,
             "previews": [
               "page-1.png",
@@ -2391,7 +2391,7 @@
           "extra": [],
           "raster_rmse": [
             0.0257366,
-            0.0665688
+            0.0669796
           ]
         },
         "candidate_vs_libreoffice": {
@@ -2440,11 +2440,11 @@
                 792.0
               ],
               [
-                786.0,
+                612.0,
                 792.0
               ]
             ],
-            "bytes": 9313,
+            "bytes": 9888,
             "image_count": 0,
             "previews": [
               "page-1.png",
@@ -2560,7 +2560,7 @@
             ]
           ],
           "raster_rmse": [
-            0.0598162,
+            0.0590331,
             null
           ]
         },
@@ -3181,7 +3181,7 @@
                 612.0
               ]
             ],
-            "bytes": 14310,
+            "bytes": 13381,
             "image_count": 0,
             "previews": [
               "page-1.png",
@@ -3242,7 +3242,7 @@
       "comparisons": {
         "candidate_vs_office2pdf": {
           "recall": 0.9922480620155039,
-          "precision": 0.9552238805970149,
+          "precision": 0.9481481481481482,
           "missing": [
             [
               "2336",
@@ -3252,6 +3252,10 @@
           "extra": [
             [
               "income",
+              1
+            ],
+            [
+              "500",
               1
             ],
             [
@@ -3276,12 +3280,12 @@
             ]
           ],
           "raster_rmse": [
-            0.153757
+            0.122921
           ]
         },
         "candidate_vs_libreoffice": {
-          "recall": 0.710691823899371,
-          "precision": 0.8432835820895522,
+          "recall": 0.7169811320754716,
+          "precision": 0.8444444444444444,
           "missing": [
             [
               "t",
@@ -3324,10 +3328,6 @@
               2
             ],
             [
-              "500",
-              1
-            ],
-            [
               "3",
               1
             ],
@@ -3361,6 +3361,10 @@
             ],
             [
               "ypi",
+              1
+            ],
+            [
+              "ng",
               1
             ]
           ],
@@ -3439,7 +3443,7 @@
             ]
           ],
           "raster_rmse": [
-            0.135766,
+            0.121629,
             0.0233035
           ]
         },

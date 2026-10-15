@@ -1,9 +1,9 @@
 # XLSX drawings and formatting milestone
 
-Implementation: `368daa8` on `davros-fixes`. This is a development milestone,
+Implementation: `e45b651` on `davros-fixes`. This is a development milestone,
 not a production switch or a claim of complete Excel fidelity.
 
-The [all-page comparison report](runs/corpus-complete/report.html) contains the
+The [all-page comparison report](runs/chart-layout-verified/report.html) contains the
 candidate, office2pdf and real LibreOffice PDFs. Generated binaries and images
 remain ignored. `features.json` records the final measurements, source/binary
 hashes, font configuration, reference provenance and expectation results.
@@ -19,12 +19,18 @@ The original `baseline.json` remains the grid-only comparison.
   renderer. Numeric X coordinates, cache indexes/gaps, no-line series, workbook
   theme and individual point colors, currency labels, titles, legends, axis
   bounds, and circle/square marker sizes/colors are retained.
+- Chart layout now respects source font sizes, title weight, grid visibility and
+  bar gap width. Plot margins use measured labels, and top/bottom legends wrap
+  into centered rows. Legend symbols retain scatter marker shape and color.
+  Chart-only sheets fit their source paper size even in natural-width preview.
+- Automatic wrapped row heights use the rendered cell font and indentation,
+  preventing bold or indented text from being clipped by underestimated heights.
 - Applied scalar conditional comparisons, relative and absolute references,
   priority/stop rules, differential fonts/fills, and cached numeric/named data
   bars. The budget's hidden bar value stays hidden.
 - Preserved drawing text, repeated print-title rows/columns, horizontal centering,
   explicit print scaling and fit-to-page output. Natural-width preview continues
-  to use source scale with vertical pagination.
+  to use source scale with vertical pagination for ordinary worksheets.
 - Added indexed cell colors, negative number-section colors, underline,
   indentation, shrink-to-fit, rotation, and Typewriter font-family mapping.
 - Added PDF feature expectations. A missing image or chart page now fails the
@@ -45,7 +51,7 @@ up from eighteen. This measures retained text, not twenty visual passes.
 | WithChart | 37.5% | 100% | 100% | 2 / 2 / 2 |
 | SimpleScatterChart | 11.8% | 100% | 64.3% | 2 / 2 / 2 |
 | picture | 100% | 100% | 100% | 1 / 1 / 4 |
-| simple-monthly-budget | 56.6% | 71.1% | 99.2% | 2 / 1 / 2 |
+| simple-monthly-budget | 56.6% | 71.7% | 99.2% | 2 / 1 / 2 |
 
 The picture now appears; the initial grid renderer had zero PDF image objects.
 The one-page preview shows the complete picture, while office2pdf's one-page
@@ -73,8 +79,9 @@ data bars, drawing text, rotated text and repeated titles successfully. They are
 still insufficient to establish replacement readiness for arbitrary XLSX input.
 
 - Font substitution, exact line metrics and chart plot/legend geometry still
-  differ. Chart sheets currently follow drawing dimensions and the preview's
-  natural-width policy, rather than reproducing LibreOffice's chart-page sizing.
+  differ. Chart sheets now fit paper, but source defaults and chart styling are
+  not identical to LibreOffice. Very large legends can still exhaust the space
+  available inside small chart frames.
 - The default paper size differs when a workbook omits it: this implementation
   uses Letter, while the installed LibreOffice uses A4. Number-format test output
   consequently has nine pages versus LibreOffice's eight; office2pdf also has nine.
@@ -91,12 +98,12 @@ still insufficient to establish replacement readiness for arbitrary XLSX input.
 
 ## Validation
 
-The workspace's all-feature test suite passed, including integration and doc
-checks, before the final number-color/scatter refinements. After those changes,
-all affected Calc and core tests passed (22 Calc unit, ten XLSX integration,
-28 core unit tests), along with workspace all-target/all-feature checking after
-the axis change. Five corpus-runner tests pass. Final corpus runs render every
-page (up to ten per fixture) and preserve the exact implementation hash.
+All affected tests pass (23 Calc unit, ten XLSX integration and 30 core unit
+tests), including chart-sheet page fitting, horizontal legend wrapping and
+indented bold row-height regressions. Workspace all-target/all-feature checking
+and five corpus-runner tests pass. The earlier workspace all-feature test suite
+also passed before these refinements. Final corpus runs render every page (up
+to ten per fixture) and preserve the exact implementation hash.
 
 Davros production dispatch and dependency pins remain unchanged. The fork's
 commits are local until explicitly published.
