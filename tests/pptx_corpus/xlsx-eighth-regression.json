@@ -1,0 +1,7 @@
+{
+  "cases": 54,
+  "changed_pdf_ids": [],
+  "expectation_failure_ids": [],
+  "reference": "pptx-seventh-*",
+  "candidate": "pptx-eighth-*"
+}

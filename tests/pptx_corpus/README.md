@@ -23,6 +23,23 @@ retain fixture provenance. Files and generated render directories are ignored.
 These are regression fixtures, including intentionally damaged packages, rather
 than a representative sample of everyday presentations.
 
+## Eighth pass
+
+The all-page pass at renderer commit `cb3300a` checks all 627 decks, with 614
+successful conversions and 13 expected parser errors. The unchanged regression
+gate reports no findings across 1,272 comparable pages in 579 decks. Mean
+per-deck image RMSE decreases from 0.0845693 to 0.0755636 against `sixth-all`.
+This is a regression result, not a claim of rendering parity.
+
+`eighth-pass-results.json` retains the per-document comparisons and engine/font
+provenance; `eighth-visual-audit.json` contains per-page scores.
+`eighth-regressions.json`, `eighth-negative-controls.json`, and
+`eighth-validation.json` record the gate, old-output controls, test counts,
+candidate hash, and release size. All 54 XLSX regression PDFs remain byte-identical.
+The standalone report is generated locally, with all three engines aligned and
+metadata below the images. `picture-bullet-inventory.json` identifies the next
+eight distinct presentations to examine; remaining areas are in `fidelity-plan.json`.
+
 ## Reproduce
 
 The repeatable build/test/comparison cycle is:

@@ -1,0 +1,18 @@
+{
+  "renderer_commit": "cb3300afcdf0a421f9b2c8a5dc4effaf72f45a6a",
+  "run": "tests/pptx_corpus/runs/loop-20261015T190943083663",
+  "command": "python3 tests/pptx_corpus/loop.py --reuse-build loop-20261015T190719595764",
+  "candidate_sha256": "cddc5ede8e19406c8e063ebf0fd0a6abe0a848a04898a112b9a465a49f08dd36",
+  "workspace_tests": 285,
+  "harness_tests": 8,
+  "xlsx_cases": 54,
+  "xlsx_changed_pdf_ids": [],
+  "release": {
+    "command": "CARGO_PROFILE_RELEASE_STRIP=symbols cargo build --offline --release -p lo_impress --example pptx-preview",
+    "bytes": 2259920,
+    "sha256": "59999ff6cccc5e6734f332806f544b19994132673b0d2db8a1efb5f3b13accf3",
+    "scope": "PPTX executable only, excluding fonts and packaging; corpus uses the separately hashed test candidate"
+  },
+  "report_sha256": "8a3cf0de4f604b02f438a83a990c5ce0ab8d3643adebee72222951b002371d0e",
+  "remaining_work": "See fidelity-plan.json; a passing regression gate does not establish parity."
+}

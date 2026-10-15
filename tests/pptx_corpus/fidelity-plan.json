@@ -11,19 +11,21 @@
   "loop": {
     "command_prefix": [
       "python3",
-      "tests/pptx_corpus/run.py",
-      "evaluate"
+      "tests/pptx_corpus/loop.py"
     ],
-    "approval": "Reusable prefix requested and first sandboxed evaluation succeeded; approval policy remains environment-controlled",
+    "approval": "Reusable script prefix saved by environment and exercised successfully",
     "isolation": "bwrap, no network, pinned fixtures/fonts, 4 GiB address space, 256 MiB output, timeout, separate fresh output directory",
     "iteration": [
+      "Compact byte-identical completed candidates under exclusive lock; preserve all paths and bytes",
       "Build immutable candidate",
       "Run focused cases with --preview-pages 0",
       "Review images/text and semantic tests",
       "Run all four shards and visual audit",
       "Investigate every regression rather than average it away",
       "Commit and push validated batch"
-    ]
+    ],
+    "resume": "--resume loop-TIMESTAMP reuses the immutable candidate and completed conversions",
+    "reuse_build": "--reuse-build loop-TIMESTAMP evaluates a previously tested immutable executable; provenance explicitly distinguishes it from the current workspace"
   },
   "milestones": [
     {
@@ -34,7 +36,7 @@
         "Feature inventory and targeted cohorts",
         "Standalone report handles all-page runs"
       ],
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "area": "Text",
@@ -46,7 +48,14 @@
         "Superscript/subscript, vertical text and per-character font fallback",
         "Source font availability and shaping diagnosis"
       ],
-      "status": "in_progress"
+      "status": "in_progress",
+      "implemented": [
+        "Rich text column flow and RTL column order",
+        "Numbering formats, hanging and first-line indents",
+        "Percentage/point line spacing, paragraph spacing and blank-paragraph height",
+        "Normal autofit size rounding, measured fit and anchored trailing blanks",
+        "Master text style precedence and hyperlink styling"
+      ]
     },
     {
       "area": "Shapes and fills",
@@ -57,7 +66,13 @@
         "Missing preset shapes, line caps and arrowheads",
         "Group text scale and rotation inheritance"
       ],
-      "status": "pending"
+      "status": "in_progress",
+      "implemented": [
+        "187 bounded DrawingML preset geometries",
+        "Line ends and caps",
+        "Shape-relative vector hatch fills",
+        "Local theme fill/line references precede inherited styles"
+      ]
     },
     {
       "area": "SmartArt",
@@ -67,7 +82,12 @@
         "Parse data/layout models and implement common layout families",
         "Explicitly report unsupported layout algorithms"
       ],
-      "status": "pending"
+      "status": "in_progress",
+      "implemented": [
+        "Bounded presentation-tree fallback when cached drawing is absent",
+        "Composite, linear, snake, cycle, shape and text algorithms",
+        "Layout colors, source ordering and node labels"
+      ]
     },
     {
       "area": "Charts and tables",
@@ -88,7 +108,18 @@
         "Release size and performance measurements",
         "Refresh full three-renderer report and record remaining limitations"
       ],
-      "status": "pending"
+      "status": "in_progress"
     }
-  ]
+  ],
+  "known_limitations": [
+    "SmartArt hierarchy and connectors remain unsupported; supported layouts still approximate constraints.",
+    "Picture bullets reserve indentation but their images are not yet rendered.",
+    "Some paragraph metrics, effects, charts and table layouts still differ from LibreOffice.",
+    "Per-page regression gate remains authoritative; an improved mean does not establish parity."
+  ],
+  "next_focused_cohort": {
+    "feature": "picture bullets",
+    "inventory": "picture-bullet-inventory.json",
+    "decks": 8
+  }
 }
