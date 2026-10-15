@@ -299,20 +299,27 @@ fn parse_xlsx_sheet_rich(
     };
     let normal = &styles.cells[0];
     let normal_size = normal.font_size_mpt.unwrap_or(11000) as f32 / 1000.0;
-    let digit = lo_core::font_metrics::measure_base_font(
-        "0",
-        normal_size,
-        crate::pdf::cell_font(Some(normal)),
-    )
-    .round()
-    .max(1.0);
-    layout.default_column_width = 10.0 * digit + 5.0;
+    let normal_font = crate::pdf::cell_font(Some(normal));
+    // SpreadsheetML column widths use the largest digit advance at 96 DPI.
+    // Round in pixel space before converting the resulting width to PDF points.
+    let digit = ('0'..='9')
+        .map(|ch| {
+            lo_core::font_metrics::measure_base_font(
+                &ch.to_string(),
+                normal_size * 96.0 / 72.0,
+                normal_font,
+            )
+        })
+        .fold(1.0_f32, f32::max)
+        .round()
+        .max(1.0);
+    layout.default_column_width = (10.0 * digit + 5.0) * 72.0 / 96.0;
     layout.default_row_height = (normal_size * 1.2 + 3.0).ceil().max(15.0);
     if let Some(format) = root.child("sheetFormatPr") {
         layout.default_column_width = if format.attr("defaultColWidth").is_some() {
             excel_column_width(positive(format, "defaultColWidth", 8.43), digit)
         } else {
-            positive(format, "baseColWidth", 8.0) * digit + 5.0
+            (positive(format, "baseColWidth", 8.0) * digit + 5.0) * 72.0 / 96.0
         };
         layout.default_row_height = positive(format, "defaultRowHeight", 15.0).clamp(0.0, 409.0);
     }
@@ -536,7 +543,11 @@ fn parse_xlsx_sheet_rich(
         if explicit_rows.contains(&addr.row) {
             continue;
         }
-        let Some(style) = cell.style.as_ref().filter(|s| s.wrap || layout.rich_text.contains_key(addr)) else {
+        let Some(style) = cell
+            .style
+            .as_ref()
+            .filter(|s| s.wrap || layout.rich_text.contains_key(addr))
+        else {
             continue;
         };
         let (span, rows) = layout.merges.get(addr).copied().unwrap_or((1, 1));
@@ -604,10 +615,13 @@ fn parse_xlsx_sheet_rich(
     Ok(sheet)
 }
 
-fn excel_column_width(width: f32, digit: f32) -> f32 {
-    // Declared widths include padding and use the Normal font's digit advance.
-    // Substitute-font metrics are approximate when the original font is absent.
-    (width.min(255.0) * digit).round()
+fn excel_column_width(width: f32, digit_pixels: f32) -> f32 {
+    // ISO/IEC 29500 CT_Col width conversion (padding is already in `width`).
+    // https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.column
+    let pixels = (((256.0 * width.clamp(0.0, 255.0) + (128.0 / digit_pixels).trunc()) / 256.0)
+        * digit_pixels)
+        .trunc();
+    pixels * 72.0 / 96.0
 }
 
 fn xlsx_header_footer(
@@ -1130,6 +1144,13 @@ mod tests {
     use crate::to_xlsx;
     use lo_core::{CellAddr, CellValue, Workbook};
 
+    #[test]
+    fn column_width_rounding_uses_pixels_before_pdf_points() {
+        // The specification's 8-character Calibri example is 61 pixels.
+        assert_eq!(excel_column_width(8.7109375, 7.0), 45.75);
+        assert_eq!(excel_column_width(24.0, 9.0), 162.0);
+        assert_eq!(excel_column_width(0.0, 7.0), 0.0);
+    }
     #[test]
     fn wrapped_row_height_uses_cell_font_and_indentation() {
         let root = parse_xml_document(r#"<worksheet><cols><col min="1" max="1" width="12"/></cols><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>WW WW WW WW WW WW</t></is></c></row></sheetData></worksheet>"#).unwrap();
