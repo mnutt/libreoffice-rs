@@ -29,6 +29,26 @@ class ReferenceReuseTest(unittest.TestCase):
 
 
 class CandidateCompactionTest(unittest.TestCase):
+    def test_interrupted_replacement_retains_original_and_can_be_retried(self):
+        import loop
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = []
+            for name in ('a', 'b'):
+                folder = root/name/'fixture'/'candidate'
+                folder.mkdir(parents=True)
+                path = folder/'page-1.png'
+                path.write_bytes(b'identical image bytes')
+                paths.append(path)
+                (root/name/'results.json').write_text('{}')
+            with patch.object(loop.os, 'replace', side_effect=OSError('interrupted')):
+                with self.assertRaises(OSError):
+                    loop.compact_completed_candidates(root)
+            self.assertTrue(all(p.read_bytes() == b'identical image bytes' for p in paths))
+            self.assertFalse(list(root.glob('**/*.dedup-*')))
+            self.assertEqual(loop.compact_completed_candidates(root), len(b'identical image bytes'))
+            self.assertEqual(paths[0].stat().st_ino, paths[1].stat().st_ino)
+
     def test_only_completed_outputs_are_shared_and_repeat_is_noop(self):
         import loop
         with tempfile.TemporaryDirectory() as directory:

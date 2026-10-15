@@ -48,6 +48,10 @@ are retained. `--resume loop-TIMESTAMP` repeats audit/report/gate stages using t
 saved immutable candidate, so quota interruptions do not require conversion again.
 For a focused resume, supply the original `--ids` as well.
 
+The default regression baseline is `sixth-all`, with all 1,272 comparable pages
+recorded in `sixth-visual-audit.json`. Baseline render artifacts must be available
+under `runs/sixth-all-0` through `runs/sixth-all-3` on the comparison machine.
+
 `--preview-pages 0` renders every page. All-page audits retain the existing
 0.1-point PDF rounding allowance and require identical raster dimensions.
 `fidelity-plan.json` tracks the remaining milestones; `feature-inventory.json`

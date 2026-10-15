@@ -2,7 +2,8 @@
 """One repeatable PPTX build/test/evaluate/audit cycle, with internal log files.
 
 Approve the prefix `python3 tests/pptx_corpus/loop.py` once. No shell commands,
-downloads, cleanup, commits or pushes are performed by this harness.
+downloads, commits or pushes are performed by this harness. Byte-identical
+completed candidate artifacts are hardlinked, preserving their paths and data.
 """
 import argparse
 from concurrent.futures import ThreadPoolExecutor
@@ -15,6 +16,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import uuid
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -48,9 +50,12 @@ def _compact_completed_candidates(runs):
             continue
         if previous.stat().st_ino == stat.st_ino:
             continue
-        temporary = path.with_name(path.name+'.dedup-link')
-        os.link(previous,temporary)
-        os.replace(temporary,path)
+        temporary = path.with_name(path.name+'.dedup-'+uuid.uuid4().hex)
+        try:
+            os.link(previous,temporary)
+            os.replace(temporary,path)
+        finally:
+            temporary.unlink(missing_ok=True)
         if stat.st_nlink == 1:
             saved += stat.st_size
     return saved
@@ -59,8 +64,8 @@ def _compact_completed_candidates(runs):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--ids', nargs='+', help='Optional focused fixture IDs, automatically assigned to shards')
-    parser.add_argument('--baseline', default='fifth-final', help='Run prefix within runs/')
-    parser.add_argument('--baseline-audit', default='fifth-visual-audit.json', help='Audit filename within this corpus directory')
+    parser.add_argument('--baseline', default='sixth-all', help='Run prefix within runs/')
+    parser.add_argument('--baseline-audit', default='sixth-visual-audit.json', help='Audit filename within this corpus directory')
     parser.add_argument('--resume', help='Resume audit/report/gate for an existing loop directory; retain its immutable candidate')
     args = parser.parse_args()
     for name in (args.baseline,args.baseline_audit,args.resume or 'unused'):
