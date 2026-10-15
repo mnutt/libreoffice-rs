@@ -58,7 +58,7 @@ not comparative performance benchmarks.
 
 Each conversion runs in a fresh network-isolated Bubblewrap namespace with a
 read-only input, executable and font bundle, private writable scratch, 4 GiB
-address-space and 128 MiB file limits. LibreOffice also uses a private profile
+address-space and 256 MiB file limits. LibreOffice also uses a private profile
 with macros disabled. The runner fails if user namespaces are unavailable; it
 does not silently run reference tools without isolation. The example executable
 itself is only a corpus adapter and does not enforce production sandboxing.

@@ -17,3 +17,5 @@ Cargo.lock
 /tests/xlsx_corpus/runs/
 
 __pycache__/
+/tests/pptx_corpus/files/
+/tests/pptx_corpus/runs/

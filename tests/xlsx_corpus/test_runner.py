@@ -8,6 +8,18 @@ from unittest.mock import patch
 import run
 
 class CorpusTests(unittest.TestCase):
+    def test_output_file_limit_is_256_mib(self):
+        with patch.object(run.resource,'setrlimit') as setlimit:
+            run.limits()
+        setlimit.assert_any_call(run.resource.RLIMIT_FSIZE,(256*1024**2,)*2)
+
+    def test_expected_rejection_never_accepts_crash_timeout_or_different_error(self):
+        expected={'expected_error':'invalid zip'}
+        stage={'status':'error','exit_code':1,'timeout':False,'stderr':'Error: invalid zip'}
+        self.assertEqual(run.check_expectations(stage,'',expected),[])
+        for change in [{'exit_code':101},{'exit_code':-11},{'timeout':True},{'stderr':'different failure'},{'stderr':'invalid zip: panicked at parser'}]:
+            self.assertTrue(run.check_expectations({**stage,**change},'',expected))
+
     def test_limit_overrides_are_explicitly_forwarded_through_clearenv(self):
         settings = {name: str(100 + i) for i, name in enumerate(run.PREVIEW_LIMIT_ENV)}
         with patch.dict(run.os.environ, settings, clear=True):

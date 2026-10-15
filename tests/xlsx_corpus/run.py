@@ -20,6 +20,7 @@ import zipfile
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+FORMAT = "xlsx"
 
 
 def digest(path):
@@ -47,6 +48,8 @@ def validate_manifest(manifest):
         if len(names) != len(set(names)):
             raise ValueError('Duplicate local names')
         for f in manifest[group]:
+            if not re.fullmatch(r'https://github.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', f.get('repository', manifest['repository'])) or not re.fullmatch(r'[a-f0-9]{40}', f.get('revision', manifest['revision'])):
+                raise ValueError('Invalid per-file source pin')
             if Path(f['file']).name != f['file'] or f['file'] in ('.', '..'):
                 raise ValueError('Unsafe local filename')
             if Path(f['path']).is_absolute() or '..' in Path(f['path']).parts:
@@ -64,8 +67,9 @@ def fetch(manifest):
         for record in manifest[group]:
             target = HERE / folder / record['file']
             if not target.exists():
-                repo = manifest['repository'].removeprefix('https://github.com/')
-                url = f"https://raw.githubusercontent.com/{repo}/{manifest['revision']}/{urllib.parse.quote(record['path'])}"
+                repo = record.get('repository', manifest['repository']).removeprefix('https://github.com/')
+                revision = record.get('revision', manifest['revision'])
+                url = f"https://raw.githubusercontent.com/{repo}/{revision}/{urllib.parse.quote(record['path'])}"
                 with urllib.request.urlopen(url, timeout=60) as response:
                     data = response.read(record['size'] + 1)
                 if len(data) != record['size'] or hashlib.sha256(data).hexdigest() != record['sha256']:
@@ -73,12 +77,12 @@ def fetch(manifest):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(data)
             verify(target, record)
-    print(f"Verified {len(manifest['fixtures'])} XLSX fixtures and notices")
+    print(f"Verified {len(manifest['fixtures'])} {FORMAT.upper()} fixtures and notices")
 
 
 def limits():
     resource.setrlimit(resource.RLIMIT_AS, (4 * 1024**3,) * 2)
-    resource.setrlimit(resource.RLIMIT_FSIZE, (128 * 1024**2,) * 2)
+    resource.setrlimit(resource.RLIMIT_FSIZE, (256 * 1024**2,) * 2)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 
 
@@ -113,7 +117,7 @@ def sandbox(source, work, bundle, executable=None):
         if Path(path).exists():
             cmd += ['--ro-bind', path, path]
     cmd += ['--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp',
-            '--ro-bind', str(source), '/input.xlsx', '--ro-bind', str(bundle), '/bundle',
+            '--ro-bind', str(source), f'/input.{FORMAT}', '--ro-bind', str(bundle), '/bundle',
             '--bind', str(work), '/work', '--chdir', '/work', '--clearenv',
             '--setenv', 'PATH', '/usr/bin', '--setenv', 'HOME', '/work',
             '--setenv', 'LANG', 'C.UTF-8', '--setenv', 'TMPDIR', '/work',
@@ -125,7 +129,7 @@ def sandbox(source, work, bundle, executable=None):
         if name in os.environ:
             cmd += ['--setenv', name, os.environ[name]]
     if executable:
-        return cmd + ['--ro-bind', str(executable), '/converter', '/converter', '/input.xlsx', '/work/output.pdf']
+        return cmd + ['--ro-bind', str(executable), '/converter', '/converter', f'/input.{FORMAT}', '/work/output.pdf']
     profile = work / 'profile/user'
     profile.mkdir(parents=True)
     (profile / 'registrymodifications.xcu').write_text('''<?xml version="1.0"?>
@@ -134,7 +138,7 @@ def sandbox(source, work, bundle, executable=None):
 </oor:items>''')
     return cmd + ['--setenv', 'SAL_USE_VCLPLUGIN', 'svp', '/usr/bin/soffice',
                   '-env:UserInstallation=file:///work/profile', '--headless', '--nologo',
-                  '--nodefault', '--norestore', '--convert-to', 'pdf', '--outdir', '/work', '/input.xlsx']
+                  '--nodefault', '--norestore', '--convert-to', 'pdf', '--outdir', '/work', f'/input.{FORMAT}']
 
 
 def raster_color_counts(pdf, region=None):
@@ -153,13 +157,14 @@ def raster_color_counts(pdf, region=None):
         x0,y0,x1,y1 = region
         pixels = b''.join(pixels[(y*width+int(x0*width))*3:(y*width+int(x1*width))*3]
                           for y in range(int(y0*height), int(y1*height)))
-    colors = dict(red=0, blue=0, orange=0, green=0, rose=0, dark=0)
+    colors = dict(red=0, blue=0, orange=0, green=0, rose=0, dark=0, light_green=0)
     for i in range(0, len(pixels), 3):
         r,g,b = pixels[i:i+3]
         colors['red'] += r > 180 and g < 100 and b < 100
         colors['blue'] += b > 140 and r < 100 and g < 170
         colors['orange'] += r > 180 and 80 < g < 180 and b < 100
         colors['green'] += g > 140 and r < 140 and b < 160
+        colors['light_green'] += g > 180 and r < 180 and b < 160
         colors['rose'] += r > 200 and g < 150 and b < 160
         colors['dark'] += max(r,g,b) < 60
     return colors
@@ -200,6 +205,13 @@ def compare_text(actual, reference):
 
 def check_expectations(stage, text, expected):
     failures = []
+    if 'expected_error' in expected:
+        # A crash, timeout, or newly introduced error must never satisfy this gate.
+        if (stage['status'] == 'error' and stage.get('exit_code') == 1
+                and not stage.get('timeout') and expected['expected_error'] in stage.get('stderr', '')
+                and 'panicked at' not in stage.get('stderr', '')):
+            return []
+        return ['candidate did not reject the input with the expected normal error']
     if stage['status'] != 'ok':
         return ['candidate did not produce a valid PDF']
     for key, metric in [('min_images', 'image_count'), ('min_pages', 'pages')]:
@@ -259,10 +271,13 @@ def report(results, output):
                           f'<a href="{path}/stderr.log">log</a>{images}</article>')
         sections.append(f'<section id="{case["id"]}"><h2>{case["id"]}</h2><div class="panels">'
                         + ''.join(panels) + '</div><pre>' + html.escape(json.dumps(case, indent=2)) + '</pre></section>')
-    (output / 'report.html').write_text('''<!doctype html><meta charset="utf-8"><title>XLSX renderer comparison</title>
+    document_html = ('''<!doctype html><meta charset="utf-8"><title>XLSX renderer comparison</title>
 <style>body{font:15px system-ui;margin:24px;background:#eee}table{border-collapse:collapse}td,th{border:1px solid #aaa;padding:6px}section{margin:40px 0}.panels{display:flex;gap:12px}article{flex:1;min-width:0}img{width:100%;display:block;margin:12px 0;background:white}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}</style>
 <h1>XLSX renderer comparison</h1><p>Selectable text recall/precision ignore order and layout. Raster RMSE is reported only for matching page geometry, for the previewed pages; it is not a fidelity pass. LibreOffice is an independent reference, not Microsoft Excel. Davros intentionally widens sheets instead of printing horizontal page tiles. Open full PDFs to inspect later pages.</p>
 ''' + '<pre>' + html.escape(json.dumps(results['summary'], indent=2)) + '</pre><table><tr><th>Case</th><th>Focus</th><th>Candidate status/pages</th><th>Office2PDF status/pages</th><th>LibreOffice status/pages</th></tr>' + ''.join(rows) + '</table>' + ''.join(sections))
+    if FORMAT == 'pptx':
+        document_html = document_html.replace('XLSX', 'PPTX').replace('Microsoft Excel', 'Microsoft PowerPoint').replace('Davros intentionally widens sheets instead of printing horizontal page tiles. ', '')
+    (output / 'report.html').write_text(document_html)
 
 
 def evaluate(args, manifest):
@@ -307,13 +322,16 @@ def evaluate(args, manifest):
                    cases=[])
     for fixture in fixtures:
         source = HERE / 'files' / fixture['file']
-        with zipfile.ZipFile(source) as archive:
-            members=archive.namelist()
+        try:
+            with zipfile.ZipFile(source) as archive:
+                members=archive.namelist()
+        except zipfile.BadZipFile:
+            members=[]  # Retain malformed/encrypted fixtures as conversion failures.
         case = dict(id=fixture['id'], purpose=fixture['purpose'], stages={}, comparisons={},
                     input_parts={kind:sum(bool(re.fullmatch(pattern,p)) for p in members)
-                                 for kind,pattern in [('charts',r'xl/charts/chart[0-9]+\.xml'),
-                                                      ('drawings',r'xl/drawings/drawing[0-9]+\.xml'),
-                                                      ('media',r'xl/media/[^/]+')]})
+                                 for kind,pattern in [('charts',rf'{"xl" if FORMAT == "xlsx" else "ppt"}/charts/chart[0-9]+\.xml'),
+                                                      ('drawings',rf'{"xl" if FORMAT == "xlsx" else "ppt"}/drawings/drawing[0-9]+\.xml'),
+                                                      ('media',rf'{"xl" if FORMAT == "xlsx" else "ppt"}/media/[^/]+')]})
         for name, binary in [('candidate', candidate), ('office2pdf', bundle/'davros-preview'), ('libreoffice', None)]:
             work = output / fixture['id'] / name
             work.mkdir(parents=True)
@@ -384,7 +402,7 @@ def main():
     fetch_parser.add_argument('--manifest', type=Path, default=HERE/'manifest.json')
     run = commands.add_parser('evaluate')
     run.add_argument('--manifest', type=Path, default=HERE/'manifest.json')
-    run.add_argument('--candidate', type=Path, default=ROOT/'target/debug/examples/xlsx-preview')
+    run.add_argument('--candidate', type=Path, default=ROOT/f'target/debug/examples/{FORMAT}-preview')
     run.add_argument('--bundle', type=Path, required=True, help='Davros runtime bundle with office2pdf and fonts')
     run.add_argument('--output', type=Path, required=True, help='new output directory')
     run.add_argument('--ids', nargs='+')

@@ -1,0 +1,325 @@
+{
+  "duplicate_aliases": [
+    {
+      "id": "lo-tdf100926_ODP-efb8b8",
+      "same_as": "lo-tdf100926-3256f5"
+    },
+    {
+      "id": "office-45545_Comment-c0a120",
+      "same_as": "office-45545_Comment-5b5c4b"
+    },
+    {
+      "id": "office-EmbeddedAudio-ea04dc",
+      "same_as": "office-EmbeddedAudio-c49bfd"
+    },
+    {
+      "id": "office-EmbeddedVideo-74e3ba",
+      "same_as": "office-EmbeddedVideo-3a2da0"
+    },
+    {
+      "id": "office-SmartArt-66d989",
+      "same_as": "office-SmartArt-1f8160"
+    },
+    {
+      "id": "office-WithMaster-f9680c",
+      "same_as": "office-WithMaster-2fa5e4"
+    },
+    {
+      "id": "office-backgrounds-33b000",
+      "same_as": "office-backgrounds-27664d"
+    },
+    {
+      "id": "office-bar-chart-7688c8",
+      "same_as": "office-bar-chart-537a67"
+    },
+    {
+      "id": "office-chart-picture-bg-d26ccb",
+      "same_as": "office-chart-picture-bg-97c861"
+    },
+    {
+      "id": "office-copy-slide-demo-a6043b",
+      "same_as": "office-copy-slide-demo-036a69"
+    },
+    {
+      "id": "office-crop-position-49e741",
+      "same_as": "lo-crop-position-fe1bad"
+    },
+    {
+      "id": "office-customGeo-e9f945",
+      "same_as": "office-customGeo-cb55b2"
+    },
+    {
+      "id": "office-group-rot-dcb2de",
+      "same_as": "lo-group-rot-ee0db2"
+    },
+    {
+      "id": "office-highlight-test-case-c5a541",
+      "same_as": "office-highlight-test-case-058a6a"
+    },
+    {
+      "id": "office-keyframes-741d27",
+      "same_as": "office-keyframes-4b57e3"
+    },
+    {
+      "id": "office-layouts-345592",
+      "same_as": "office-layouts-29b6ca"
+    },
+    {
+      "id": "office-line-chart-4a72bb",
+      "same_as": "office-line-chart-2acc9d"
+    },
+    {
+      "id": "office-onemaster-twolayouts-ff7864",
+      "same_as": "lo-onemaster-twolayouts-75beac"
+    },
+    {
+      "id": "office-picture-transparency-fa8da8",
+      "same_as": "office-picture-transparency-f5af5e"
+    },
+    {
+      "id": "office-pie-chart-d24eb2",
+      "same_as": "office-pie-chart-92d315"
+    },
+    {
+      "id": "office-present1-71be93",
+      "same_as": "office-present1-0b3e84"
+    },
+    {
+      "id": "office-radar-chart-ad6a41",
+      "same_as": "office-radar-chart-0ec5bd"
+    },
+    {
+      "id": "office-rain-8b3f17",
+      "same_as": "office-rain-21fa43"
+    },
+    {
+      "id": "office-scatter-chart-a0cc81",
+      "same_as": "office-scatter-chart-4c807e"
+    },
+    {
+      "id": "office-shape-text-rotate-4b5e98",
+      "same_as": "lo-shape-text-rotate-765557"
+    },
+    {
+      "id": "office-shapes-6f473e",
+      "same_as": "office-shapes-152c54"
+    },
+    {
+      "id": "office-smartart-simple-2bdd41",
+      "same_as": "office-smartart-simple-1b327c"
+    },
+    {
+      "id": "office-table-with-theme-733928",
+      "same_as": "office-table-with-theme-623b6e"
+    },
+    {
+      "id": "office-table_test-713c0b",
+      "same_as": "office-table_test-6c21b0"
+    },
+    {
+      "id": "office-table_test2-42895b",
+      "same_as": "office-table_test2-40bb97"
+    },
+    {
+      "id": "office-themes-a72ad0",
+      "same_as": "office-themes-338f80"
+    },
+    {
+      "id": "office-with_japanese-ffb082",
+      "same_as": "office-with_japanese-0a08e7"
+    },
+    {
+      "id": "poi-45545_Comment-788ee5",
+      "same_as": "office-45545_Comment-5b5c4b"
+    },
+    {
+      "id": "poi-Divino_Revelado-1451f6",
+      "same_as": "office-Divino_Revelado-c75402"
+    },
+    {
+      "id": "poi-EmbeddedAudio-30c18a",
+      "same_as": "office-EmbeddedAudio-c49bfd"
+    },
+    {
+      "id": "poi-EmbeddedVideo-51d3d9",
+      "same_as": "office-EmbeddedVideo-3a2da0"
+    },
+    {
+      "id": "poi-SmartArt-93a253",
+      "same_as": "office-SmartArt-1f8160"
+    },
+    {
+      "id": "poi-WithMaster-242b81",
+      "same_as": "office-WithMaster-2fa5e4"
+    },
+    {
+      "id": "poi-backgrounds-b08b5f",
+      "same_as": "office-backgrounds-27664d"
+    },
+    {
+      "id": "poi-bar-chart-e162cc",
+      "same_as": "office-bar-chart-537a67"
+    },
+    {
+      "id": "poi-chart-picture-bg-98905a",
+      "same_as": "office-chart-picture-bg-97c861"
+    },
+    {
+      "id": "poi-clusterfuzz-testcase-minimized-POIFuzzer-5205835528404992-cd039b",
+      "same_as": "office-clusterfuzz-testcase-minimized-POIFuzzer-5205835528404992-485c91"
+    },
+    {
+      "id": "poi-clusterfuzz-testcase-minimized-POIXSLFFuzzer-4838644450394112-6f622b",
+      "same_as": "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-4838644450394112-8c5b62"
+    },
+    {
+      "id": "poi-clusterfuzz-testcase-minimized-POIXSLFFuzzer-4986044400861184-18aa3d",
+      "same_as": "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-4986044400861184-ab8f02"
+    },
+    {
+      "id": "poi-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5463285576892416-606b98",
+      "same_as": "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5463285576892416-a3705a"
+    },
+    {
+      "id": "poi-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5471515212382208-2d18e6",
+      "same_as": "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5471515212382208-19babc"
+    },
+    {
+      "id": "poi-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5611274456596480-e34636",
+      "same_as": "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5611274456596480-03b742"
+    },
+    {
+      "id": "poi-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6071540680032256-39cc5f",
+      "same_as": "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6071540680032256-3cf916"
+    },
+    {
+      "id": "poi-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6254434927378432-1e1014",
+      "same_as": "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6254434927378432-264ef2"
+    },
+    {
+      "id": "poi-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6372932378820608-0a1fbb",
+      "same_as": "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6372932378820608-40973e"
+    },
+    {
+      "id": "poi-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6435650376957952-3a9af4",
+      "same_as": "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6435650376957952-6857a5"
+    },
+    {
+      "id": "poi-copy-slide-demo-fcbc6d",
+      "same_as": "office-copy-slide-demo-036a69"
+    },
+    {
+      "id": "poi-customGeo-070207",
+      "same_as": "office-customGeo-cb55b2"
+    },
+    {
+      "id": "poi-highlight-test-case-e15b7d",
+      "same_as": "office-highlight-test-case-058a6a"
+    },
+    {
+      "id": "poi-keyframes-fe013e",
+      "same_as": "office-keyframes-4b57e3"
+    },
+    {
+      "id": "poi-layouts-6985d0",
+      "same_as": "office-layouts-29b6ca"
+    },
+    {
+      "id": "poi-line-chart-609c65",
+      "same_as": "office-line-chart-2acc9d"
+    },
+    {
+      "id": "poi-picture-transparency-2ef2d5",
+      "same_as": "office-picture-transparency-f5af5e"
+    },
+    {
+      "id": "poi-pie-chart-a00870",
+      "same_as": "office-pie-chart-92d315"
+    },
+    {
+      "id": "poi-present1-701877",
+      "same_as": "office-present1-0b3e84"
+    },
+    {
+      "id": "poi-radar-chart-7f3297",
+      "same_as": "office-radar-chart-0ec5bd"
+    },
+    {
+      "id": "poi-rain-bfbdb0",
+      "same_as": "office-rain-21fa43"
+    },
+    {
+      "id": "poi-sample-eb59dc",
+      "same_as": "office-poi_sample-1313db"
+    },
+    {
+      "id": "poi-scatter-chart-e52b24",
+      "same_as": "office-scatter-chart-4c807e"
+    },
+    {
+      "id": "poi-shapes-2764da",
+      "same_as": "office-shapes-152c54"
+    },
+    {
+      "id": "poi-smartart-simple-077493",
+      "same_as": "office-smartart-simple-1b327c"
+    },
+    {
+      "id": "poi-table-with-theme-775edd",
+      "same_as": "office-table-with-theme-623b6e"
+    },
+    {
+      "id": "poi-table_test-0c7497",
+      "same_as": "office-table_test-6c21b0"
+    },
+    {
+      "id": "poi-table_test2-f01b52",
+      "same_as": "office-table_test2-40bb97"
+    },
+    {
+      "id": "poi-themes-aca4e3",
+      "same_as": "office-themes-338f80"
+    },
+    {
+      "id": "poi-with_japanese-efc28d",
+      "same_as": "office-with_japanese-0a08e7"
+    },
+    {
+      "id": "python-minimal-62ff5f",
+      "same_as": "office-minimal-cbd91f"
+    },
+    {
+      "id": "python-minimal-d88792",
+      "same_as": "office-minimal-cbd91f"
+    },
+    {
+      "id": "python-no-slides-0f6c92",
+      "same_as": "office-no-slides-1039f8"
+    },
+    {
+      "id": "python-test-3854ee",
+      "same_as": "office-test-a9f933"
+    },
+    {
+      "id": "python-test-e6727f",
+      "same_as": "office-test-a9f933"
+    },
+    {
+      "id": "python-test_slides-fec3ac",
+      "same_as": "office-test_slides-5de877"
+    }
+  ],
+  "non_zip": [
+    "office-Divino_Revelado-c75402",
+    "office-clusterfuzz-testcase-minimized-POIFuzzer-5205835528404992-485c91",
+    "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-4838644450394112-8c5b62",
+    "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-4986044400861184-ab8f02",
+    "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5463285576892416-a3705a",
+    "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5471515212382208-19babc",
+    "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5611274456596480-03b742",
+    "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6071540680032256-3cf916",
+    "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6254434927378432-264ef2",
+    "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6372932378820608-40973e",
+    "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6435650376957952-6857a5"
+  ]
+}

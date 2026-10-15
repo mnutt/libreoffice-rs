@@ -1,0 +1,112 @@
+{
+  "office-Divino_Revelado-c75402": {
+    "expected_error": "Error: Parse(\"zip end-of-central-directory not found\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-clusterfuzz-testcase-minimized-POIFuzzer-5205835528404992-485c91": {
+    "expected_error": "Error: Parse(\"bad central directory signature at 33660\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5471515212382208-19babc": {
+    "expected_error": "Error: Parse(\"zip central directory is out of bounds\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6372932378820608-40973e": {
+    "expected_error": "Error: Parse(\"zip central directory is out of bounds\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "lo-ofz35597-1-1681de": {
+    "expected_error": "Error: Parse(\"zip size mismatch for ppt/slides/slide1.xml: expected 5943, got 5941\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-4838644450394112-8c5b62": {
+    "expected_error": "Error: Parse(\"zip end-of-central-directory not found\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5611274456596480-03b742": {
+    "expected_error": "Error: Parse(\"zip end-of-central-directory not found\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6435650376957952-6857a5": {
+    "expected_error": "Error: Parse(\"zip central directory is out of bounds\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "lo-ofz46160-1-4a0288": {
+    "expected_error": "Error: Parse(\"unexpected end of deflate stream\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-4986044400861184-ab8f02": {
+    "expected_error": "Error: Parse(\"zip end-of-central-directory not found\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6071540680032256-3cf916": {
+    "expected_error": "Error: Parse(\"zip end-of-central-directory not found\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-5463285576892416-a3705a": {
+    "expected_error": "Error: Parse(\"bad central directory signature at 36529\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-clusterfuzz-testcase-minimized-POIXSLFFuzzer-6254434927378432-264ef2": {
+    "expected_error": "Error: Parse(\"zip end-of-central-directory not found\")",
+    "reason": "Pinned malformed or encrypted input; require a normal parser rejection, never a crash or timeout."
+  },
+  "office-WithMaster-2fa5e4": {
+    "pages": 2,
+    "text": [
+      "This text comes from the Master Slide",
+      "First page title",
+      "First page subtitle"
+    ],
+    "min_colors": {
+      "light_green": 1000
+    }
+  },
+  "office-1-slide-f8fac1": {
+    "pages": 1
+  },
+  "lo-tdf157635-e127f3": {
+    "pages": 1,
+    "min_images": 1,
+    "min_colors": {
+      "dark": 240000
+    }
+  },
+  "lo-tdf94238-39c1e4": {
+    "min_images": 1,
+    "min_colors": {
+      "dark": 200000
+    }
+  },
+  "lo-tableBorderLineStyle-bafab9": {
+    "pages": 1,
+    "min_colors": {
+      "dark": 3000
+    }
+  },
+  "office-radar-chart-0ec5bd": {
+    "pages": 1,
+    "text": [
+      "My Radar Chart",
+      "Sales",
+      "1st Qtr",
+      "4th Qtr"
+    ]
+  },
+  "poi-ececapstonespring2012-231781": {
+    "pages": 24,
+    "min_images": 1
+  },
+  "office-table-with-theme-623b6e": {
+    "pages": 1,
+    "text": [
+      "Abc def",
+      "hij",
+      "klm",
+      "nop"
+    ],
+    "min_colors": {
+      "blue": 2000
+    }
+  }
+}
