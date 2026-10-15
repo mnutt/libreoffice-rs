@@ -117,6 +117,8 @@ impl Range {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SheetLayout {
+    /// Chart sheets fit their drawing to one paper page even in natural-width preview.
+    pub chart_sheet: bool,
     pub print_headings: bool,
     pub print_gridlines: bool,
     pub horizontal_centered: bool,
@@ -148,6 +150,7 @@ pub struct SheetLayout {
 impl Default for SheetLayout {
     fn default() -> Self {
         Self {
+            chart_sheet: false,
             print_headings: false,
             print_gridlines: false,
             horizontal_centered: false,

@@ -236,6 +236,7 @@ fn parse_xlsx_sheet(
     use lo_core::{calc::SheetLayout, style::Alignment};
     let mut sheet = Sheet::new(name.to_string());
     let mut layout = SheetLayout {
+        chart_sheet: root.local_name() == "chartsheet",
         page_width: 612.0,
         page_height: 792.0,
         margins: Some([50.4, 50.4, 54.0, 54.0]),
@@ -491,9 +492,14 @@ fn parse_xlsx_sheet(
             .get(addr)
             .map(String::as_str)
             .unwrap_or("");
-        let height =
-            crate::pdf::grid_wrap(text, (width - 4.0).max(1.0), size).len() as f32 * size * 1.2
-                + 3.0;
+        let font = crate::pdf::cell_font(Some(style));
+        let indent =
+            f32::from(style.indent) * lo_core::font_metrics::measure_base_font("   ", size, font);
+        let height = crate::pdf::grid_wrap_font(text, (width - 4.0 - indent).max(1.0), size, font)
+            .len() as f32
+            * size
+            * 1.2
+            + 3.0;
         let current = layout
             .rows
             .entry(addr.row)
@@ -1038,6 +1044,38 @@ mod tests {
     use super::*;
     use crate::to_xlsx;
     use lo_core::{CellAddr, CellValue, Workbook};
+
+    #[test]
+    fn wrapped_row_height_uses_cell_font_and_indentation() {
+        let root = parse_xml_document(r#"<worksheet><cols><col min="1" max="1" width="12"/></cols><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>WW WW WW WW WW WW</t></is></c></row></sheetData></worksheet>"#).unwrap();
+        let style = lo_core::style::CellStyle {
+            wrap: true,
+            bold: true,
+            indent: 2,
+            font_size_mpt: Some(12000),
+            ..Default::default()
+        };
+        let styles = crate::xlsx_styles::Styles {
+            cells: vec![style],
+            general_alignment: vec![true],
+        };
+        let sheet = parse_xlsx_sheet("Wrapped", &root, &[], &styles, false).unwrap();
+        let layout = sheet.layout.as_ref().unwrap();
+        let pdf = String::from_utf8_lossy(&crate::pdf::to_pdf_preview(&Workbook {
+            sheets: vec![sheet.clone()],
+            ..Default::default()
+        }))
+        .into_owned();
+        assert!(
+            layout.rows[&0] > 40.0,
+            "indented bold text must grow the row"
+        );
+        assert_eq!(
+            pdf.matches("(WW WW)").count(),
+            3,
+            "all wrapped lines must survive"
+        );
+    }
 
     #[test]
     fn hidden_grid_dimensions_and_sheet_fields_are_preserved() {

@@ -164,7 +164,11 @@ fn grid_color(value: &str) -> Option<(f32, f32, f32)> {
 fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut PdfDocument) {
     let [l, r, t, b] = layout.margins.unwrap_or([layout.margin; 4]);
     let mut scale = layout.print_scale.clamp(0.1, 4.0);
-    if let Some((across, down)) = layout.fit_to_pages {
+    if let Some((across, down)) = if layout.chart_sheet {
+        Some((1, 1))
+    } else {
+        layout.fit_to_pages
+    } {
         let (mut row, mut col) = sheet.max_extent();
         for (a, (cols, rows)) in &layout.merges {
             row = row.max(a.row.saturating_add(*rows).saturating_sub(1));
@@ -714,7 +718,7 @@ pub(crate) fn grid_wrap(text: &str, width: f32, size: f32) -> Vec<String> {
     grid_wrap_font(text, width, size, PdfFont::Helvetica)
 }
 
-fn grid_wrap_font(text: &str, width: f32, size: f32, font: PdfFont) -> Vec<String> {
+pub(crate) fn grid_wrap_font(text: &str, width: f32, size: f32, font: PdfFont) -> Vec<String> {
     let mut out = Vec::new();
     for raw in text.split('\n') {
         let mut line = String::new();
@@ -823,6 +827,12 @@ mod pagination_tests {
         // Natural-width preview still retains vertical pagination at source scale.
         let pdf = String::from_utf8_lossy(&to_pdf_preview(&book)).into_owned();
         assert_eq!(pdf.matches("/Type /Page ").count(), 2);
+        let layout = book.sheets[0].layout.as_mut().unwrap();
+        layout.chart_sheet = true;
+        layout.fit_to_pages = None;
+        let pdf = String::from_utf8_lossy(&to_pdf_preview(&book)).into_owned();
+        assert_eq!(pdf.matches("/Type /Page ").count(), 1);
+        assert!(pdf.contains("/MediaBox [0 0 200.00 200.00]"));
     }
     #[test]
     fn repeated_titles_reserve_space_on_later_pages() {
@@ -901,6 +911,9 @@ pub fn to_pdf_preview(workbook: &Workbook) -> Vec<u8> {
         let Some(layout) = sheet.layout.as_mut() else {
             continue;
         };
+        if layout.chart_sheet {
+            continue;
+        }
         layout.print_scale = 1.0;
         layout.fit_to_pages = None;
         for (a, (cols, _)) in &layout.merges {
