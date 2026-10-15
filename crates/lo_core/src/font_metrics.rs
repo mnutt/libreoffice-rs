@@ -61,6 +61,7 @@ const TIMES_ITALIC: [u16; 95] = [
 pub fn measure_base_font(text: &str, size: f32, font: crate::PdfFont) -> f32 {
     use crate::PdfFont;
     let widths = match font {
+        PdfFont::Source(id) => return crate::source_font::measure(id, text, size),
         PdfFont::Helvetica | PdfFont::HelveticaOblique => &HELVETICA,
         PdfFont::HelveticaBold | PdfFont::HelveticaBoldOblique => &HELVETICA_BOLD,
         PdfFont::TimesRoman => &TIMES_ROMAN,

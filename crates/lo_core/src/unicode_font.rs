@@ -150,19 +150,30 @@ pub(crate) fn build_unicode_fonts(chars: &BTreeSet<char>) -> Result<Vec<Embedded
             // Use an actual outlined square, not .notdef (which can be blank).
             // Distinct CIDs preserve each missing character in ToUnicode even
             // though every CID draws the same glyph.
-            let fallback = candidates.iter().find(|candidate| {
-                database.with_face_data(candidate.id, |data, index| {
-                    has_sfnt_table(data, b"glyf") && Face::parse(data, index)
-                        .ok().is_some_and(|face| face.glyph_index('□').is_some())
-                }).unwrap_or(false)
-            }).ok_or_else(|| LoError::Unsupported(
-                "no TrueType font with a missing-character square is available".into()
-            ))?;
+            let fallback = candidates
+                .iter()
+                .find(|candidate| {
+                    database
+                        .with_face_data(candidate.id, |data, index| {
+                            has_sfnt_table(data, b"glyf")
+                                && Face::parse(data, index)
+                                    .ok()
+                                    .is_some_and(|face| face.glyph_index('□').is_some())
+                        })
+                        .unwrap_or(false)
+                })
+                .ok_or_else(|| {
+                    LoError::Unsupported(
+                        "no TrueType font with a missing-character square is available".into(),
+                    )
+                })?;
             let missing = remaining.iter().copied().collect::<Vec<_>>();
             for chunk in missing.chunks(u16::MAX as usize) {
-                let font = database.with_face_data(fallback.id, |data, index| {
-                    build_tofu_font(data, index, &fallback.post_script_name, chunk)
-                }).ok_or_else(|| LoError::Io("reading tofu PDF font".into()))??;
+                let font = database
+                    .with_face_data(fallback.id, |data, index| {
+                        build_tofu_font(data, index, &fallback.post_script_name, chunk)
+                    })
+                    .ok_or_else(|| LoError::Io("reading tofu PDF font".into()))??;
                 fonts.push(font);
             }
             eprintln!("Preview font warning: rendering {} unsupported Unicode characters as boxes; missing {sample}", remaining.len());
@@ -170,12 +181,7 @@ pub(crate) fn build_unicode_fonts(chars: &BTreeSet<char>) -> Result<Vec<Embedded
         };
         let font = database
             .with_face_data(selected.id, |data, index| {
-                build_from_face(
-                    data,
-                    index,
-                    &selected.post_script_name,
-                    &selected_chars,
-                )
+                build_from_face(data, index, &selected.post_script_name, &selected_chars)
             })
             .ok_or_else(|| LoError::Io("reading selected Unicode PDF font".to_string()))??;
         remaining.retain(|ch| !selected_chars.contains(ch));
@@ -184,7 +190,7 @@ pub(crate) fn build_unicode_fonts(chars: &BTreeSet<char>) -> Result<Vec<Embedded
     Ok(fonts)
 }
 
-fn build_from_face(
+pub(crate) fn build_from_face(
     data: &[u8],
     face_index: u32,
     post_script_name: &str,
@@ -193,7 +199,6 @@ fn build_from_face(
     let face = Face::parse(data, face_index)
         .map_err(|_| LoError::Parse("selected Unicode PDF font is malformed".to_string()))?;
     let mut remapper = GlyphRemapper::new();
-    let mut old_glyphs = BTreeMap::new();
     for ch in chars {
         let glyph = face.glyph_index(*ch).ok_or_else(|| {
             LoError::Unsupported(format!(
@@ -201,24 +206,17 @@ fn build_from_face(
                 *ch as u32
             ))
         })?;
-        if let Some(previous) = old_glyphs.insert(glyph.0, *ch) {
-            if previous != *ch {
-                return Err(LoError::Unsupported(format!(
-                    "Unicode PDF font aliases U+{:04X} and U+{:04X} to one glyph",
-                    previous as u32, *ch as u32
-                )));
-            }
-        }
         remapper.remap(glyph.0);
     }
 
     let units_per_em = face.units_per_em().max(1) as u32;
-    let widths = remapper
+    let mut widths = remapper
         .remapped_gids()
         .map(|old_gid| {
-            let advance = face.glyph_hor_advance(GlyphId(old_gid)).unwrap_or(units_per_em as u16);
-            ((advance as u32 * 1000 + units_per_em / 2) / units_per_em).min(u16::MAX as u32)
-                as u16
+            let advance = face
+                .glyph_hor_advance(GlyphId(old_gid))
+                .unwrap_or(units_per_em as u16);
+            ((advance as u32 * 1000 + units_per_em / 2) / units_per_em).min(u16::MAX as u32) as u16
         })
         .collect::<Vec<_>>();
     let mut char_to_cid = BTreeMap::new();
@@ -228,8 +226,7 @@ fn build_from_face(
     }
     let bbox = face.global_bounding_box();
     let scale_metric = |value: i16| -> i16 {
-        ((value as i32 * 1000) / units_per_em as i32)
-            .clamp(i16::MIN as i32, i16::MAX as i32) as i16
+        ((value as i32 * 1000) / units_per_em as i32).clamp(i16::MIN as i32, i16::MAX as i32) as i16
     };
     let subset = subset(data, face_index, &remapper)
         .map_err(|error| LoError::Unsupported(format!("subsetting Unicode PDF font: {error}")))?;
@@ -240,12 +237,37 @@ fn build_from_face(
         ));
     }
 
+    // TrueType CIDs are character identities, independent of glyph IDs. In
+    // particular space/NBSP may share an outline but must extract distinctly.
+    let cid_to_gid = if is_true_type {
+        let glyph_widths = widths;
+        widths = vec![glyph_widths[0]];
+        let mut mapping = vec![0];
+        for (i, ch) in chars.iter().enumerate() {
+            let gid = char_to_cid[ch];
+            let cid = u16::try_from(i + 1)
+                .map_err(|_| LoError::Unsupported("too many font characters".into()))?;
+            widths.push(glyph_widths[gid as usize]);
+            mapping.push(gid);
+            char_to_cid.insert(*ch, cid);
+        }
+        Some(mapping)
+    } else {
+        let unique = char_to_cid.values().copied().collect::<BTreeSet<_>>();
+        if unique.len() != char_to_cid.len() {
+            return Err(LoError::Unsupported(
+                "CFF font aliases multiple characters to one glyph".into(),
+            ));
+        }
+        None
+    };
+
     Ok(EmbeddedUnicodeFont {
         base_name: format!("LOUNIC+{}", pdf_name(post_script_name)),
         bytes: subset,
         is_true_type,
         widths,
-        cid_to_gid: None,
+        cid_to_gid,
         ascent: scale_metric(face.ascender()),
         descent: scale_metric(face.descender()),
         bbox: (
@@ -266,8 +288,12 @@ fn build_tofu_font(
     chars: &[char],
 ) -> Result<EmbeddedUnicodeFont> {
     let mut font = build_from_face(data, face_index, post_script_name, &BTreeSet::from(['□']))?;
-    let square_gid = font.char_to_cid[&'□'];
-    let width = font.widths[square_gid as usize];
+    let square_cid = font.char_to_cid[&'□'];
+    let width = font.widths[square_cid as usize];
+    let square_gid = font
+        .cid_to_gid
+        .as_ref()
+        .map_or(square_cid, |m| m[square_cid as usize]);
     font.base_name = "LOTOFU+MissingGlyph".into();
     font.char_to_cid.clear();
     let mut mapping = vec![0];

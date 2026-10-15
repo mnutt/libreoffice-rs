@@ -14,6 +14,7 @@ pub mod pdf;
 pub mod pdf_canvas;
 pub mod raster;
 pub mod style;
+pub mod source_font;
 pub mod svg;
 pub mod units;
 mod unicode_font;

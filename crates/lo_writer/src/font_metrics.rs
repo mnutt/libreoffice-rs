@@ -53,6 +53,9 @@ pub(crate) fn measure_text(text: &str, size: f32, font: PdfFont) -> f32 {
 }
 
 fn glyph_width(ch: char, font: PdfFont) -> u16 {
+    if let PdfFont::Source(id) = font {
+        return lo_core::source_font::measure(id, &ch.to_string(), 1000.0).round() as u16;
+    }
     if font == PdfFont::Courier {
         return 600;
     }
@@ -65,6 +68,7 @@ fn glyph_width(ch: char, font: PdfFont) -> u16 {
             PdfFont::TimesBold => &TIMES_BOLD,
             PdfFont::TimesItalic => &TIMES_ITALIC,
             PdfFont::Courier => unreachable!(),
+            PdfFont::Source(_) => unreachable!(),
         };
         return widths[normalized as usize - 32];
     }

@@ -7,13 +7,15 @@
 
 use std::collections::BTreeSet;
 
-use crate::pdf::{pdf_can_encode_win_ansi, pdf_escape_win_ansi, pdf_text_string};
 use crate::pdf::pdf_from_binary_objects;
+use crate::pdf::{pdf_can_encode_win_ansi, pdf_escape_win_ansi, pdf_text_string};
 use crate::unicode_font::{build_unicode_fonts, EmbeddedUnicodeFont};
 use crate::{LoError, Result};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PdfFont {
+    /// Face in the immutable bundled-font catalog.
+    Source(u32),
     Helvetica,
     HelveticaBold,
     HelveticaOblique,
@@ -27,6 +29,7 @@ pub enum PdfFont {
 impl PdfFont {
     fn resource_name(self) -> &'static str {
         match self {
+            Self::Source(_) => "Helvetica",
             Self::Helvetica => "F1",
             Self::HelveticaBold => "F2",
             Self::HelveticaOblique => "F3",
@@ -40,6 +43,7 @@ impl PdfFont {
 
     fn base_font(self) -> &'static str {
         match self {
+            Self::Source(_) => "Helvetica",
             Self::Helvetica => "Helvetica",
             Self::HelveticaBold => "Helvetica-Bold",
             Self::HelveticaOblique => "Helvetica-Oblique",
@@ -80,6 +84,7 @@ pub struct PdfPage {
 struct UnicodeText {
     text: String,
     size: f32,
+    source: Option<u32>,
 }
 
 impl PdfPage {
@@ -109,7 +114,12 @@ impl PdfPage {
         g: f32,
         b: f32,
     ) {
-        let unicode = !pdf_can_encode_win_ansi(text);
+        let source = if let PdfFont::Source(id) = font {
+            Some(id)
+        } else {
+            None
+        };
+        let unicode = source.is_some() || !pdf_can_encode_win_ansi(text);
         let resource_name = if unicode { "FU0" } else { font.resource_name() };
         self.commands.push_str("BT\n");
         self.commands
@@ -119,7 +129,11 @@ impl PdfPage {
         }
         self.commands
             .push_str(&format!("/{resource_name} {size} Tf\n"));
-        let shear = if unicode && font.is_italic() { 0.20 } else { 0.0 };
+        let shear = if unicode && font.is_italic() {
+            0.20
+        } else {
+            0.0
+        };
         self.commands
             .push_str(&format!("1 0 {shear:.2} 1 {x:.2} {y:.2} Tm\n"));
         if unicode {
@@ -127,6 +141,7 @@ impl PdfPage {
             self.unicode_texts.push(UnicodeText {
                 text: text.to_string(),
                 size,
+                source,
             });
             self.commands
                 .push_str(&format!("__LO_UNICODE_TEXT_{index}__\n"));
@@ -485,17 +500,40 @@ impl PdfDocument {
         if self.pages.is_empty() {
             return empty_pdf();
         }
+        let mut source_chars = std::collections::BTreeMap::<u32, BTreeSet<char>>::new();
+        for text in self.pages.iter().flat_map(|p| &p.unicode_texts) {
+            if let Some(id) = text.source {
+                source_chars.entry(id).or_default().extend(
+                    text.text
+                        .chars()
+                        .filter(|ch| crate::source_font::covers(id, *ch)),
+                );
+            }
+        }
         let unicode_chars = self
             .pages
             .iter()
             .flat_map(|page| page.unicode_texts.iter())
-            .flat_map(|text| text.text.chars())
+            .flat_map(|text| {
+                text.text.chars().filter(|ch| {
+                    !text
+                        .source
+                        .is_some_and(|id| crate::source_font::covers(id, *ch))
+                })
+            })
             .collect::<BTreeSet<_>>();
-        let unicode_fonts = if unicode_chars.is_empty() {
+        let mut unicode_fonts = if unicode_chars.is_empty() {
             Vec::new()
         } else {
             build_unicode_fonts(&unicode_chars)?
         };
+        let mut source_indices = std::collections::BTreeMap::new();
+        for (id, chars) in source_chars {
+            if !chars.is_empty() {
+                source_indices.insert(id, unicode_fonts.len());
+                unicode_fonts.push(crate::source_font::embed(id, &chars)?);
+            }
+        }
         let mut objects: Vec<Vec<u8>> = Vec::new();
         objects.push(Vec::new()); // catalog
         objects.push(Vec::new()); // pages tree
@@ -588,7 +626,7 @@ impl PdfDocument {
                 "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {:.2} {:.2}] /Resources {} /Contents {} 0 R /StructParents {}{} >>",
                 page.width, page.height, resources, content_obj, index, annotations
             ).into_bytes());
-            let commands = render_page_commands(page, &unicode_fonts)?;
+            let commands = render_page_commands(page, &unicode_fonts, &source_indices)?;
             objects.push(
                 format!(
                     "<< /Length {} >>\nstream\n{}endstream",
@@ -656,10 +694,9 @@ impl PdfDocument {
                     .join(" ")
             ));
             for (tag, object) in page.tags.iter().zip(refs) {
-                let alt = tag
-                    .alt
-                    .as_ref()
-                    .map_or_else(String::new, |value| format!(" /Alt {}", pdf_text_string(value)));
+                let alt = tag.alt.as_ref().map_or_else(String::new, |value| {
+                    format!(" /Alt {}", pdf_text_string(value))
+                });
                 objects.push(
                     format!(
                         "<< /Type /StructElem /S /{} /P {} 0 R /Pg {} 0 R /K {}{} >>",
@@ -709,26 +746,36 @@ fn empty_pdf() -> Result<Vec<u8>> {
 fn render_page_commands(
     page: &PdfPage,
     unicode_fonts: &[EmbeddedUnicodeFont],
+    source_indices: &std::collections::BTreeMap<u32, usize>,
 ) -> Result<String> {
     let mut commands = page.commands.clone();
     for (index, text) in page.unicode_texts.iter().enumerate() {
-        let encoded = encode_unicode_text(text, unicode_fonts)?;
-        commands = commands.replace(
-            &format!("__LO_UNICODE_TEXT_{index}__"),
-            &encoded,
-        );
+        let encoded = encode_unicode_text(
+            text,
+            unicode_fonts,
+            text.source.and_then(|id| source_indices.get(&id).copied()),
+        )?;
+        commands = commands.replace(&format!("__LO_UNICODE_TEXT_{index}__"), &encoded);
     }
     Ok(commands)
 }
 
-fn encode_unicode_text(text: &UnicodeText, fonts: &[EmbeddedUnicodeFont]) -> Result<String> {
+fn encode_unicode_text(
+    text: &UnicodeText,
+    fonts: &[EmbeddedUnicodeFont],
+    preferred: Option<usize>,
+) -> Result<String> {
     let mut encoded = String::new();
     let mut active_font = None;
     let mut segment = String::new();
     for ch in text.text.chars() {
-        let font_index = fonts
-            .iter()
-            .position(|font| font.char_to_cid.contains_key(&ch))
+        let font_index = preferred
+            .filter(|i| fonts[*i].char_to_cid.contains_key(&ch))
+            .or_else(|| {
+                fonts
+                    .iter()
+                    .position(|font| font.char_to_cid.contains_key(&ch))
+            })
             .ok_or_else(|| {
                 LoError::Unsupported(format!(
                     "Unicode PDF fonts do not contain U+{:04X}",
@@ -749,13 +796,7 @@ fn encode_unicode_text(text: &UnicodeText, fonts: &[EmbeddedUnicodeFont]) -> Res
         segment.push(ch);
     }
     if let Some(font_index) = active_font {
-        append_unicode_segment(
-            &mut encoded,
-            font_index,
-            text.size,
-            &segment,
-            fonts,
-        )?;
+        append_unicode_segment(&mut encoded, font_index, text.size, &segment, fonts)?;
     }
     Ok(encoded)
 }
@@ -774,10 +815,7 @@ fn append_unicode_segment(
     Ok(())
 }
 
-fn append_unicode_font_objects(
-    objects: &mut Vec<Vec<u8>>,
-    font: &EmbeddedUnicodeFont,
-) -> usize {
+fn append_unicode_font_objects(objects: &mut Vec<Vec<u8>>, font: &EmbeddedUnicodeFont) -> usize {
     let type0_obj = objects.len() + 1;
     let descendant_obj = type0_obj + 1;
     let descriptor_obj = type0_obj + 2;
@@ -865,7 +903,10 @@ fn append_unicode_font_objects(
 }
 
 fn document_language(chars: &BTreeSet<char>) -> &'static str {
-    if chars.iter().any(|ch| matches!(*ch as u32, 0x4E00..=0x9FFF | 0x3400..=0x4DBF)) {
+    if chars
+        .iter()
+        .any(|ch| matches!(*ch as u32, 0x4E00..=0x9FFF | 0x3400..=0x4DBF))
+    {
         "zh-CN"
     } else if chars.iter().any(|ch| matches!(*ch as u32, 0x3040..=0x30FF)) {
         "ja"
