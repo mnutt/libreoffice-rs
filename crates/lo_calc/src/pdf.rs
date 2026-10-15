@@ -228,40 +228,88 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
     let mut widths = widths;
     let mut heights = heights;
     // Drawing-only areas must participate in pagination too.
-    let drawing_width = layout.images.iter().map(|i| i.frame).chain(layout.charts.iter().map(|c|c.frame)).chain(layout.text_boxes.iter().map(|t|t.frame)).map(|f| f.origin.x.as_pt()+f.size.width.as_pt()).fold(0.0_f32,f32::max);
-    let drawing_height = layout.images.iter().map(|i| i.frame).chain(layout.charts.iter().map(|c|c.frame)).chain(layout.text_boxes.iter().map(|t|t.frame)).map(|f| f.origin.y.as_pt()+f.size.height.as_pt()).fold(0.0_f32,f32::max);
-    extend_drawing_grid(&mut widths, drawing_width, layout.default_column_width, available_w);
-    extend_drawing_grid(&mut heights, drawing_height, layout.default_row_height, available_h);
-    let images: Vec<_> = layout.images.iter().filter_map(|i| register_image(pdf,i).map(|name|(i.frame,name))).collect();
-    let valid_repeat=|repeat:Option<(u32,u32)>,sizes:&[f32],available:f32| repeat.filter(|(a,b)|a<=b && (*b as usize)<sizes.len() && sizes[*a as usize..=*b as usize].iter().sum::<f32>()<available);
-    let repeat_columns=valid_repeat(layout.repeat_columns,&widths,available_w);
-    let repeat_rows=valid_repeat(layout.repeat_rows,&heights,available_h);
+    let drawing_width = layout
+        .images
+        .iter()
+        .map(|i| i.frame)
+        .chain(layout.charts.iter().map(|c| c.frame))
+        .chain(layout.text_boxes.iter().map(|t| t.frame))
+        .map(|f| f.origin.x.as_pt() + f.size.width.as_pt())
+        .fold(0.0_f32, f32::max);
+    let drawing_height = layout
+        .images
+        .iter()
+        .map(|i| i.frame)
+        .chain(layout.charts.iter().map(|c| c.frame))
+        .chain(layout.text_boxes.iter().map(|t| t.frame))
+        .map(|f| f.origin.y.as_pt() + f.size.height.as_pt())
+        .fold(0.0_f32, f32::max);
+    extend_drawing_grid(
+        &mut widths,
+        drawing_width,
+        layout.default_column_width,
+        available_w,
+    );
+    extend_drawing_grid(
+        &mut heights,
+        drawing_height,
+        layout.default_row_height,
+        available_h,
+    );
+    let images: Vec<_> = layout
+        .images
+        .iter()
+        .filter_map(|i| register_image(pdf, i).map(|name| (i.frame, name)))
+        .collect();
+    let valid_repeat = |repeat: Option<(u32, u32)>, sizes: &[f32], available: f32| {
+        repeat.filter(|(a, b)| {
+            a <= b
+                && (*b as usize) < sizes.len()
+                && sizes[*a as usize..=*b as usize].iter().sum::<f32>() < available
+        })
+    };
+    let repeat_columns = valid_repeat(layout.repeat_columns, &widths, available_w);
+    let repeat_rows = valid_repeat(layout.repeat_rows, &heights, available_h);
     let column_pages = grid_bands_repeated(&widths, available_w, repeat_columns);
     let row_pages = grid_bands_repeated(&heights, available_h, repeat_rows);
     for columns in column_pages {
         for rows in &row_pages {
-            let repeated_columns=repeated_indices(repeat_columns,columns.start,widths.len());
-            let repeated_rows=repeated_indices(repeat_rows,rows.start,heights.len());
-            let repeat_w: f32=repeated_columns.iter().map(|i|widths[*i]).sum();
-            let repeat_h: f32=repeated_rows.iter().map(|i|heights[*i]).sum();
-            let column_indices: Vec<_>=repeated_columns.into_iter().chain(columns.clone()).collect();
-            let row_indices: Vec<_>=repeated_rows.into_iter().chain(rows.clone()).collect();
-            let ox: f32 = widths[..columns.start].iter().sum::<f32>()-repeat_w;
-            let oy: f32 = heights[..rows.start].iter().sum::<f32>()-repeat_h;
+            let repeated_columns = repeated_indices(repeat_columns, columns.start, widths.len());
+            let repeated_rows = repeated_indices(repeat_rows, rows.start, heights.len());
+            let repeat_w: f32 = repeated_columns.iter().map(|i| widths[*i]).sum();
+            let repeat_h: f32 = repeated_rows.iter().map(|i| heights[*i]).sum();
+            let column_indices: Vec<_> = repeated_columns
+                .into_iter()
+                .chain(columns.clone())
+                .collect();
+            let row_indices: Vec<_> = repeated_rows.into_iter().chain(rows.clone()).collect();
+            let ox: f32 = widths[..columns.start].iter().sum::<f32>() - repeat_w;
+            let oy: f32 = heights[..rows.start].iter().sum::<f32>() - repeat_h;
             let tw: f32 = widths[columns.clone()].iter().sum();
             let th: f32 = heights[rows.clone()].iter().sum();
-            let image_present = images.iter().map(|(f,_)| f).chain(layout.charts.iter().map(|c| &c.frame)).chain(layout.text_boxes.iter().map(|t| &t.frame)).any(|f| f.origin.x.as_pt() < ox+tw && f.origin.x.as_pt()+f.size.width.as_pt()>ox && f.origin.y.as_pt()<oy+th && f.origin.y.as_pt()+f.size.height.as_pt()>oy);
+            let image_present = images
+                .iter()
+                .map(|(f, _)| f)
+                .chain(layout.charts.iter().map(|c| &c.frame))
+                .chain(layout.text_boxes.iter().map(|t| &t.frame))
+                .any(|f| {
+                    f.origin.x.as_pt() < ox + tw
+                        && f.origin.x.as_pt() + f.size.width.as_pt() > ox
+                        && f.origin.y.as_pt() < oy + th
+                        && f.origin.y.as_pt() + f.size.height.as_pt() > oy
+                });
             // Empty page tiles do not need a printed page.
             if !sheet.cells.keys().any(|a| {
                 columns.contains(&(a.col as usize))
                     && rows.contains(&(a.row as usize))
                     && widths[a.col as usize] > 0.0
                     && heights[a.row as usize] > 0.0
-            }) && !image_present && !(columns.start == 0
-                && rows.start == 0
-                && (!layout.charts.is_empty()
-                    || !layout.headers.is_empty()
-                    || !layout.footers.is_empty()))
+            }) && !image_present
+                && !(columns.start == 0
+                    && rows.start == 0
+                    && (!layout.charts.is_empty()
+                        || !layout.headers.is_empty()
+                        || !layout.footers.is_empty()))
             {
                 continue;
             }
@@ -339,9 +387,21 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                         {
                             page.rect_fill_rgb(x, top - h, w, h, red, green, blue);
                         }
-                        if let Some((fraction,paint,show))=layout.data_bars.get(&addr) {
-                            if let Some((red,green,blue))=grid_color(paint) {page.rect_fill_rgb(x+2.0,top-h+2.0,(w-4.0).max(0.0)*fraction,(h-4.0).max(0.0),red,green,blue);}
-                            if !show {text.clear();}
+                        if let Some((fraction, paint, show)) = layout.data_bars.get(&addr) {
+                            if let Some((red, green, blue)) = grid_color(paint) {
+                                page.rect_fill_rgb(
+                                    x + 2.0,
+                                    top - h + 2.0,
+                                    (w - 4.0).max(0.0) * fraction,
+                                    (h - 4.0).max(0.0),
+                                    red,
+                                    green,
+                                    blue,
+                                );
+                            }
+                            if !show {
+                                text.clear();
+                            }
                         }
                         if let Some(style) = style {
                             let edges = [
@@ -376,12 +436,23 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                             size.min((h - 1.0).max(1.0))
                         };
                         let font = cell_font(style);
+                        let indent = style.map(|s| s.indent as f32).unwrap_or(0.0)
+                            * lo_core::font_metrics::measure_base_font("   ", size, font);
+                        let size = if style.is_some_and(|s| s.shrink_to_fit && !s.wrap) {
+                            size * ((w - 4.0 - indent).max(1.0)
+                                / lo_core::font_metrics::measure_base_font(&text, size, font)
+                                    .max(1.0))
+                            .min(1.0)
+                        } else {
+                            size
+                        };
+                        let rotation = style.map(|s| s.rotation_degrees).unwrap_or(0);
                         // Text can overflow into adjacent empty cells, as in Calc;
                         // occupied cells and page edges stop it. Numeric values stay
                         // within their own column. Clip to the source row height.
                         let mut visible_w = w;
                         if matches!(cell.value, CellValue::Text(_))
-                            && !style.is_some_and(|s| s.wrap)
+                            && !style.is_some_and(|s| s.wrap || s.rotation_degrees != 0)
                             && col_span == 1
                         {
                             let mut blocked = false;
@@ -398,7 +469,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                         }
                         page.raw(&format!("q {} {} {} {} re W n", x, top - h, visible_w, h));
                         let lines = if style.is_some_and(|s| s.wrap) {
-                            grid_wrap_font(&text, (w - 4.0).max(1.0), size, font)
+                            grid_wrap_font(&text, (w - 4.0 - indent).max(1.0), size, font)
                         } else {
                             text.split('\n').map(str::to_string).collect()
                         };
@@ -411,16 +482,51 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                         for (line_index, line) in lines.iter().enumerate() {
                             let estimated =
                                 lo_core::font_metrics::measure_base_font(line, size, font);
+                            if rotation != 0 {
+                                let angle = (rotation as f32).to_radians();
+                                let (sin, cos) = angle.sin_cos();
+                                page.raw(&format!(
+                                    "q {cos} {sin} {} {cos} {} {} cm",
+                                    -sin,
+                                    x + w / 2.0,
+                                    top - h / 2.0
+                                ));
+                                page.text_rgb(
+                                    -estimated / 2.0,
+                                    -size * 0.3 - line_index as f32 * size * 1.2,
+                                    size,
+                                    font,
+                                    line,
+                                    color.0,
+                                    color.1,
+                                    color.2,
+                                );
+                                page.raw("Q");
+                                continue;
+                            }
                             let offset = match style.map(|s| &s.alignment) {
-                                Some(Alignment::End) => (w - 2.0 - estimated).max(2.0),
+                                Some(Alignment::End) => (w - 2.0 - indent - estimated).max(2.0),
                                 Some(Alignment::Center) => ((w - estimated) / 2.0).max(2.0),
-                                _ => 2.0,
+                                _ => 2.0 + indent,
                             };
                             let y = baseline - line_index as f32 * size * 1.2;
                             if y < top - h {
                                 break;
                             }
-                            if style.is_some_and(|s|s.underline) {page.line_rgb(x+offset,y-1.0,x+offset+lo_core::font_metrics::measure_base_font(line,size,font),y-1.0,color.0,color.1,color.2);}
+                            if style.is_some_and(|s| s.underline) {
+                                page.line_rgb(
+                                    x + offset,
+                                    y - 1.0,
+                                    x + offset
+                                        + lo_core::font_metrics::measure_base_font(
+                                            line, size, font,
+                                        ),
+                                    y - 1.0,
+                                    color.0,
+                                    color.1,
+                                    color.2,
+                                );
+                            }
                             page.text_rgb(
                                 x + offset,
                                 y,
@@ -438,31 +544,93 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                 }
                 top -= h;
             }
-            page.raw(&format!("q {} {} {} {} re W n",left+heading_w+repeat_w,bottom+layout.footer_height,available_w-repeat_w,available_h-repeat_h));
-            for (f,name) in &images {
-                if !frame_intersects(*f,ox,oy,tw,th) {continue;}
-                page.image(name,left+heading_w+f.origin.x.as_pt()-ox,layout.page_height-top_margin-layout.header_height-heading_h-f.origin.y.as_pt()+oy-f.size.height.as_pt(),f.size.width.as_pt(),f.size.height.as_pt());
+            page.raw(&format!(
+                "q {} {} {} {} re W n",
+                left + heading_w + repeat_w,
+                bottom + layout.footer_height,
+                available_w - repeat_w,
+                available_h - repeat_h
+            ));
+            for (f, name) in &images {
+                if !frame_intersects(*f, ox, oy, tw, th) {
+                    continue;
+                }
+                page.image(
+                    name,
+                    left + heading_w + f.origin.x.as_pt() - ox,
+                    layout.page_height
+                        - top_margin
+                        - layout.header_height
+                        - heading_h
+                        - f.origin.y.as_pt()
+                        + oy
+                        - f.size.height.as_pt(),
+                    f.size.width.as_pt(),
+                    f.size.height.as_pt(),
+                );
             }
             page.raw("Q");
             {
                 page.raw(&format!(
                     "q {} {} {} {} re W n",
-                    left+heading_w+repeat_w, bottom+layout.footer_height, available_w-repeat_w, available_h-repeat_h
+                    left + heading_w + repeat_w,
+                    bottom + layout.footer_height,
+                    available_w - repeat_w,
+                    available_h - repeat_h
                 ));
                 for text in &layout.text_boxes {
-                    if !frame_intersects(text.frame,ox,oy,tw,th) {continue;}
-                    let f=text.frame;let x=left+heading_w+f.origin.x.as_pt()-ox;
-                    let y=layout.page_height-top_margin-layout.header_height-heading_h-f.origin.y.as_pt()+oy;
-                    let w=f.size.width.as_pt();let h=f.size.height.as_pt();let pad=text.style.padding.as_pt();let size=text.style.font_size_pt.clamp(1.0,409.0);
-                    page.raw(&format!("q {x} {} {w} {h} re W n",y-h));
-                    if let Some((r,g,b))=grid_color(&text.style.background) {page.rect_fill_rgb(x,y-h,w,h,r,g,b);}
-                    let (r,g,b)=grid_color(&text.style.foreground).unwrap_or((0.0,0.0,0.0));
-                    for (i,line) in grid_wrap(&text.text,(w-2.0*pad).max(1.0),size).iter().enumerate() {let baseline=y-pad-size-i as f32*size*1.2;if baseline<y-h {break;}if baseline<bottom+layout.footer_height || baseline+size>layout.page_height-top_margin-layout.header_height-heading_h-repeat_h {continue;}page.text_rgb(x+pad,baseline,size,PdfFont::Helvetica,line,r,g,b);}
+                    if !frame_intersects(text.frame, ox, oy, tw, th) {
+                        continue;
+                    }
+                    let f = text.frame;
+                    let x = left + heading_w + f.origin.x.as_pt() - ox;
+                    let y = layout.page_height
+                        - top_margin
+                        - layout.header_height
+                        - heading_h
+                        - f.origin.y.as_pt()
+                        + oy;
+                    let w = f.size.width.as_pt();
+                    let h = f.size.height.as_pt();
+                    let pad = text.style.padding.as_pt();
+                    let size = text.style.font_size_pt.clamp(1.0, 409.0);
+                    page.raw(&format!("q {x} {} {w} {h} re W n", y - h));
+                    if let Some((r, g, b)) = grid_color(&text.style.background) {
+                        page.rect_fill_rgb(x, y - h, w, h, r, g, b);
+                    }
+                    let (r, g, b) = grid_color(&text.style.foreground).unwrap_or((0.0, 0.0, 0.0));
+                    for (i, line) in grid_wrap(&text.text, (w - 2.0 * pad).max(1.0), size)
+                        .iter()
+                        .enumerate()
+                    {
+                        let baseline = y - pad - size - i as f32 * size * 1.2;
+                        if baseline < y - h {
+                            break;
+                        }
+                        if baseline < bottom + layout.footer_height
+                            || baseline + size
+                                > layout.page_height
+                                    - top_margin
+                                    - layout.header_height
+                                    - heading_h
+                                    - repeat_h
+                        {
+                            continue;
+                        }
+                        page.text_rgb(x + pad, baseline, size, PdfFont::Helvetica, line, r, g, b);
+                    }
                     page.raw("Q");
                 }
                 for chart in &layout.charts {
-                    if !frame_intersects(chart.frame,ox,oy,tw,th) {continue;}
-                    chart.render(page, layout.page_height, left+heading_w-ox, top_margin+layout.header_height+heading_h-oy);
+                    if !frame_intersects(chart.frame, ox, oy, tw, th) {
+                        continue;
+                    }
+                    chart.render(
+                        page,
+                        layout.page_height,
+                        left + heading_w - ox,
+                        top_margin + layout.header_height + heading_h - oy,
+                    );
                 }
                 page.raw("Q");
             }
@@ -495,17 +663,41 @@ fn grid_wrap_font(text: &str, width: f32, size: f32, font: PdfFont) -> Vec<Strin
     out
 }
 
-fn repeated_indices(repeat: Option<(u32,u32)>, start: usize, len: usize) -> Vec<usize> {
-    match repeat {Some((a,b)) if a<=b && (b as usize)<start && (b-a)<16384 => (a as usize..=b as usize).filter(|i|*i<len).collect(),_=>Vec::new()}
-}
-fn grid_bands_repeated(sizes:&[f32],available:f32,repeat:Option<(u32,u32)>)->Vec<std::ops::Range<usize>> {
-    if repeat.is_none(){return grid_bands(sizes,available);}
-    let mut ranges=Vec::new();let mut start=0;let mut occupied=0.0;
-    for (i,size) in sizes.iter().enumerate() {
-        if i>start && occupied+size>available+0.01 {ranges.push(start..i);start=i;occupied=repeated_indices(repeat,start,sizes.len()).iter().map(|i|sizes[*i]).sum::<f32>().min((available-*size).max(0.0));}
-        occupied+=size;
+fn repeated_indices(repeat: Option<(u32, u32)>, start: usize, len: usize) -> Vec<usize> {
+    match repeat {
+        Some((a, b)) if a <= b && (b as usize) < start && (b - a) < 16384 => {
+            (a as usize..=b as usize).filter(|i| *i < len).collect()
+        }
+        _ => Vec::new(),
     }
-    if start<sizes.len(){ranges.push(start..sizes.len());}ranges
+}
+fn grid_bands_repeated(
+    sizes: &[f32],
+    available: f32,
+    repeat: Option<(u32, u32)>,
+) -> Vec<std::ops::Range<usize>> {
+    if repeat.is_none() {
+        return grid_bands(sizes, available);
+    }
+    let mut ranges = Vec::new();
+    let mut start = 0;
+    let mut occupied = 0.0;
+    for (i, size) in sizes.iter().enumerate() {
+        if i > start && occupied + size > available + 0.01 {
+            ranges.push(start..i);
+            start = i;
+            occupied = repeated_indices(repeat, start, sizes.len())
+                .iter()
+                .map(|i| sizes[*i])
+                .sum::<f32>()
+                .min((available - *size).max(0.0));
+        }
+        occupied += size;
+    }
+    if start < sizes.len() {
+        ranges.push(start..sizes.len());
+    }
+    ranges
 }
 
 fn grid_bands(sizes: &[f32], available: f32) -> Vec<std::ops::Range<usize>> {
@@ -536,13 +728,33 @@ mod pagination_tests {
     use lo_core::CellAddr;
     #[test]
     fn repeated_titles_reserve_space_on_later_pages() {
-        assert_eq!(grid_bands_repeated(&[20.0;8],60.0,Some((0,0))),[0..3,3..5,5..7,7..8]);
-        let mut book=Workbook::default();let sheet=&mut book.sheets[0];
-        for r in 0..8 {sheet.set(CellAddr::new(r,0),CellValue::Text(if r==0 {"Repeated title".into()}else {format!("row {r}")}));}
-        sheet.layout=Some(lo_core::calc::SheetLayout {page_width:200.0,page_height:100.0,margin:20.0,default_row_height:20.0,repeat_rows:Some((0,0)),..Default::default()});
-        let pdf=String::from_utf8_lossy(&to_pdf(&book)).into_owned();
-        assert_eq!(pdf.matches("(Repeated title)").count(),4);
-        assert_eq!(render(&book).pages().len(),4);
+        assert_eq!(
+            grid_bands_repeated(&[20.0; 8], 60.0, Some((0, 0))),
+            [0..3, 3..5, 5..7, 7..8]
+        );
+        let mut book = Workbook::default();
+        let sheet = &mut book.sheets[0];
+        for r in 0..8 {
+            sheet.set(
+                CellAddr::new(r, 0),
+                CellValue::Text(if r == 0 {
+                    "Repeated title".into()
+                } else {
+                    format!("row {r}")
+                }),
+            );
+        }
+        sheet.layout = Some(lo_core::calc::SheetLayout {
+            page_width: 200.0,
+            page_height: 100.0,
+            margin: 20.0,
+            default_row_height: 20.0,
+            repeat_rows: Some((0, 0)),
+            ..Default::default()
+        });
+        let pdf = String::from_utf8_lossy(&to_pdf(&book)).into_owned();
+        assert_eq!(pdf.matches("(Repeated title)").count(), 4);
+        assert_eq!(render(&book).pages().len(), 4);
     }
     #[test]
     fn grid_paginates_both_axes_and_skips_hidden_sheets() {
@@ -603,7 +815,14 @@ pub fn to_pdf_preview(workbook: &Workbook) -> Vec<u8> {
                     .unwrap_or(layout.default_column_width)
             })
             .sum::<f32>();
-        let width = layout.images.iter().map(|i|i.frame).chain(layout.charts.iter().map(|c|c.frame)).chain(layout.text_boxes.iter().map(|t|t.frame)).map(|f|f.origin.x.as_pt()+f.size.width.as_pt()).fold(width,f32::max);
+        let width = layout
+            .images
+            .iter()
+            .map(|i| i.frame)
+            .chain(layout.charts.iter().map(|c| c.frame))
+            .chain(layout.text_boxes.iter().map(|t| t.frame))
+            .map(|f| f.origin.x.as_pt() + f.size.width.as_pt())
+            .fold(width, f32::max);
         let margins = layout.margins.unwrap_or([layout.margin; 4]);
         layout.page_width = layout.page_width.max(
             (width + margins[0] + margins[1] + if layout.print_headings { 24.0 } else { 0.0 })
@@ -619,7 +838,11 @@ pub(crate) fn cell_font(style: Option<&lo_core::style::CellStyle>) -> PdfFont {
         return PdfFont::Helvetica;
     };
     let family = style.font_family.to_ascii_lowercase();
-    if family.contains("courier") || family.contains("mono") || family == "consolas" {
+    if family.contains("courier")
+        || family.contains("mono")
+        || family == "consolas"
+        || family.contains("typewriter")
+    {
         return PdfFont::Courier;
     }
     if family.contains("times") || family.contains("serif") || family == "cambria" {
@@ -679,23 +902,31 @@ fn draw_border(
 }
 
 fn extend_drawing_grid(values: &mut Vec<f32>, extent: f32, default: f32, available: f32) {
-    let step=default.max(1.0).min(available.max(1.0));
-    let mut total: f32=values.iter().sum();
-    while total < extent && values.len()<100_000 { let n=step.min(extent-total); values.push(n); total+=n; }
+    let step = default.max(1.0).min(available.max(1.0));
+    let mut total: f32 = values.iter().sum();
+    while total < extent && values.len() < 100_000 {
+        let n = step.min(extent - total);
+        values.push(n);
+        total += n;
+    }
 }
 fn register_image(pdf: &mut PdfDocument, image: &lo_core::ImageElement) -> Option<String> {
     if image.mime_type == "image/jpeg" {
-        let (w,h)=jpeg_dimensions(&image.data)?;
-        return Some(pdf.add_jpeg_image(w,h,image.data.clone()));
+        let (w, h) = jpeg_dimensions(&image.data)?;
+        return Some(pdf.add_jpeg_image(w, h, image.data.clone()));
     }
     // Bound PNG allocation before invoking the decoder.
-    let b=&image.data;
-    if b.get(..8)? != b"\x89PNG\r\n\x1a\n" {return None;}
-    let w=u32::from_be_bytes(b.get(16..20)?.try_into().ok()?);
-    let h=u32::from_be_bytes(b.get(20..24)?.try_into().ok()?);
-    if u64::from(w)*u64::from(h)>16_000_000 {return None;}
-    let i=lo_core::decode_png(b).ok()?;
-    Some(pdf.add_rgba_image(i.width,i.height,i.pixels))
+    let b = &image.data;
+    if b.get(..8)? != b"\x89PNG\r\n\x1a\n" {
+        return None;
+    }
+    let w = u32::from_be_bytes(b.get(16..20)?.try_into().ok()?);
+    let h = u32::from_be_bytes(b.get(20..24)?.try_into().ok()?);
+    if u64::from(w) * u64::from(h) > 16_000_000 {
+        return None;
+    }
+    let i = lo_core::decode_png(b).ok()?;
+    Some(pdf.add_rgba_image(i.width, i.height, i.pixels))
 }
 fn jpeg_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
     let mut index = 2usize;
@@ -739,5 +970,9 @@ fn jpeg_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
     None
 }
 
-
-fn frame_intersects(f:lo_core::Rect,x:f32,y:f32,w:f32,h:f32)->bool {f.origin.x.as_pt()<x+w && f.origin.x.as_pt()+f.size.width.as_pt()>x && f.origin.y.as_pt()<y+h && f.origin.y.as_pt()+f.size.height.as_pt()>y}
+fn frame_intersects(f: lo_core::Rect, x: f32, y: f32, w: f32, h: f32) -> bool {
+    f.origin.x.as_pt() < x + w
+        && f.origin.x.as_pt() + f.size.width.as_pt() > x
+        && f.origin.y.as_pt() < y + h
+        && f.origin.y.as_pt() + f.size.height.as_pt() > y
+}

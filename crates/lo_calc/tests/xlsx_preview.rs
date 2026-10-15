@@ -139,11 +139,72 @@ fn style_only_column_preserves_the_sheet_default_width() {
 
 #[test]
 fn conditional_priority_uses_cached_values_and_preserves_base_styles() {
-    let styles=r##"<styleSheet><fonts><font><name val="Arial"/><sz val="10"/></font></fonts><cellXfs><xf/></cellXfs><dxfs><dxf><font><b/><color rgb="FF00B050"/></font></dxf><dxf><font><i/><color rgb="FFFF0000"/></font></dxf></dxfs></styleSheet>"##;
-    let xml=r#"<worksheet><sheetData><row r="1"><c r="A1"><f>UNKNOWN()</f><v>6</v></c><c r="B1"><f>Total</f><v>10</v></c><c r="C1"><v>4</v></c></row></sheetData><conditionalFormatting sqref="A1"><cfRule type="cellIs" operator="greaterThan" priority="1" dxfId="0" stopIfTrue="1"><formula>3</formula></cfRule><cfRule type="cellIs" operator="greaterThan" priority="2" dxfId="1"><formula>0</formula></cfRule></conditionalFormatting><conditionalFormatting sqref="C1"><cfRule type="expression" priority="1" dxfId="1"><formula>$A$1&gt;5</formula></cfRule><cfRule type="dataBar" priority="2"><dataBar showValue="0"><cfvo type="num" val="0"/><cfvo type="num" val="Total"/><color rgb="FF112233"/></dataBar></cfRule></conditionalFormatting></worksheet>"#;
-    let book=lo_calc::from_xlsx_bytes("",&workbook(xml,styles,"")).unwrap();
-    let sheet=&book.sheets[0];let style=sheet.get(CellAddr::new(0,0)).unwrap().style.as_ref().unwrap();
-    assert!(style.bold);assert!(!style.italic);assert_eq!(style.foreground,"#00B050");assert_eq!(style.font_family,"Arial");
-    assert!(sheet.get(CellAddr::new(0,2)).unwrap().style.as_ref().unwrap().italic);
-    assert_eq!(sheet.layout.as_ref().unwrap().data_bars[&CellAddr::new(0,2)],(0.4,"#112233".into(),false));
+    let styles = r##"<styleSheet><fonts><font><name val="Arial"/><sz val="10"/></font></fonts><cellXfs><xf/></cellXfs><dxfs><dxf><font><b/><color rgb="FF00B050"/></font></dxf><dxf><font><i/><color rgb="FFFF0000"/></font></dxf></dxfs></styleSheet>"##;
+    let xml = r#"<worksheet><sheetData><row r="1"><c r="A1"><f>UNKNOWN()</f><v>6</v></c><c r="B1"><f>Total</f><v>10</v></c><c r="C1"><v>4</v></c></row></sheetData><conditionalFormatting sqref="A1"><cfRule type="cellIs" operator="greaterThan" priority="1" dxfId="0" stopIfTrue="1"><formula>3</formula></cfRule><cfRule type="cellIs" operator="greaterThan" priority="2" dxfId="1"><formula>0</formula></cfRule></conditionalFormatting><conditionalFormatting sqref="C1"><cfRule type="expression" priority="1" dxfId="1"><formula>$A$1&gt;5</formula></cfRule><cfRule type="dataBar" priority="2"><dataBar showValue="0"><cfvo type="num" val="0"/><cfvo type="num" val="Total"/><color rgb="FF112233"/></dataBar></cfRule></conditionalFormatting></worksheet>"#;
+    let book = lo_calc::from_xlsx_bytes("", &workbook(xml, styles, "")).unwrap();
+    let sheet = &book.sheets[0];
+    let style = sheet
+        .get(CellAddr::new(0, 0))
+        .unwrap()
+        .style
+        .as_ref()
+        .unwrap();
+    assert!(style.bold);
+    assert!(!style.italic);
+    assert_eq!(style.foreground, "#00B050");
+    assert_eq!(style.font_family, "Arial");
+    assert!(
+        sheet
+            .get(CellAddr::new(0, 2))
+            .unwrap()
+            .style
+            .as_ref()
+            .unwrap()
+            .italic
+    );
+    assert_eq!(
+        sheet.layout.as_ref().unwrap().data_bars[&CellAddr::new(0, 2)],
+        (0.4, "#112233".into(), false)
+    );
+}
+
+#[test]
+fn imports_extended_palette_rotation_indent_and_shrink() {
+    let styles = r#"<styleSheet><fonts><font><name val="Lucida Sans Typewriter"/></font></fonts><fills><fill><patternFill patternType="solid"><fgColor indexed="47"/></patternFill></fill></fills><cellXfs><xf><alignment textRotation="90" indent="2" shrinkToFit="1"/></xf></cellXfs></styleSheet>"#;
+    let book=lo_calc::from_xlsx_bytes("",&workbook(r#"<worksheet><sheetData><row><c r="A1" t="inlineStr"><is><t>Rotated</t></is></c></row></sheetData></worksheet>"#,styles,"")).unwrap();
+    let s = book.sheets[0]
+        .get(CellAddr::new(0, 0))
+        .unwrap()
+        .style
+        .as_ref()
+        .unwrap();
+    assert_eq!(s.background, "#FFCC99");
+    assert_eq!(s.rotation_degrees, 90);
+    assert_eq!(s.indent, 2);
+    assert!(s.shrink_to_fit);
+}
+
+#[test]
+fn conditional_relative_references_follow_each_target_row() {
+    let styles = r#"<styleSheet><cellXfs><xf/></cellXfs><dxfs><dxf><font><b/></font></dxf></dxfs></styleSheet>"#;
+    let xml = r#"<worksheet><sheetData><row><c r="A1"><v>1</v></c><c r="B1"><v>1</v></c></row><row><c r="A2"><v>9</v></c><c r="B2"><v>1</v></c></row></sheetData><conditionalFormatting sqref="B1:B2"><cfRule type="expression" dxfId="0"><formula>$A1&gt;5</formula></cfRule></conditionalFormatting></worksheet>"#;
+    let book = lo_calc::from_xlsx_bytes("", &workbook(xml, styles, "")).unwrap();
+    assert!(
+        !book.sheets[0]
+            .get(CellAddr::new(0, 1))
+            .unwrap()
+            .style
+            .as_ref()
+            .unwrap()
+            .bold
+    );
+    assert!(
+        book.sheets[0]
+            .get(CellAddr::new(1, 1))
+            .unwrap()
+            .style
+            .as_ref()
+            .unwrap()
+            .bold
+    );
 }

@@ -87,22 +87,54 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
                 parse_xlsx_sheet(&name, &sheet_xml, &shared_strings, &styles, date_1904)?;
             sheet.layout.as_mut().unwrap().hidden =
                 matches!(sheet_node.attr("state"), Some("hidden" | "veryHidden"));
-            crate::xlsx_drawings::import(&zip, &target, &sheet_xml, sheet.layout.as_mut().unwrap())?;
-            if let Some(names)=workbook_root.child("definedNames") {
+            crate::xlsx_drawings::import(
+                &zip,
+                &target,
+                &sheet_xml,
+                sheet.layout.as_mut().unwrap(),
+            )?;
+            if let Some(names) = workbook_root.child("definedNames") {
                 for name in names.children_named("definedName") {
-                    if name.attr("name")!=Some("_xlnm.Print_Titles") || name.attr("localSheetId").and_then(|v|v.parse::<usize>().ok())!=Some(index) {continue;}
+                    if name.attr("name") != Some("_xlnm.Print_Titles")
+                        || name
+                            .attr("localSheetId")
+                            .and_then(|v| v.parse::<usize>().ok())
+                            != Some(index)
+                    {
+                        continue;
+                    }
                     for range in name.text_content().split(',') {
-                        let Some((_,range))=range.rsplit_once('!') else {continue};
-                        let range=range.replace('$',""); let Some((a,b))=range.split_once(':') else {continue};
-                        let layout=sheet.layout.as_mut().unwrap();
-                        if let (Ok(a),Ok(b))=(a.parse::<u32>(),b.parse::<u32>()) {if a>0 && b>=a && b<=1048576 && b-a<1024 {layout.repeat_rows=Some((a-1,b-1));}}
-                        else if a.len()<=3 && b.len()<=3 {
-                            if let (Some((_,a)),Some((_,b)))=(parse_cell_ref(&format!("{a}1")),parse_cell_ref(&format!("{b}1"))) {if b>=a {layout.repeat_columns=Some((a-1,b-1));}}
+                        let Some((_, range)) = range.rsplit_once('!') else {
+                            continue;
+                        };
+                        let range = range.replace('$', "");
+                        let Some((a, b)) = range.split_once(':') else {
+                            continue;
+                        };
+                        let layout = sheet.layout.as_mut().unwrap();
+                        if let (Ok(a), Ok(b)) = (a.parse::<u32>(), b.parse::<u32>()) {
+                            if a > 0 && b >= a && b <= 1048576 && b - a < 1024 {
+                                layout.repeat_rows = Some((a - 1, b - 1));
+                            }
+                        } else if a.len() <= 3 && b.len() <= 3 {
+                            if let (Some((_, a)), Some((_, b))) = (
+                                parse_cell_ref(&format!("{a}1")),
+                                parse_cell_ref(&format!("{b}1")),
+                            ) {
+                                if b >= a {
+                                    layout.repeat_columns = Some((a - 1, b - 1));
+                                }
+                            }
                         }
                     }
                 }
             }
-            crate::xlsx_conditional::apply(&mut sheet, &sheet_xml, styles_xml.as_ref(), theme_xml.as_ref());
+            crate::xlsx_conditional::apply(
+                &mut sheet,
+                &sheet_xml,
+                styles_xml.as_ref(),
+                theme_xml.as_ref(),
+            );
             workbook.sheets.push(sheet);
         }
     }
@@ -149,7 +181,10 @@ pub fn from_ods_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workbook
 
 // ---------------------------------------------------------------------------
 
-pub(crate) fn parse_relationships(zip: &ZipArchive, part: &str) -> Result<BTreeMap<String, String>> {
+pub(crate) fn parse_relationships(
+    zip: &ZipArchive,
+    part: &str,
+) -> Result<BTreeMap<String, String>> {
     let rels_path = rels_path_for(part);
     if !zip.contains(&rels_path) {
         return Ok(BTreeMap::new());
@@ -157,7 +192,9 @@ pub(crate) fn parse_relationships(zip: &ZipArchive, part: &str) -> Result<BTreeM
     let root = parse_xml_document(&zip.read_string(&rels_path)?)?;
     let mut map = BTreeMap::new();
     for rel in root.children_named("Relationship") {
-        if rel.attr("TargetMode") == Some("External") { continue; }
+        if rel.attr("TargetMode") == Some("External") {
+            continue;
+        }
         if let (Some(id), Some(target)) = (rel.attr("Id"), rel.attr("Target")) {
             map.insert(id.to_string(), resolve_part_target(part, target));
         }

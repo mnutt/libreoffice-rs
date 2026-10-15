@@ -4,7 +4,9 @@ use lo_core::{CellAddr, Sheet, XmlNode};
 use std::collections::BTreeMap;
 
 fn address(s: &str) -> Option<CellAddr> {
-    if s.len()>16 {return None;}
+    if s.len() > 16 {
+        return None;
+    }
     let a = CellAddr::from_a1(&s.replace('$', "")).ok()?;
     (a.col < 16384 && a.row < 1048576).then_some(a)
 }
@@ -104,17 +106,48 @@ pub(crate) fn apply(
         }
     }
     rules.sort_by_key(|r| r.0);
+    let mut budget = 1_000_000usize;
     for (a, cell) in &mut sheet.cells {
         let value = cached.get(a).map(String::as_str).unwrap_or("");
         let mut matched = Vec::new();
         for (_, range, rule) in &rules {
+            if budget == 0 {
+                eprintln!("XLSX preview: conditional-format work limit reached");
+                return;
+            }
+            budget -= 1;
+            let base = range
+                .split_whitespace()
+                .next()
+                .and_then(|r| r.split(':').next())
+                .and_then(address);
+            let resolve = |s: &str| -> Option<String> {
+                let s = s.trim();
+                if let (Some(mut target), Some(base)) = (address(s), base) {
+                    if !s.starts_with('$') {
+                        target.col = u32::try_from(
+                            i64::from(target.col) + i64::from(a.col) - i64::from(base.col),
+                        )
+                        .ok()?;
+                    }
+                    if !s.trim_start_matches('$').contains('$') {
+                        target.row = u32::try_from(
+                            i64::from(target.row) + i64::from(a.row) - i64::from(base.row),
+                        )
+                        .ok()?;
+                    }
+                    cached.get(&target).cloned()
+                } else {
+                    scalar(s)
+                }
+            };
             if !within(range, *a) {
                 continue;
             }
             if let Some(bar) = rule.child("dataBar") {
                 let limits: Vec<_> = bar.children_named("cfvo").collect();
                 let bound = |n: &&XmlNode| -> Option<f32> {
-                    scalar(n.attr("val")?)?
+                    resolve(n.attr("val")?)?
                         .parse::<f32>()
                         .ok()
                         .filter(|v| v.is_finite())
@@ -143,8 +176,8 @@ pub(crate) fn apply(
                 .collect();
             let applies = match rule.attr("type") {
                 Some("cellIs") => {
-                    let b = formulas.first().and_then(|s| scalar(s));
-                    let c = formulas.get(1).and_then(|s| scalar(s));
+                    let b = formulas.first().and_then(|s| resolve(s));
+                    let c = formulas.get(1).and_then(|s| resolve(s));
                     b.is_some_and(|b| {
                         condition(
                             rule.attr("operator").unwrap_or(""),
@@ -165,7 +198,7 @@ pub(crate) fn apply(
                     ]
                     .iter()
                     .find_map(|(token, op)| f.split_once(token).map(|(l, r)| (l, r, op)))
-                    .is_some_and(|(l, r, op)| match (scalar(l), scalar(r)) {
+                    .is_some_and(|(l, r, op)| match (resolve(l), resolve(r)) {
                         (Some(l), Some(r)) => condition(op, &l, &r, ""),
                         _ => false,
                     })

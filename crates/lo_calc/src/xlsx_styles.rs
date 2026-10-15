@@ -61,10 +61,17 @@ pub(crate) fn color(node: Option<&XmlNode>, theme: &[String], indexed: &[String]
     let Some(node) = node else {
         return String::new();
     };
+    // ISO/IEC 29500 indexed palette; indexes 64/65 are system foreground/background.
+    // https://learn.microsoft.com/dotnet/api/documentformat.openxml.spreadsheet.indexedcolors
     let defaults = [
         "000000", "FFFFFF", "FF0000", "00FF00", "0000FF", "FFFF00", "FF00FF", "00FFFF", "000000",
         "FFFFFF", "FF0000", "00FF00", "0000FF", "FFFF00", "FF00FF", "00FFFF", "800000", "008000",
-        "000080", "808000", "800080", "008080", "C0C0C0", "808080",
+        "000080", "808000", "800080", "008080", "C0C0C0", "808080", "9999FF", "993366", "FFFFCC",
+        "CCFFFF", "660066", "FF8080", "0066CC", "CCCCFF", "000080", "FF00FF", "FFFF00", "00FFFF",
+        "800080", "800000", "008080", "0000FF", "00CCFF", "CCFFFF", "CCFFCC", "FFFF99", "99CCFF",
+        "FF99CC", "CC99FF", "FFCC99", "3366FF", "33CCCC", "99CC00", "FFCC00", "FF9900", "FF6600",
+        "666699", "969696", "003366", "339966", "003300", "333300", "993300", "993366", "333399",
+        "333333", "000000", "FFFFFF",
     ];
     let value = if let Some(rgb) = node.attr("rgb") {
         Some(rgb)
@@ -225,6 +232,14 @@ pub(crate) fn parse(root: Option<&XmlNode>, theme: Option<&XmlNode>) -> Styles {
         };
         if let Some(align) = align {
             style.wrap = truth(align.attr("wrapText"));
+            style.indent = index(align, "indent").min(250) as u16;
+            style.shrink_to_fit = truth(align.attr("shrinkToFit"));
+            let rotation = index(align, "textRotation");
+            style.rotation_degrees = match rotation {
+                0..=90 => rotation as i16,
+                91..=180 => 90 - rotation as i16,
+                _ => 0,
+            };
             style.vertical_alignment = Some(match align.attr("vertical") {
                 Some("top") => Alignment::Start,
                 Some("center" | "justify" | "distributed") => Alignment::Center,

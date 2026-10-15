@@ -76,8 +76,14 @@ pub(crate) fn import(
     root: &XmlNode,
     layout: &mut SheetLayout,
 ) -> Result<()> {
-    let theme=if zip.contains("xl/theme/theme1.xml") {Some(lo_core::parse_xml_document(&zip.read_string("xl/theme/theme1.xml")?)?)} else {None};
-    let colors=crate::xlsx_styles::theme_colors(theme.as_ref());
+    let theme = if zip.contains("xl/theme/theme1.xml") {
+        Some(lo_core::parse_xml_document(
+            &zip.read_string("xl/theme/theme1.xml")?,
+        )?)
+    } else {
+        None
+    };
+    let colors = crate::xlsx_styles::theme_colors(theme.as_ref());
     let rels = crate::import::parse_relationships(zip, part)?;
     for drawing in root.children_named("drawing").take(64) {
         let Some(path) = drawing.attr("id").and_then(|id| rels.get(id)) else {
@@ -89,16 +95,53 @@ pub(crate) fn import(
             let Some(frame) = frame(anchor, layout) else {
                 continue;
             };
-            if let Some(shape)=anchor.child("sp") {
-                if let Some(body)=shape.child("txBody") {
-                    fn first<'a>(n:&'a XmlNode,key:&str)->Option<&'a XmlNode> {if n.local_name()==key {Some(n)} else {n.children.iter().find_map(|n|first(n,key))}}
-                    fn text(n:&XmlNode)->String {if n.local_name()=="t" {n.text_content()} else if n.local_name()=="br" {"\n".into()} else {n.children.iter().map(|n|text(n)).collect()}}
-                    let text=body.children_named("p").map(text).collect::<Vec<_>>().join("\n");
-                    let properties=first(body,"rPr").or_else(||first(body,"defRPr"));
-                    let style=lo_core::style::TextBoxStyle {font_size_pt:properties.and_then(|n|number(n,"sz")).unwrap_or(1100.0)/100.0,
-                        padding:Length::pt(body.child("bodyPr").and_then(|n|number(n,"lIns")).unwrap_or(91440.0)/12700.0),
-                        background:drawing_color(shape.child("spPr").and_then(|n|n.child("solidFill")),&colors),foreground:drawing_color(properties.and_then(|n|n.child("solidFill")),&colors),border:false,..Default::default()};
-                    layout.text_boxes.push(lo_core::TextBox{frame,text,style});
+            if let Some(shape) = anchor.child("sp") {
+                if let Some(body) = shape.child("txBody") {
+                    fn first<'a>(n: &'a XmlNode, key: &str) -> Option<&'a XmlNode> {
+                        if n.local_name() == key {
+                            Some(n)
+                        } else {
+                            n.children.iter().find_map(|n| first(n, key))
+                        }
+                    }
+                    fn text(n: &XmlNode) -> String {
+                        if n.local_name() == "t" {
+                            n.text_content()
+                        } else if n.local_name() == "br" {
+                            "\n".into()
+                        } else {
+                            n.children.iter().map(|n| text(n)).collect()
+                        }
+                    }
+                    let text = body
+                        .children_named("p")
+                        .map(text)
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    let properties = first(body, "rPr").or_else(|| first(body, "defRPr"));
+                    let style = lo_core::style::TextBoxStyle {
+                        font_size_pt: properties.and_then(|n| number(n, "sz")).unwrap_or(1100.0)
+                            / 100.0,
+                        padding: Length::pt(
+                            body.child("bodyPr")
+                                .and_then(|n| number(n, "lIns"))
+                                .unwrap_or(91440.0)
+                                / 12700.0,
+                        ),
+                        background: drawing_color(
+                            shape.child("spPr").and_then(|n| n.child("solidFill")),
+                            &colors,
+                        ),
+                        foreground: drawing_color(
+                            properties.and_then(|n| n.child("solidFill")),
+                            &colors,
+                        ),
+                        border: false,
+                        ..Default::default()
+                    };
+                    layout
+                        .text_boxes
+                        .push(lo_core::TextBox { frame, text, style });
                 }
             }
             if let Some(chart) = anchor
@@ -109,7 +152,11 @@ pub(crate) fn import(
             {
                 if let Some(path) = chart.attr("id").and_then(|id| rels.get(id)) {
                     let xml = lo_core::parse_xml_document(&zip.read_string(path)?)?;
-                    if let Some(chart) = lo_core::odf_chart::OdfChart::from_ooxml_with_theme(&xml, frame, theme.as_ref()) {
+                    if let Some(chart) = lo_core::odf_chart::OdfChart::from_ooxml_with_theme(
+                        &xml,
+                        frame,
+                        theme.as_ref(),
+                    ) {
                         layout.charts.push(chart);
                     }
                 }
@@ -158,9 +205,11 @@ mod tests {
     use super::*;
     #[test]
     fn drawing_theme_colors_resolve_background_and_accent() {
-        let colors=crate::xlsx_styles::theme_colors(None);
-        let node=lo_core::parse_xml_document(r#"<solidFill><schemeClr val="accent1"/></solidFill>"#).unwrap();
-        assert_eq!(drawing_color(Some(&node),&colors),"#4F81BD");
+        let colors = crate::xlsx_styles::theme_colors(None);
+        let node =
+            lo_core::parse_xml_document(r#"<solidFill><schemeClr val="accent1"/></solidFill>"#)
+                .unwrap();
+        assert_eq!(drawing_color(Some(&node), &colors), "#4F81BD");
     }
     #[test]
     fn anchors_use_hidden_dimensions_and_emu_offsets() {
@@ -205,10 +254,31 @@ mod tests {
     }
 }
 
-fn drawing_color(node:Option<&XmlNode>, colors:&[String])->String {
-    let Some(n)=node else {return String::new()};
-    if let Some(rgb)=n.child("srgbClr").and_then(|n|n.attr("val")).filter(|v|v.len()==6 && v.is_ascii()) {return format!("#{rgb}");}
-    let name=n.child("schemeClr").and_then(|n|n.attr("val")).unwrap_or("");
-    let i=match name {"bg1"|"lt1"=>0,"tx1"|"dk1"=>1,"bg2"|"lt2"=>2,"tx2"|"dk2"=>3,"accent1"=>4,"accent2"=>5,"accent3"=>6,"accent4"=>7,"accent5"=>8,"accent6"=>9,_=>return String::new()};
-    colors.get(i).map(|v|format!("#{v}")).unwrap_or_default()
+fn drawing_color(node: Option<&XmlNode>, colors: &[String]) -> String {
+    let Some(n) = node else { return String::new() };
+    if let Some(rgb) = n
+        .child("srgbClr")
+        .and_then(|n| n.attr("val"))
+        .filter(|v| v.len() == 6 && v.is_ascii())
+    {
+        return format!("#{rgb}");
+    }
+    let name = n
+        .child("schemeClr")
+        .and_then(|n| n.attr("val"))
+        .unwrap_or("");
+    let i = match name {
+        "bg1" | "lt1" => 0,
+        "tx1" | "dk1" => 1,
+        "bg2" | "lt2" => 2,
+        "tx2" | "dk2" => 3,
+        "accent1" => 4,
+        "accent2" => 5,
+        "accent3" => 6,
+        "accent4" => 7,
+        "accent5" => 8,
+        "accent6" => 9,
+        _ => return String::new(),
+    };
+    colors.get(i).map(|v| format!("#{v}")).unwrap_or_default()
 }
