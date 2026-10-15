@@ -369,3 +369,101 @@ mod tests {
         assert!(bytes.starts_with(b"PK"));
     }
 }
+
+/// Read cached embedded ODF charts without fetching linked resources.
+pub fn odf_charts(root: &lo_core::XmlNode, zip: &ZipArchive) -> Vec<lo_core::odf_chart::OdfChart> {
+    use lo_core::{Length, Rect, style::odf_length};
+    let mut charts = Vec::new();
+    fn visit(
+        node: &lo_core::XmlNode,
+        zip: &ZipArchive,
+        out: &mut Vec<lo_core::odf_chart::OdfChart>,
+    ) {
+        if node.local_name() == "notes" {
+            return;
+        }
+        if node.local_name() == "frame" {
+            if let Some(href) = node.child("object").and_then(|n| n.attr("href")) {
+                let href = href.strip_prefix("./").unwrap_or(href);
+                if !href.starts_with('/')
+                    && !href.contains(':')
+                    && !href.split('/').any(|s| s == "..")
+                {
+                    let w = node.attr("width").and_then(odf_length).filter(|v| *v > 0.0);
+                    let h = node
+                        .attr("height")
+                        .and_then(odf_length)
+                        .filter(|v| *v > 0.0);
+                    if let (Some(w), Some(h), Ok(xml)) =
+                        (w, h, zip.read_string(&format!("{href}/content.xml")))
+                    {
+                        if let Ok(root) = lo_core::parse_xml_document(&xml) {
+                            let frame = Rect::new(
+                                Length::pt(node.attr("x").and_then(odf_length).unwrap_or(0.0)),
+                                Length::pt(node.attr("y").and_then(odf_length).unwrap_or(0.0)),
+                                Length::pt(w),
+                                Length::pt(h),
+                            );
+                            if let Some(chart) = lo_core::odf_chart::OdfChart::parse(&root, frame) {
+                                out.push(chart);
+                            }
+                        }
+                    }
+                }
+            }
+            return;
+        }
+        for child in &node.children {
+            visit(child, zip, out);
+        }
+    }
+    visit(root, zip, &mut charts);
+    charts
+}
+
+/// Load one supported raster alternative from an ODF frame.
+pub fn odf_image(frame: &lo_core::XmlNode, zip: &ZipArchive) -> Option<lo_core::ImageElement> {
+    use lo_core::{Rect, Length, style::odf_length};
+    for image in frame.children_named("image") {
+        let Some(href) = image.attr("href") else {
+            continue;
+        };
+        let href = href.strip_prefix("./").unwrap_or(href);
+        if href.starts_with('/') || href.contains(':') || href.split('/').any(|s| s == "..") {
+            continue;
+        }
+        let mime = match href.rsplit('.').next()?.to_ascii_lowercase().as_str() {
+            "png" => "image/png",
+            "webp" => "image/webp",
+            "svg" => "image/svg+xml",
+            "jpg" | "jpeg" => "image/jpeg",
+            _ => continue,
+        };
+        let Ok(data) = zip.read(href) else { continue };
+        let w = frame
+            .attr("width")
+            .and_then(odf_length)
+            .filter(|v| *v > 0.0)?;
+        let h = frame
+            .attr("height")
+            .and_then(odf_length)
+            .filter(|v| *v > 0.0)?;
+        return Some(lo_core::ImageElement {
+            opacity: 255,
+            name: href.to_string(),
+            mime_type: mime.to_string(),
+            data,
+            frame: Rect::new(
+                Length::pt(frame.attr("x").and_then(odf_length).unwrap_or(0.0)),
+                Length::pt(frame.attr("y").and_then(odf_length).unwrap_or(0.0)),
+                Length::pt(w),
+                Length::pt(h),
+            ),
+            alt: frame
+                .child("desc")
+                .map(|n| n.text_content())
+                .unwrap_or_default(),
+        });
+    }
+    None
+}

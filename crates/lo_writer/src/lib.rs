@@ -352,6 +352,7 @@ where
                 index += 1;
             }
             document.body.push(Block::Table(Table {
+                odf_layout: None,
                 name: "Table1".to_string(),
                 rows,
             }));

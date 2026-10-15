@@ -60,7 +60,7 @@ fn glyph_width(ch: char, font: PdfFont) -> u16 {
     if (' '..='~').contains(&normalized) {
         let widths = match font {
             PdfFont::Helvetica | PdfFont::HelveticaOblique => &HELVETICA,
-            PdfFont::HelveticaBold => &HELVETICA_BOLD,
+            PdfFont::HelveticaBold | PdfFont::HelveticaBoldOblique => &HELVETICA_BOLD,
             PdfFont::TimesRoman => &TIMES_ROMAN,
             PdfFont::TimesBold => &TIMES_BOLD,
             PdfFont::TimesItalic => &TIMES_ITALIC,

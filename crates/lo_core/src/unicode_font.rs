@@ -80,7 +80,26 @@ impl EmbeddedUnicodeFont {
 
 pub(crate) fn build_unicode_fonts(chars: &BTreeSet<char>) -> Result<Vec<EmbeddedUnicodeFont>> {
     let mut database = Database::new();
-    if let Some(paths) = std::env::var_os(FONT_OVERRIDE_ENV) {
+    if let Some(directory) = std::env::var_os("DAVROS_PREVIEW_FONTS") {
+        let mut paths = std::fs::read_dir(directory)?
+            .filter_map(|entry| entry.ok().map(|e| e.path()))
+            .collect::<Vec<_>>();
+        paths.sort();
+        for path in paths {
+            if path
+                .extension()
+                .and_then(|s| s.to_str())
+                .is_some_and(|s| matches!(s, "ttf" | "otf"))
+            {
+                database.load_font_file(&path).map_err(|error| {
+                    LoError::Io(format!(
+                        "loading bundled PDF font {}: {error}",
+                        path.display()
+                    ))
+                })?;
+            }
+        }
+    } else if let Some(paths) = std::env::var_os(FONT_OVERRIDE_ENV) {
         for path in std::env::split_paths(&paths) {
             database.load_font_file(&path).map_err(|error| {
                 LoError::Io(format!(

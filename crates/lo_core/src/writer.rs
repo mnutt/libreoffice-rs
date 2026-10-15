@@ -81,7 +81,17 @@ pub struct TableRow {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
+pub struct OdfTableLayout {
+    pub columns: Vec<f32>,
+    /// Zero spans mark covered cells; all other cells default to (1, 1).
+    pub spans: std::collections::BTreeMap<(usize, usize), (usize, usize)>,
+    pub backgrounds: std::collections::BTreeMap<(usize, usize), String>,
+    pub borders: std::collections::BTreeMap<(usize, usize), String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Table {
+    pub odf_layout: Option<OdfTableLayout>,
     pub name: String,
     pub rows: Vec<TableRow>,
 }
@@ -126,9 +136,54 @@ pub enum Block {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum OdfPageField {
+    Text(String),
+    PageNumber,
+    PageCount,
+    Tab,
+    LineBreak,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub struct OdfDocumentLayout {
+    pub page: [f32; 2],
+    pub margins: [f32; 4], // left, right, top, bottom, in points
+    pub header_height: f32,
+    pub header_font: TextStyle,
+    pub footer_font: TextStyle,
+    pub footer_height: f32,
+    pub headers: Vec<Vec<OdfPageField>>,
+    pub footers: Vec<Vec<OdfPageField>>,
+    pub first_headers: Option<Vec<Vec<OdfPageField>>>,
+    pub first_footers: Option<Vec<Vec<OdfPageField>>>,
+    pub left_headers: Option<Vec<Vec<OdfPageField>>>,
+    pub left_footers: Option<Vec<Vec<OdfPageField>>>,
+    pub image_groups: std::collections::BTreeMap<usize, usize>,
+}
+impl Default for OdfDocumentLayout {
+    fn default() -> Self {
+        Self {
+            page: [595.28, 841.89],
+            margins: [56.69; 4],
+            header_height: 0.0,
+            footer_height: 0.0,
+            headers: Vec::new(),
+            footers: Vec::new(),
+            header_font: TextStyle::default(),
+            footer_font: TextStyle::default(),
+            first_headers: None,
+            first_footers: None,
+            left_headers: None,
+            left_footers: None,
+            image_groups: Default::default(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct TextDocument {
     pub meta: Metadata,
     pub page_style: PageStyle,
+    pub odf_layout: Option<OdfDocumentLayout>,
     pub body: Vec<Block>,
 }
 
@@ -142,6 +197,7 @@ impl Default for TextDocument {
                 margin_mm: 20,
             },
             body: Vec::new(),
+            odf_layout: None,
         }
     }
 }

@@ -80,6 +80,7 @@ impl DrawBuilder {
                     Length::mm(h_mm),
                 ),
                 style: ShapeStyle {
+                    rotation_millidegrees: 0,
                     fill: fill.to_string(),
                     stroke: "#222222".to_string(),
                     stroke_width_mm: 1,
@@ -107,6 +108,7 @@ impl DrawBuilder {
                     Length::mm(h_mm),
                 ),
                 style: ShapeStyle {
+                    rotation_millidegrees: 0,
                     fill: fill.to_string(),
                     stroke: "#222222".to_string(),
                     stroke_width_mm: 1,
@@ -127,6 +129,7 @@ impl DrawBuilder {
                     Length::mm(y2_mm - y1_mm),
                 ),
                 style: ShapeStyle {
+                    rotation_millidegrees: 0,
                     fill: String::new(),
                     stroke: "#333333".to_string(),
                     stroke_width_mm: 1,

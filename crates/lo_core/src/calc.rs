@@ -115,10 +115,48 @@ impl Range {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct SheetLayout {
+    pub headers: Vec<(u8, Vec<crate::OdfPageField>)>,
+    pub footers: Vec<(u8, Vec<crate::OdfPageField>)>,
+    pub header_height: f32,
+    pub footer_height: f32,
+    pub columns: BTreeMap<u32, f32>,
+    pub merges: BTreeMap<CellAddr, (u32, u32)>,
+    pub rows: BTreeMap<u32, f32>,
+    pub hidden: bool,
+    pub charts: Vec<crate::odf_chart::OdfChart>,
+    pub page_width: f32,
+    pub page_height: f32,
+    pub margin: f32,
+}
+impl Default for SheetLayout {
+    fn default() -> Self {
+        Self {
+            headers: Vec::new(),
+            footers: Vec::new(),
+            header_height: 0.0,
+            footer_height: 0.0,
+            columns: BTreeMap::new(),
+            merges: BTreeMap::new(),
+            rows: BTreeMap::new(),
+            hidden: false,
+            charts: Vec::new(),
+            page_width: 595.28,
+            page_height: 841.89,
+            // Calc uses 2 cm when the ODF page style omits margins.
+            margin: 72.0 * 2.0 / 2.54,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Sheet {
     pub name: String,
     pub cells: BTreeMap<CellAddr, Cell>,
+    /// Imported display text for preview; invalidated when the cell is replaced.
+    pub display_values: BTreeMap<CellAddr, String>,
+    pub layout: Option<SheetLayout>,
     /// When true, row 0 is treated as a header row: ODF serialization emits
     /// it inside <table:table-header-rows> with a bold style, and calc
     /// evaluation skips it when ranges start at row 0.
@@ -130,11 +168,14 @@ impl Sheet {
         Self {
             name: name.into(),
             cells: BTreeMap::new(),
+            display_values: BTreeMap::new(),
+            layout: None,
             has_header: false,
         }
     }
 
     pub fn set(&mut self, addr: CellAddr, value: CellValue) {
+        self.display_values.remove(&addr);
         self.cells.insert(
             addr,
             Cell {

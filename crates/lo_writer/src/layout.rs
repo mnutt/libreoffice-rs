@@ -61,8 +61,158 @@ pub fn render_document_pdf(doc: &TextDocument) -> Vec<u8> {
         .expect("PDF text contains Unicode that no installed font can preserve")
 }
 
+fn render_inline_image_group(
+    ctx: &LayoutContext,
+    pdf: &mut PdfDocument,
+    index: &mut usize,
+    mut y: f32,
+    blocks: &[Block],
+) -> f32 {
+    let max_width = ctx.page_w - ctx.margin_l - ctx.margin_r;
+    let max_height = ctx.page_h - ctx.margin_t - ctx.margin_b;
+    let images: Vec<_> = blocks
+        .iter()
+        .filter_map(|b| {
+            if let Block::Image(image) = b {
+                Some(image)
+            } else {
+                None
+            }
+        })
+        .collect();
+    let mut start = 0;
+    while start < images.len() {
+        let mut row = Vec::new();
+        let mut used = 0.0f32;
+        let mut height = 0.0f32;
+        for image in &images[start..] {
+            let w = image.size.width.as_pt().max(1.0);
+            let h = image.size.height.as_pt().max(1.0);
+            let scale = (max_width / w).min(max_height / h).min(1.0);
+            let (w, h) = (w * scale, h * scale);
+            if !row.is_empty() && used + w > max_width + 0.01 {
+                break;
+            }
+            row.push((*image, w, h));
+            used += w;
+            height = height.max(h);
+        }
+        y = ensure_room(ctx, pdf, index, y, height);
+        let bottom = y - height;
+        let mut x = ctx.margin_l;
+        for (image, w, h) in &row {
+            let resource = register_pdf_image(pdf, image);
+            let page = pdf.page_mut(*index).expect("image row page");
+            page.begin_tag("Figure", Some(&image.alt));
+            if let Some(resource) = resource {
+                page.image(&resource, x, bottom, *w, *h);
+            } else {
+                page.rect_stroke(x, bottom, *w, *h);
+            }
+            page.end_tag();
+            x += w;
+        }
+        start += row.len();
+        y = bottom;
+    }
+    y - 4.0
+}
+
+fn render_odf_page_fields(
+    pdf: &mut PdfDocument,
+    layout: &lo_core::OdfDocumentLayout,
+    fonts: &FontResolver,
+) {
+    use lo_core::OdfPageField as Field;
+    let pages = pdf.pages().len();
+    for index in 0..pages {
+        let select = |normal, first: &Option<Vec<Vec<Field>>>, left: &Option<Vec<Vec<Field>>>| {
+            if index == 0 {
+                first.clone().unwrap_or(normal)
+            } else if index % 2 == 1 {
+                left.clone().unwrap_or(normal)
+            } else {
+                normal
+            }
+        };
+        let header = select(
+            layout.headers.clone(),
+            &layout.first_headers,
+            &layout.left_headers,
+        );
+        let footer = select(
+            layout.footers.clone(),
+            &layout.first_footers,
+            &layout.left_footers,
+        );
+        let page = pdf.page_mut(index).expect("header page");
+        for (lines, mut y, style) in [
+            (
+                header,
+                layout.page[1] - layout.margins[2],
+                &layout.header_font,
+            ),
+            (
+                footer,
+                layout.margins[3] + layout.footer_height.max(14.0),
+                &layout.footer_font,
+            ),
+        ] {
+            let size = (style.font_size_pt as f32).max(1.0);
+            let font = fonts.pick(Some(&style.font_family), style.bold, style.italic);
+            y -= size;
+            for line in lines {
+                let mut text = String::new();
+                for field in line {
+                    match field {
+                        Field::Text(s) => text.push_str(&s),
+                        Field::PageNumber => text.push_str(&(index + 1).to_string()),
+                        Field::PageCount => text.push_str(&pages.to_string()),
+                        Field::Tab => text.push('\t'),
+                        Field::LineBreak => text.push('\n'),
+                    }
+                }
+                for line in text.split('\n') {
+                    let columns: Vec<_> = line.split('\t').collect();
+                    let available = layout.page[0] - layout.margins[0] - layout.margins[1];
+                    for (column, text) in columns.iter().enumerate() {
+                        let width = measure_text(text, size, font);
+                        let x = if column == 0 {
+                            layout.margins[0]
+                        } else if column == columns.len() - 1 {
+                            layout.page[0] - layout.margins[1] - width
+                        } else {
+                            layout.margins[0] + (available - width) / 2.0
+                        };
+                        page.text(x, y, size, font, text);
+                    }
+                    y -= size * 1.2;
+                }
+            }
+        }
+    }
+}
+
 pub fn try_render_document_pdf(doc: &TextDocument) -> Result<Vec<u8>> {
-    let ctx = LayoutContext::from_page_style(&doc.page_style);
+    let mut ctx = LayoutContext::from_page_style(&doc.page_style);
+    if let Some(layout) = &doc.odf_layout {
+        ctx.page_w = layout.page[0];
+        ctx.page_h = layout.page[1];
+        ctx.margin_l = layout.margins[0];
+        ctx.margin_r = layout.margins[1];
+        let header = if !layout.headers.is_empty() || layout.first_headers.is_some() {
+            layout.header_height.max(14.0)
+        } else {
+            0.0
+        };
+        let footer = if !layout.footers.is_empty() || layout.first_footers.is_some() {
+            layout.footer_height.max(14.0)
+        } else {
+            0.0
+        };
+        ctx.margin_t = (layout.margins[2] + header).min(ctx.page_h * 0.45);
+        ctx.margin_b = (layout.margins[3] + footer).min(ctx.page_h * 0.45);
+    }
     let mut pdf = PdfDocument::new();
     let mut page_index = pdf.add_page(ctx.page_w, ctx.page_h);
     let mut y = ctx.page_h - ctx.margin_t;
@@ -94,7 +244,27 @@ pub fn try_render_document_pdf(doc: &TextDocument) -> Result<Vec<u8>> {
         y -= 30.0;
     }
 
+    let mut skip_until = 0;
     for (block_index, block) in doc.body.iter().enumerate() {
+        if block_index < skip_until {
+            continue;
+        }
+        if let Some(end) = doc
+            .odf_layout
+            .as_ref()
+            .and_then(|l| l.image_groups.get(&block_index))
+            .copied()
+        {
+            y = render_inline_image_group(
+                &ctx,
+                &mut pdf,
+                &mut page_index,
+                y,
+                &doc.body[block_index..end],
+            );
+            skip_until = end;
+            continue;
+        }
         if let Block::Heading(heading) = block {
             let heading_height = heading_height(&ctx, heading);
             let following_height = doc
@@ -251,6 +421,9 @@ pub fn try_render_document_pdf(doc: &TextDocument) -> Result<Vec<u8>> {
         }
     }
 
+    if let Some(layout) = &doc.odf_layout {
+        render_odf_page_fields(&mut pdf, layout, &ctx.fonts);
+    }
     pdf.try_finish()
 }
 
@@ -351,8 +524,39 @@ fn render_list_item(
     item: &ListItem,
 ) -> f32 {
     for block in &item.blocks {
-        if let Block::Paragraph(paragraph) = block {
-            y = render_paragraph(ctx, pdf, page_index, y, paragraph, 12.0, 18.0, "LI");
+        match block {
+            Block::Paragraph(paragraph) => {
+                y = render_paragraph(ctx, pdf, page_index, y, paragraph, 12.0, 18.0, "LI");
+            }
+            Block::List(list) => {
+                let mut nested = ctx.clone();
+                nested.margin_l += 18.0;
+                y = render_list(&nested, pdf, page_index, y, list);
+            }
+            Block::Image(_) => {
+                let mut nested = ctx.clone();
+                nested.margin_l += 18.0;
+                y = render_inline_image_group(
+                    &nested,
+                    pdf,
+                    page_index,
+                    y,
+                    std::slice::from_ref(block),
+                );
+            }
+            Block::Table(table) => {
+                let mut nested = ctx.clone();
+                nested.margin_l += 18.0;
+                y = render_table(&nested, pdf, page_index, y, table);
+            }
+            Block::Heading(heading) => {
+                y = render_heading(ctx, pdf, page_index, y, heading);
+            }
+            Block::PageBreak => {
+                *page_index = pdf.add_page(ctx.page_w, ctx.page_h);
+                y = ctx.page_h - ctx.margin_t;
+            }
+            _ => {}
         }
     }
     y
@@ -400,6 +604,25 @@ fn following_keep_height(ctx: &LayoutContext, block: &Block) -> f32 {
     }
 }
 
+fn paragraph_line_factor(paragraph: &Paragraph) -> f32 {
+    if paragraph.style.line_height_percent > 0 {
+        paragraph.style.line_height_percent as f32 / 100.0
+    } else {
+        1.25
+    }
+}
+fn paragraph_empty_line_height(paragraph: &Paragraph, default_size: f32, empty: bool) -> f32 {
+    if !empty {
+        return 0.0;
+    }
+    let size = if paragraph.text_style.font_size_pt > 0 {
+        paragraph.text_style.font_size_pt as f32
+    } else {
+        default_size
+    };
+    size * paragraph_line_factor(paragraph)
+}
+
 fn render_paragraph(
     ctx: &LayoutContext,
     pdf: &mut PdfDocument,
@@ -414,7 +637,11 @@ fn render_paragraph(
     let right = ctx.margin_r + mm_to_pt(paragraph.style.margin_right_mm);
     let available_width = (ctx.page_w - left - right).max(48.0);
     let margin_top = mm_to_pt(paragraph.style.margin_top_mm);
-    let minimum_bottom_mm = minimum_paragraph_bottom_mm(semantic_role);
+    let minimum_bottom_mm = if paragraph.style.source_spacing {
+        0
+    } else {
+        minimum_paragraph_bottom_mm(semantic_role)
+    };
     let margin_bottom = mm_to_pt(paragraph.style.margin_bottom_mm.max(minimum_bottom_mm));
     let runs = paragraph_runs(paragraph, default_size, &ctx.fonts);
     let lines = layout_runs(&runs, available_width);
@@ -423,8 +650,15 @@ fn render_paragraph(
         .map(|line| {
             line.runs
                 .iter()
-                .map(|run| run.size * 1.25)
-                .fold(default_size * 1.25, f32::max)
+                .map(|run| run.size * paragraph_line_factor(paragraph))
+                .fold(
+                    if paragraph.style.source_spacing {
+                        paragraph_empty_line_height(paragraph, default_size, line.runs.is_empty())
+                    } else {
+                        default_size * 1.25
+                    },
+                    f32::max,
+                )
         })
         .collect::<Vec<_>>();
     let total_height = margin_top + line_heights.iter().sum::<f32>() + margin_bottom;
@@ -445,7 +679,9 @@ fn render_paragraph(
         // Descend by one line box before drawing so glyph ascenders never
         // intrude into the preceding table, paragraph, or page margin.
         y -= line_height;
-        if let Some((r, g, b)) = parse_color(&paragraph.text_style.background) {
+        if let Some((r, g, b)) = parse_color(&paragraph.text_style.background)
+            .filter(|_| !paragraph.style.source_spacing)
+        {
             let page = pdf.page_mut(*page_index).expect("page");
             page.begin_artifact();
             page.rect_fill_rgb(
@@ -493,11 +729,31 @@ fn paragraph_height(
             .map(|line| {
                 line.runs
                     .iter()
-                    .map(|run| run.size * 1.25)
-                    .fold(default_size * 1.25, f32::max)
+                    .map(|run| run.size * paragraph_line_factor(paragraph))
+                    .fold(
+                        if paragraph.style.source_spacing {
+                            paragraph_empty_line_height(
+                                paragraph,
+                                default_size,
+                                line.runs.is_empty(),
+                            )
+                        } else {
+                            default_size * 1.25
+                        },
+                        f32::max,
+                    )
             })
             .sum::<f32>()
-        + mm_to_pt(paragraph.style.margin_bottom_mm.max(minimum_bottom_mm))
+        + mm_to_pt(
+            paragraph
+                .style
+                .margin_bottom_mm
+                .max(if paragraph.style.source_spacing {
+                    0
+                } else {
+                    minimum_bottom_mm
+                }),
+        )
 }
 
 fn minimum_paragraph_bottom_mm(semantic_role: &str) -> u16 {
@@ -508,6 +764,103 @@ fn minimum_paragraph_bottom_mm(semantic_role: &str) -> u16 {
     }
 }
 
+fn render_odf_table(
+    ctx: &LayoutContext,
+    pdf: &mut PdfDocument,
+    page_index: &mut usize,
+    mut y: f32,
+    table: &Table,
+    layout: &lo_core::OdfTableLayout,
+) -> f32 {
+    let count = table.rows.iter().map(|r| r.cells.len()).max().unwrap_or(0);
+    if count == 0 {
+        return y;
+    }
+    let available = ctx.page_w - ctx.margin_l - ctx.margin_r;
+    let mut widths: Vec<f32> = (0..count)
+        .map(|c| {
+            layout
+                .columns
+                .get(c)
+                .copied()
+                .unwrap_or(available / count as f32)
+        })
+        .collect();
+    let total: f32 = widths.iter().sum();
+    if total > available {
+        for w in &mut widths {
+            *w *= available / total;
+        }
+    }
+    let mut rows = Vec::new();
+    for (r, row) in table.rows.iter().enumerate() {
+        let mut cells = Vec::new();
+        let mut height = 16.0f32;
+        for (c, cell) in row.cells.iter().enumerate() {
+            let (span, _) = layout.spans.get(&(r, c)).copied().unwrap_or((1, 1));
+            let width: f32 = widths[c..(c + span).min(count)].iter().sum();
+            let lines = if span == 0 {
+                Vec::new()
+            } else {
+                layout_cell(cell, (width - 4.0).max(1.0), &ctx.fonts, false)
+            };
+            height = height.max(lines.iter().map(table_line_height).sum::<f32>() + 4.0);
+            cells.push(lines);
+        }
+        rows.push((cells, height));
+    }
+    for (r, (cells, height)) in rows.iter().enumerate() {
+        y = ensure_room(ctx, pdf, page_index, y, *height);
+        let page = pdf.page_mut(*page_index).expect("table page");
+        let mut x = ctx.margin_l;
+        for (c, lines) in cells.iter().enumerate() {
+            let (span, row_span) = layout.spans.get(&(r, c)).copied().unwrap_or((1, 1));
+            let width: f32 = widths[c..(c + span).min(count)].iter().sum();
+            let cell_height: f32 = rows[r..(r + row_span).min(rows.len())]
+                .iter()
+                .map(|(_, h)| h)
+                .sum();
+            if span > 0 {
+                if let Some((red, green, blue)) =
+                    layout.backgrounds.get(&(r, c)).and_then(|s| parse_color(s))
+                {
+                    page.rect_fill_rgb(x, y - cell_height, width, cell_height, red, green, blue);
+                }
+                if let Some(border) = layout.borders.get(&(r, c)).filter(|s| s.as_str() != "none") {
+                    let (red, green, blue) = border
+                        .split_whitespace()
+                        .last()
+                        .and_then(parse_color)
+                        .unwrap_or((0.0, 0.0, 0.0));
+                    page.rect_stroke_rgb(x, y - cell_height, width, cell_height, red, green, blue);
+                }
+                let mut baseline = y
+                    - 2.0
+                    - lines
+                        .first()
+                        .map(|line| line.runs.iter().map(|r| r.size).fold(9.0, f32::max))
+                        .unwrap_or(9.0);
+                for line in lines {
+                    render_line(
+                        page,
+                        line,
+                        x + 2.0,
+                        baseline,
+                        Alignment::Start,
+                        width - 4.0,
+                        false,
+                        "TD",
+                    );
+                    baseline -= table_line_height(line);
+                }
+            }
+            x += widths[c];
+        }
+        y -= height;
+    }
+    y
+}
+
 fn render_table(
     ctx: &LayoutContext,
     pdf: &mut PdfDocument,
@@ -515,6 +868,9 @@ fn render_table(
     mut y: f32,
     table: &Table,
 ) -> f32 {
+    if let Some(layout) = &table.odf_layout {
+        return render_odf_table(ctx, pdf, page_index, y, table, layout);
+    }
     let col_widths = table_column_widths(ctx, table);
     let row_layouts = table
         .rows
@@ -1130,15 +1486,7 @@ fn register_pdf_image(pdf: &mut PdfDocument, image: &ImageBlock) -> Option<Strin
 }
 
 fn register_raster_image(pdf: &mut PdfDocument, decoded: lo_core::RasterImage) -> String {
-    let mut rgb = Vec::with_capacity(decoded.width as usize * decoded.height as usize * 3);
-    for pixel in decoded.pixels.chunks_exact(4) {
-        let alpha = pixel[3] as u16;
-        let inverse = 255 - alpha;
-        rgb.push(((pixel[0] as u16 * alpha + 255 * inverse) / 255) as u8);
-        rgb.push(((pixel[1] as u16 * alpha + 255 * inverse) / 255) as u8);
-        rgb.push(((pixel[2] as u16 * alpha + 255 * inverse) / 255) as u8);
-    }
-    pdf.add_rgb_image(decoded.width, decoded.height, rgb)
+    pdf.add_rgba_image(decoded.width, decoded.height, decoded.pixels)
 }
 
 fn jpeg_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {

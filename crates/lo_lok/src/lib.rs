@@ -321,7 +321,9 @@ impl Office {
                         style: lo_core::TextBoxStyle::default(),
                     })],
                     notes: Vec::new(),
-                chart_tokens: Vec::new(),
+                    chart_tokens: Vec::new(),
+                    odf_charts: Vec::new(),
+                    background: None,
                 });
                 DocumentBackend::Impress(p)
             }
@@ -532,6 +534,7 @@ fn execute_writer_command(
                 })
                 .collect();
             doc.body.push(Block::Table(Table {
+                odf_layout: None,
                 name: "Table1".to_string(),
                 rows,
             }));
@@ -677,6 +680,8 @@ fn execute_impress_command(
                 elements: Vec::new(),
                 notes: Vec::new(),
                 chart_tokens: Vec::new(),
+                odf_charts: Vec::new(),
+                background: None,
             });
             Ok(UnoValue::Int(deck.slides.len() as i64))
         }
@@ -752,6 +757,7 @@ fn execute_impress_command(
                         Length::mm(get_i64(arguments, "height").unwrap_or(45) as f32),
                     ),
                     style: lo_core::ShapeStyle {
+                        rotation_millidegrees: 0,
                         fill: "#d9eaf7".to_string(),
                         stroke: "#1f4e79".to_string(),
                         stroke_width_mm: 1,
@@ -806,6 +812,7 @@ fn execute_draw_command(
                         Length::mm(get_i64(arguments, "height").unwrap_or(40) as f32),
                     ),
                     style: lo_core::ShapeStyle {
+                        rotation_millidegrees: 0,
                         fill: "#d9eaf7".to_string(),
                         stroke: "#1f4e79".to_string(),
                         stroke_width_mm: 1,

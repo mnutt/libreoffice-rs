@@ -1,4 +1,6 @@
 mod chart;
+#[cfg(feature = "svg")]
+mod odf_shapes;
 pub mod html;
 pub mod import;
 pub mod markdown;
@@ -77,6 +79,8 @@ impl ImpressBuilder {
             ],
             notes: Vec::new(),
             chart_tokens: Vec::new(),
+            odf_charts: Vec::new(),
+            background: None,
         });
         self
     }
@@ -103,6 +107,7 @@ impl ImpressBuilder {
                         Length::mm(25.0),
                     ),
                     style: ShapeStyle {
+                        rotation_millidegrees: 0,
                         fill: "#d9eaf7".to_string(),
                         stroke: "#1f4e79".to_string(),
                         stroke_width_mm: 1,
@@ -117,6 +122,7 @@ impl ImpressBuilder {
                         Length::mm(25.0),
                     ),
                     style: ShapeStyle {
+                        rotation_millidegrees: 0,
                         fill: "#e2f0d9".to_string(),
                         stroke: "#375623".to_string(),
                         stroke_width_mm: 1,
@@ -131,6 +137,7 @@ impl ImpressBuilder {
                         Length::mm(0.0),
                     ),
                     style: ShapeStyle {
+                        rotation_millidegrees: 0,
                         fill: String::new(),
                         stroke: "#666666".to_string(),
                         stroke_width_mm: 1,
@@ -160,6 +167,8 @@ impl ImpressBuilder {
             ],
             notes: vec!["Auto-generated diagram slide".to_string()],
             chart_tokens: Vec::new(),
+            odf_charts: Vec::new(),
+            background: None,
         });
         self
     }

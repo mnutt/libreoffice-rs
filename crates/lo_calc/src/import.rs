@@ -89,10 +89,23 @@ pub fn from_ods_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workbook
         .child("spreadsheet")
         .ok_or_else(|| LoError::Parse("content.xml missing office:spreadsheet".to_string()))?;
 
+    let mut styles = lo_core::style::OdfStyles::default();
+    let page_styles = if zip.contains("styles.xml") {
+        Some(parse_xml_document(&zip.read_string("styles.xml")?)?)
+    } else {
+        None
+    };
+    if let Some(root) = &page_styles {
+        styles.collect(root);
+    }
+    styles.collect(&content);
     let mut workbook = Workbook::new(title);
     workbook.sheets.clear();
     for table in spreadsheet.children_named("table") {
-        workbook.sheets.push(parse_ods_sheet(table));
+        let mut sheet = parse_ods_sheet(table);
+        apply_ods_layout(table, &styles, page_styles.as_ref(), &mut sheet);
+        sheet.layout.as_mut().unwrap().charts = lo_zip::odf_charts(table, &zip);
+        workbook.sheets.push(sheet);
     }
     if workbook.sheets.is_empty() {
         workbook.sheets.push(Sheet::new("Sheet1"));
@@ -232,23 +245,314 @@ fn parse_cell_ref(reference: &str) -> Option<(u32, u32)> {
 // ---------------------------------------------------------------------------
 // ODS
 
+fn ods_rows<'a>(node: &'a XmlNode, rows: &mut Vec<&'a XmlNode>) {
+    for child in &node.children {
+        match child.local_name() {
+            "table-row" => rows.push(child),
+            "table-header-rows" | "table-rows" | "table-row-group" => ods_rows(child, rows),
+            _ => {}
+        }
+    }
+}
+
+// Keep dynamic page fields typed until pagination is complete.
+fn ods_page_fields(node: Option<&XmlNode>, sheet: &str) -> Vec<(u8, Vec<lo_core::OdfPageField>)> {
+    use lo_core::OdfPageField as F;
+    fn collect(node: &XmlNode, sheet: &str, out: &mut Vec<F>) {
+        for item in &node.items {
+            match item {
+                XmlItem::Text(text) => out.push(F::Text(text.clone())),
+                XmlItem::Node(n) => match n.local_name() {
+                    "page-number" => out.push(F::PageNumber),
+                    "page-count" => out.push(F::PageCount),
+                    "sheet-name" => out.push(F::Text(sheet.to_string())),
+                    "line-break" => out.push(F::LineBreak),
+                    "tab" => out.push(F::Tab),
+                    _ => collect(n, sheet, out),
+                },
+            }
+        }
+    }
+    let Some(node) = node.filter(|n| n.attr("display") != Some("false")) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for child in &node.children {
+        let alignment = match child.local_name() {
+            "region-left" => 0,
+            "region-right" => 2,
+            _ => 1,
+        };
+        let mut fields = Vec::new();
+        collect(child, sheet, &mut fields);
+        if !fields.is_empty() {
+            out.push((alignment, fields));
+        }
+    }
+    out
+}
+
+fn apply_ods_layout(
+    table: &XmlNode,
+    styles: &lo_core::style::OdfStyles,
+    page_styles: Option<&XmlNode>,
+    sheet: &mut Sheet,
+) {
+    use lo_core::style::{odf_length, CellStyle, Alignment};
+    let mut layout = lo_core::calc::SheetLayout::default();
+    let name = table.attr("style-name").unwrap_or("");
+    layout.hidden = styles.property(name, "table-properties", "display") == Some("false");
+    if let Some(master_name) = styles.0.get(name).and_then(|n| n.attr("master-page-name")) {
+        if let Some(root) = page_styles {
+            let master = root.child("master-styles").and_then(|n| {
+                n.children_named("master-page")
+                    .find(|n| n.attr("name") == Some(master_name))
+            });
+            if let Some(master) = master {
+                layout.headers = ods_page_fields(master.child("header"), &sheet.name);
+                layout.footers = ods_page_fields(master.child("footer"), &sheet.name);
+                if !layout.headers.is_empty() {
+                    layout.header_height = 24.0;
+                }
+                if !layout.footers.is_empty() {
+                    layout.footer_height = 24.0;
+                }
+            }
+            let props = master
+                .and_then(|n| n.attr("page-layout-name"))
+                .and_then(|name| {
+                    root.child("automatic-styles").and_then(|n| {
+                        n.children_named("page-layout")
+                            .find(|n| n.attr("name") == Some(name))
+                    })
+                })
+                .and_then(|n| n.child("page-layout-properties"));
+            if let Some(props) = props {
+                if let Some(w) = props
+                    .attr("page-width")
+                    .and_then(odf_length)
+                    .filter(|v| *v > 72.0)
+                {
+                    layout.page_width = w;
+                }
+                if let Some(h) = props
+                    .attr("page-height")
+                    .and_then(odf_length)
+                    .filter(|v| *v > 72.0)
+                {
+                    layout.page_height = h;
+                }
+                if let Some(m) = props
+                    .attr("margin")
+                    .or_else(|| props.attr("margin-left"))
+                    .and_then(odf_length)
+                    .filter(|v| *v >= 0.0)
+                {
+                    layout.margin = m.min(layout.page_width / 4.0).min(layout.page_height / 4.0);
+                }
+            }
+        }
+    }
+    let (max_row, mut max_col) = sheet.max_extent();
+    let mut cells = Vec::new();
+    table.descendants_named("table-cell", &mut cells);
+    let extra = cells
+        .iter()
+        .filter_map(|c| {
+            c.attr("number-columns-spanned")
+                .and_then(|s| s.parse::<u32>().ok())
+        })
+        .max()
+        .unwrap_or(1)
+        .saturating_sub(1);
+    max_col = max_col.saturating_add(extra).min(16_383);
+    let mut defaults = BTreeMap::new();
+    let mut col = 0u32;
+    for column in table.children_named("table-column") {
+        let count = column
+            .attr("number-columns-repeated")
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(1);
+        let width = column
+            .attr("style-name")
+            .and_then(|n| styles.property(n, "table-column-properties", "column-width"))
+            .and_then(odf_length)
+            .filter(|v| *v > 0.0)
+            .unwrap_or(64.0);
+        for offset in 0..count
+            .min(max_col.saturating_add(1).saturating_sub(col))
+            .min(16_384)
+        {
+            layout.columns.insert(
+                col + offset,
+                if matches!(column.attr("visibility"), Some("collapse" | "filter")) {
+                    0.0
+                } else {
+                    width
+                },
+            );
+            if let Some(name) = column.attr("default-cell-style-name") {
+                defaults.insert(col + offset, name);
+            }
+        }
+        col = col.saturating_add(count);
+    }
+    let mut rows = Vec::new();
+    ods_rows(table, &mut rows);
+    let mut row_index = 0u32;
+    for row in rows {
+        let repeats = row
+            .attr("number-rows-repeated")
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(1);
+        let height = row
+            .attr("style-name")
+            .and_then(|n| styles.property(n, "table-row-properties", "row-height"))
+            .and_then(odf_length)
+            .filter(|v| *v > 0.0)
+            .unwrap_or(15.0);
+        for offset in 0..repeats
+            .min(max_row.saturating_add(1).saturating_sub(row_index))
+            .min(1_048_576)
+        {
+            let r = row_index + offset;
+            layout.rows.insert(
+                r,
+                if matches!(row.attr("visibility"), Some("collapse" | "filter")) {
+                    0.0
+                } else {
+                    height
+                },
+            );
+            let mut c = 0u32;
+            for cell in row
+                .children
+                .iter()
+                .filter(|n| matches!(n.local_name(), "table-cell" | "covered-table-cell"))
+            {
+                let count = cell
+                    .attr("number-columns-repeated")
+                    .and_then(|s| s.parse::<u32>().ok())
+                    .unwrap_or(1);
+                for offset in 0..count
+                    .min(max_col.saturating_add(1).saturating_sub(c))
+                    .min(16_384)
+                {
+                    let addr = CellAddr::new(r, c + offset);
+                    let Some(target) = sheet.cells.get_mut(&addr) else {
+                        continue;
+                    };
+                    let name = cell
+                        .attr("style-name")
+                        .or_else(|| row.attr("default-cell-style-name"))
+                        .or_else(|| defaults.get(&(c + offset)).copied())
+                        .unwrap_or("Default");
+                    let columns = cell
+                        .attr("number-columns-spanned")
+                        .and_then(|s| s.parse::<u32>().ok())
+                        .unwrap_or(1)
+                        .clamp(1, 16_384);
+                    let rows = cell
+                        .attr("number-rows-spanned")
+                        .and_then(|s| s.parse::<u32>().ok())
+                        .unwrap_or(1)
+                        .clamp(1, 1_048_576);
+                    if columns > 1 || rows > 1 {
+                        layout.merges.insert(addr, (columns, rows));
+                    }
+                    let mut style = CellStyle::default();
+                    style.border = styles
+                        .property_in(name, "table-cell", "table-cell-properties", "border")
+                        .unwrap_or("")
+                        .to_string();
+                    style.wrap = styles.property_in(
+                        name,
+                        "table-cell",
+                        "table-cell-properties",
+                        "wrap-option",
+                    ) == Some("wrap");
+                    style.background = styles
+                        .property_in(
+                            name,
+                            "table-cell",
+                            "table-cell-properties",
+                            "background-color",
+                        )
+                        .unwrap_or("")
+                        .to_string();
+                    style.foreground = styles
+                        .property_in(name, "table-cell", "text-properties", "color")
+                        .unwrap_or("")
+                        .to_string();
+                    style.font_size_pt = styles
+                        .property_in(name, "table-cell", "text-properties", "font-size")
+                        .and_then(odf_length)
+                        .filter(|v| *v > 0.0)
+                        .map(|v| v.round().clamp(1.0, 512.0) as u16)
+                        .unwrap_or(10);
+                    style.bold =
+                        styles.property_in(name, "table-cell", "text-properties", "font-weight")
+                            == Some("bold");
+                    style.italic =
+                        styles.property_in(name, "table-cell", "text-properties", "font-style")
+                            == Some("italic");
+                    style.alignment = match styles.property_in(
+                        name,
+                        "table-cell",
+                        "paragraph-properties",
+                        "text-align",
+                    ) {
+                        Some("center") => Alignment::Center,
+                        Some("end" | "right") => Alignment::End,
+                        _ if matches!(target.value, CellValue::Number(_))
+                            || matches!(
+                                cell.attr("value-type"),
+                                Some("float" | "percentage" | "currency")
+                            ) =>
+                        {
+                            Alignment::End
+                        }
+                        _ => Alignment::Start,
+                    };
+                    target.style = Some(style);
+                }
+                c = c.saturating_add(count);
+            }
+        }
+        row_index = row_index.saturating_add(repeats);
+    }
+    sheet.layout = Some(layout);
+}
+
 fn parse_ods_sheet(node: &XmlNode) -> Sheet {
     let name = node.attr("name").unwrap_or("Sheet1").to_string();
     let mut sheet = Sheet::new(name);
     let mut row_index: u32 = 1;
-    for row_node in node.children_named("table-row") {
+    let mut rows = Vec::new();
+    ods_rows(node, &mut rows);
+    for row_node in rows {
         let repeat_rows = row_node
             .attr("number-rows-repeated")
             .and_then(|value| value.parse::<u32>().ok())
             .unwrap_or(1);
         let row_values = parse_ods_row(row_node);
-        for _ in 0..repeat_rows {
-            for (col, value) in &row_values {
+        if row_values.is_empty() {
+            row_index = row_index.saturating_add(repeat_rows);
+            continue;
+        }
+        for _ in 0..repeat_rows.min(1_048_576u32.saturating_sub(row_index - 1)) {
+            for (col, value, display) in &row_values {
                 if *value != CellValue::Empty {
                     sheet.set(
                         CellAddr::new(row_index.saturating_sub(1), col.saturating_sub(1)),
                         value.clone(),
                     );
+                    if let Some(text) = display {
+                        sheet.display_values.insert(
+                            CellAddr::new(row_index.saturating_sub(1), col.saturating_sub(1)),
+                            text.clone(),
+                        );
+                    }
                 }
             }
             row_index += 1;
@@ -257,7 +561,7 @@ fn parse_ods_sheet(node: &XmlNode) -> Sheet {
     sheet
 }
 
-fn parse_ods_row(row_node: &XmlNode) -> Vec<(u32, CellValue)> {
+fn parse_ods_row(row_node: &XmlNode) -> Vec<(u32, CellValue, Option<String>)> {
     let mut values = Vec::new();
     let mut col_index: u32 = 1;
     for cell in row_node
@@ -274,10 +578,21 @@ fn parse_ods_row(row_node: &XmlNode) -> Vec<(u32, CellValue)> {
         } else {
             parse_ods_value(cell)
         };
-        for _ in 0..repeat_cols {
-            values.push((col_index, value.clone()));
-            col_index += 1;
+        // ODF stores the displayed result in text:p alongside typed values.
+        // Preserve it for preview without discarding formulas or numeric types.
+        let paragraphs: Vec<String> = cell
+            .children
+            .iter()
+            .filter(|node| matches!(node.local_name(), "p" | "h"))
+            .map(|node| lo_core::style::odf_text(node))
+            .collect();
+        let display = (!paragraphs.is_empty()).then(|| paragraphs.join("\n"));
+        if value != CellValue::Empty {
+            for offset in 0..repeat_cols.min(16_384u32.saturating_sub(col_index - 1)) {
+                values.push((col_index + offset, value.clone(), display.clone()));
+            }
         }
+        col_index = col_index.saturating_add(repeat_cols);
     }
     values
 }
@@ -296,7 +611,7 @@ fn parse_ods_value(cell: &XmlNode) -> CellValue {
         .children
         .iter()
         .filter(|child| matches!(child.local_name(), "p" | "h"))
-        .map(|paragraph| paragraph.text_content())
+        .map(|paragraph| lo_core::style::odf_text(paragraph))
         .collect::<Vec<_>>()
         .join("\n");
     match value_type {
@@ -334,6 +649,65 @@ mod tests {
     use super::*;
     use crate::to_xlsx;
     use lo_core::{CellAddr, CellValue, Workbook};
+
+    #[test]
+    fn hidden_grid_dimensions_and_sheet_fields_are_preserved() {
+        let node = parse_xml_document(r#"<table><table-column visibility="collapse"/><table-column/><table-row visibility="filter"><table-cell value-type="string"><p>hidden</p></table-cell></table-row><table-row><table-cell/><table-cell value-type="string"><p>shown</p></table-cell></table-row></table>"#).unwrap();
+        let mut sheet = parse_ods_sheet(&node);
+        apply_ods_layout(
+            &node,
+            &lo_core::style::OdfStyles::default(),
+            None,
+            &mut sheet,
+        );
+        let layout = sheet.layout.unwrap();
+        assert_eq!(layout.rows[&0], 0.0);
+        assert_eq!(layout.columns[&0], 0.0);
+        assert!(layout.rows[&1] > 0.0);
+        let header = parse_xml_document(r#"<header><region-right><p><sheet-name>stale</sheet-name> <page-number>99</page-number>/<page-count>99</page-count></p></region-right></header>"#).unwrap();
+        let fields = ods_page_fields(Some(&header), "Actual sheet");
+        assert_eq!(fields[0].0, 2);
+        assert_eq!(
+            fields[0].1[0],
+            lo_core::OdfPageField::Text("Actual sheet".into())
+        );
+        assert!(fields[0].1.contains(&lo_core::OdfPageField::PageNumber));
+        assert!(fields[0].1.contains(&lo_core::OdfPageField::PageCount));
+    }
+
+    #[test]
+    fn grid_import_retains_merges_borders_and_header_groups() {
+        let root=parse_xml_document(r##"<table><table-header-rows><table-row><table-cell style-name="Cell" number-columns-spanned="2" value-type="string"><p>Merged</p></table-cell><covered-table-cell/></table-row></table-header-rows></table>"##).unwrap();
+        let style_root=parse_xml_document(r##"<styles><style name="Cell" family="table-cell"><table-cell-properties border="1pt solid #123456" wrap-option="wrap"/></style></styles>"##).unwrap();
+        let mut styles = lo_core::style::OdfStyles::default();
+        styles.collect(&style_root);
+        let mut sheet = parse_ods_sheet(&root);
+        apply_ods_layout(&root, &styles, None, &mut sheet);
+        assert_eq!(
+            sheet.layout.as_ref().unwrap().merges[&CellAddr::new(0, 0)],
+            (2, 1)
+        );
+        let style = sheet
+            .get(CellAddr::new(0, 0))
+            .unwrap()
+            .style
+            .as_ref()
+            .unwrap();
+        assert_eq!(style.border, "1pt solid #123456");
+        assert!(style.wrap);
+    }
+
+    #[test]
+    fn preview_preserves_odf_display_values() {
+        let root = parse_xml_document(r#"<table><table-row number-rows-repeated="2"><table-cell value-type="percentage" value="0.125"><p>12.5%</p></table-cell><table-cell value-type="currency" value="12.5"><p>$12.50</p></table-cell></table-row></table>"#).unwrap();
+        let sheet = parse_ods_sheet(&root);
+        assert_eq!(sheet.display_values[&CellAddr::new(1, 0)], "12.5%");
+        assert_eq!(sheet.display_values[&CellAddr::new(1, 1)], "$12.50");
+        assert_eq!(
+            sheet.get(CellAddr::new(1, 0)).unwrap().value,
+            CellValue::Number(0.125)
+        );
+    }
 
     #[test]
     fn parse_cell_ref_handles_basic() {

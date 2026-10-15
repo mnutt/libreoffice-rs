@@ -26,6 +26,8 @@ pub enum ShapeKind {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ImageElement {
+    /// Overall image opacity, multiplied with intrinsic alpha.
+    pub opacity: u8,
     pub name: String,
     pub mime_type: String,
     pub data: Vec<u8>,
@@ -51,6 +53,8 @@ pub struct Slide {
     /// `pdftotext` and pixel-diff tools see the same content the
     /// LibreOffice chart engine would draw.
     pub chart_tokens: Vec<Vec<String>>,
+    pub odf_charts: Vec<crate::odf_chart::OdfChart>,
+    pub background: Option<String>,
 }
 
 impl Default for Slide {
@@ -60,6 +64,8 @@ impl Default for Slide {
             elements: Vec::new(),
             notes: Vec::new(),
             chart_tokens: Vec::new(),
+            odf_charts: Vec::new(),
+            background: None,
         }
     }
 }
@@ -116,6 +122,8 @@ impl Presentation {
             ],
             notes: Vec::new(),
             chart_tokens: Vec::new(),
+            odf_charts: Vec::new(),
+            background: None,
         }
     }
 

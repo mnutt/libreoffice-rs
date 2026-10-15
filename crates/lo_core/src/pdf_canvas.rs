@@ -17,6 +17,7 @@ pub enum PdfFont {
     Helvetica,
     HelveticaBold,
     HelveticaOblique,
+    HelveticaBoldOblique,
     Courier,
     TimesRoman,
     TimesBold,
@@ -29,6 +30,7 @@ impl PdfFont {
             Self::Helvetica => "F1",
             Self::HelveticaBold => "F2",
             Self::HelveticaOblique => "F3",
+            Self::HelveticaBoldOblique => "F8",
             Self::Courier => "F4",
             Self::TimesRoman => "F5",
             Self::TimesBold => "F6",
@@ -41,6 +43,7 @@ impl PdfFont {
             Self::Helvetica => "Helvetica",
             Self::HelveticaBold => "Helvetica-Bold",
             Self::HelveticaOblique => "Helvetica-Oblique",
+            Self::HelveticaBoldOblique => "Helvetica-BoldOblique",
             Self::Courier => "Courier",
             Self::TimesRoman => "Times-Roman",
             Self::TimesBold => "Times-Bold",
@@ -49,13 +52,16 @@ impl PdfFont {
     }
 
     fn is_bold(self) -> bool {
-        matches!(self, Self::HelveticaBold | Self::TimesBold)
+        matches!(
+            self,
+            Self::HelveticaBold | Self::HelveticaBoldOblique | Self::TimesBold
+        )
     }
 
     fn is_italic(self) -> bool {
         matches!(
             self,
-            Self::HelveticaOblique | Self::TimesItalic
+            Self::HelveticaOblique | Self::HelveticaBoldOblique | Self::TimesItalic
         )
     }
 }
@@ -398,6 +404,7 @@ struct PdfImage {
     height: u32,
     bytes: Vec<u8>,
     jpeg: bool,
+    alpha: Option<Vec<u8>>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -435,6 +442,25 @@ impl PdfDocument {
             height,
             bytes,
             jpeg: false,
+            alpha: None,
+        });
+        format!("Im{}", self.images.len())
+    }
+
+    pub fn add_rgba_image(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> String {
+        let mut rgb = Vec::with_capacity(rgba.len() / 4 * 3);
+        let mut alpha = Vec::with_capacity(rgba.len() / 4);
+        for pixel in rgba.chunks_exact(4) {
+            rgb.extend_from_slice(&pixel[..3]);
+            alpha.push(pixel[3]);
+        }
+        let alpha = alpha.iter().any(|a| *a != 255).then_some(alpha);
+        self.images.push(PdfImage {
+            width,
+            height,
+            bytes: rgb,
+            jpeg: false,
+            alpha,
         });
         format!("Im{}", self.images.len())
     }
@@ -445,6 +471,7 @@ impl PdfDocument {
             height,
             bytes,
             jpeg: true,
+            alpha: None,
         });
         format!("Im{}", self.images.len())
     }
@@ -480,6 +507,7 @@ impl PdfDocument {
             PdfFont::TimesRoman,
             PdfFont::TimesBold,
             PdfFont::TimesItalic,
+            PdfFont::HelveticaBoldOblique,
         ] {
             objects.push(
                 format!(
@@ -495,7 +523,17 @@ impl PdfDocument {
             .collect::<Vec<_>>();
         let page_start = objects.len() + 1;
         let image_start = page_start + self.pages.len() * 2;
-        let annotation_start = image_start + self.images.len();
+        let mut next_image = image_start;
+        let image_objects: Vec<_> = self
+            .images
+            .iter()
+            .map(|image| {
+                let index = next_image;
+                next_image += 1 + usize::from(image.alpha.is_some());
+                index
+            })
+            .collect();
+        let annotation_start = next_image;
         let annotation_count = self
             .pages
             .iter()
@@ -513,7 +551,7 @@ impl PdfDocument {
                 self.images
                     .iter()
                     .enumerate()
-                    .map(|(index, _)| format!("/Im{} {} 0 R", index + 1, image_start + index))
+                    .map(|(index, _)| format!("/Im{} {} 0 R", index + 1, image_objects[index]))
                     .collect::<Vec<_>>()
                     .join(" ")
             )
@@ -529,7 +567,9 @@ impl PdfDocument {
                 .enumerate()
                 .map(|(font_index, object)| format!(" /FU{font_index} {object} 0 R"))
                 .collect::<String>();
-            let resources = format!("<< /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R /F4 6 0 R /F5 7 0 R /F6 8 0 R /F7 9 0 R{unicode_resource} >>{xobjects} >>");
+            let resources = format!(
+                "<< /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R /F4 6 0 R /F5 7 0 R /F6 8 0 R /F7 9 0 R /F8 10 0 R{unicode_resource} >>{xobjects} >>"
+            );
             let annotations = if page.links.is_empty() {
                 String::new()
             } else {
@@ -565,13 +605,24 @@ impl PdfDocument {
             } else {
                 ""
             };
+            let mask = if image.alpha.is_some() {
+                format!(" /SMask {} 0 R", objects.len() + 2)
+            } else {
+                String::new()
+            };
             let mut object = format!(
-                "<< /Type /XObject /Subtype /Image /Width {} /Height {} /ColorSpace /DeviceRGB /BitsPerComponent 8{filter} /Length {} >>\nstream\n",
+                "<< /Type /XObject /Subtype /Image /Width {} /Height {} /ColorSpace /DeviceRGB /BitsPerComponent 8{filter}{mask} /Length {} >>\nstream\n",
                 image.width, image.height, image.bytes.len()
             ).into_bytes();
             object.extend_from_slice(&image.bytes);
             object.extend_from_slice(b"\nendstream");
             objects.push(object);
+            if let Some(alpha) = &image.alpha {
+                let mut mask=format!("<< /Type /XObject /Subtype /Image /Width {} /Height {} /ColorSpace /DeviceGray /BitsPerComponent 8 /Length {} >>\nstream\n",image.width,image.height,alpha.len()).into_bytes();
+                mask.extend_from_slice(alpha);
+                mask.extend_from_slice(b"\nendstream");
+                objects.push(mask);
+            }
         }
         for (page_index, page) in self.pages.iter().enumerate() {
             let page_obj = page_start + page_index * 2;

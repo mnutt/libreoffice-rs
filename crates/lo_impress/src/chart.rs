@@ -1887,6 +1887,8 @@ mod tests {
             elements: Vec::new(),
             notes: Vec::new(),
             chart_tokens: vec![spec_to_row(&spec)],
+            odf_charts: Vec::new(),
+            background: None,
         });
         let pdf = to_pdf(&presentation);
         let text = String::from_utf8_lossy(&pdf);
