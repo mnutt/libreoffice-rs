@@ -67,8 +67,11 @@ def main():
     parser.add_argument('--baseline', default='sixth-all', help='Run prefix within runs/')
     parser.add_argument('--baseline-audit', default='sixth-visual-audit.json', help='Audit filename within this corpus directory')
     parser.add_argument('--resume', help='Resume audit/report/gate for an existing loop directory; retain its immutable candidate')
+    parser.add_argument('--reuse-build', help='Use a previous loop executable and its test/build logs; evaluate that frozen snapshot, not current source')
     args = parser.parse_args()
-    for name in (args.baseline,args.baseline_audit,args.resume or 'unused'):
+    if args.resume and args.reuse_build:
+        parser.error('--resume and --reuse-build cannot be combined')
+    for name in (args.baseline,args.baseline_audit,args.resume or 'unused',args.reuse_build or 'unused'):
         if Path(name).name != name or name in ('.','..'):
             parser.error('Baseline names must be simple filenames')
     manifests = [json.loads((HERE/f'shard-{i}.json').read_text()) for i in range(4)]
@@ -93,7 +96,18 @@ def main():
         with (root/log).open('wb') as stream:
             subprocess.run(argv,cwd=ROOT,env=env,stdout=stream,stderr=subprocess.STDOUT,check=True)
     candidate = root/'pptx-preview'
-    if not args.resume:
+    if args.reuse_build:
+        source = HERE/'runs'/args.reuse_build
+        artifacts = ('pptx-preview', 'tests.log', 'build.log')
+        if not args.reuse_build.startswith('loop-') or not all((source/name).is_file() for name in artifacts):
+            parser.error('--reuse-build requires a previous loop executable and test/build logs')
+        for name in artifacts:
+            shutil.copyfile(source/name,root/name)
+        candidate.chmod(0o755)
+        (root/'reused-build.json').write_text(json.dumps(dict(
+            source=str(source), candidate_sha256=hashlib.sha256(candidate.read_bytes()).hexdigest(),
+            note='Frozen candidate and its existing test/build logs; current workspace was not rebuilt.'),indent=2)+'\n')
+    elif not args.resume:
         command(['cargo','test','--offline','--workspace','--all-features'],'tests.log')
         command(['cargo','build','--offline','-p','lo_impress','--example','pptx-preview'],'build.log')
         shutil.copyfile(ROOT/'target/debug/examples/pptx-preview',candidate)

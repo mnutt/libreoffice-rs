@@ -47,6 +47,10 @@ an exclusive lock. In-progress runs are never compacted, and all paths and bytes
 are retained. `--resume loop-TIMESTAMP` repeats audit/report/gate stages using the
 saved immutable candidate, so quota interruptions do not require conversion again.
 For a focused resume, supply the original `--ids` as well.
+`--reuse-build loop-TIMESTAMP` starts a fresh evaluation using that loop's frozen
+executable and original test/build logs. Use it to broaden a successful focused
+run without rebuilding the same code. It does **not** build the current workspace;
+`reused-build.json` records the original directory and executable hash.
 
 The default regression baseline is `sixth-all`, with all 1,272 comparable pages
 recorded in `sixth-visual-audit.json`. Baseline render artifacts must be available
