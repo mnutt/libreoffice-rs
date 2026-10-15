@@ -1,7 +1,7 @@
 //! Paginated text preview of a workbook. Sheet boundaries start new pages.
 
-use lo_core::{CellValue, Sheet, Workbook};
 use lo_core::pdf_canvas::{PdfDocument, PdfFont};
+use lo_core::{CellValue, Sheet, Workbook};
 
 use crate::{evaluate_formula, Value};
 
@@ -107,16 +107,19 @@ fn render(workbook: &Workbook) -> PdfDocument {
         ] {
             for (alignment, fields) in fields {
                 use lo_core::OdfPageField as F;
-                let text: String = fields
-                    .iter()
-                    .map(|f| match f {
+                fn field_text(f: &F, index: usize, count: usize) -> String {
+                    match f {
                         F::Text(s) => s.clone(),
                         F::PageNumber => (index + 1).to_string(),
                         F::PageCount => count.to_string(),
                         F::Tab => "   ".into(),
                         F::LineBreak => "\n".into(),
-                    })
-                    .collect();
+                        F::Styled(fields, _) => {
+                            fields.iter().map(|f| field_text(f, index, count)).collect()
+                        }
+                    }
+                }
+                let text: String = fields.iter().map(|f| field_text(f, index, count)).collect();
                 let width = lo_core::font_metrics::measure_helvetica(&text, 10.0, false);
                 let x = match alignment {
                     0 => layout.margin,
@@ -143,7 +146,7 @@ fn grid_color(value: &str) -> Option<(f32, f32, f32)> {
 }
 
 fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut PdfDocument) {
-    use lo_core::{CellAddr, style::Alignment};
+    use lo_core::{style::Alignment, CellAddr};
     if sheet.cells.is_empty()
         && layout.charts.is_empty()
         && layout.headers.is_empty()

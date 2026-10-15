@@ -17,6 +17,8 @@ impl Default for Alignment {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TextStyle {
     pub font_family: String,
+    /// Exact imported size, in thousandths of a point, when available.
+    pub font_size_mpt: Option<u32>,
     pub font_size_pt: u16,
     pub bold: bool,
     pub italic: bool,
@@ -40,6 +42,7 @@ pub struct ParagraphStyle {
     pub odf_box: Option<OdfParagraphBox>,
     /// Top, bottom, left, right margins in thousandths of a point.
     pub odf_margins_mpt: Option<[i32; 4]>,
+    pub odf_first_line_mpt: i32,
     pub source_spacing: bool,
     pub line_height_percent: u16,
     pub alignment: Alignment,

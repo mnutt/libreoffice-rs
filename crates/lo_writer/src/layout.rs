@@ -67,6 +67,8 @@ fn render_inline_image_group(
     index: &mut usize,
     mut y: f32,
     blocks: &[Block],
+    alignment: Alignment,
+    spacing: [f32; 2],
 ) -> f32 {
     let max_width = ctx.page_w - ctx.margin_l - ctx.margin_r;
     let max_height = ctx.page_h - ctx.margin_t - ctx.margin_b;
@@ -97,9 +99,16 @@ fn render_inline_image_group(
             used += w;
             height = height.max(h);
         }
-        y = ensure_room(ctx, pdf, index, y, height);
+        let offset = if start == 0 { spacing[0] } else { 0.0 };
+        y = ensure_room(ctx, pdf, index, y, height + offset);
+        y -= offset;
         let bottom = y - height;
-        let mut x = ctx.margin_l;
+        let mut x = ctx.margin_l
+            + match alignment {
+                Alignment::Center => (max_width - used) / 2.0,
+                Alignment::End => max_width - used,
+                _ => 0.0,
+            };
         for (image, w, h) in &row {
             let resource = register_pdf_image(pdf, image);
             let page = pdf.page_mut(*index).expect("image row page");
@@ -115,7 +124,104 @@ fn render_inline_image_group(
         start += row.len();
         y = bottom;
     }
-    y - 4.0
+    y - spacing[1]
+}
+
+fn page_field_runs(
+    fields: &[lo_core::OdfPageField],
+    base: &lo_core::TextStyle,
+    index: usize,
+    pages: usize,
+    fonts: &FontResolver,
+) -> Vec<StyledRun> {
+    use lo_core::OdfPageField as Field;
+    let mut runs = Vec::new();
+    for field in fields {
+        if let Field::Styled(fields, style) = field {
+            let mut inherited = base.clone();
+            if !style.font_family.is_empty() {
+                inherited.font_family = style.font_family.clone();
+            }
+            if style.font_size_pt > 0 {
+                inherited.font_size_pt = style.font_size_pt;
+                inherited.font_size_mpt = style.font_size_mpt;
+            }
+            if !style.color.is_empty() {
+                inherited.color = style.color.clone();
+            }
+            inherited.bold |= style.bold;
+            inherited.italic |= style.italic;
+            runs.extend(page_field_runs(fields, &inherited, index, pages, fonts));
+            continue;
+        }
+        let text = match field {
+            Field::Text(s) => s.clone(),
+            Field::PageNumber => (index + 1).to_string(),
+            Field::PageCount => pages.to_string(),
+            Field::Tab => "\t".into(),
+            Field::LineBreak => "\n".into(),
+            Field::Styled(..) => unreachable!(),
+        };
+        runs.push(StyledRun {
+            text,
+            font: fonts.pick(Some(&base.font_family), base.bold, base.italic),
+            size: exact_font_size(base, 12.0),
+            color: parse_color(&base.color).unwrap_or((0.0, 0.0, 0.0)),
+            background: None,
+            underline: base.underline,
+            link: None,
+        });
+    }
+    runs
+}
+
+fn page_field_rows(runs: &[StyledRun]) -> Vec<Vec<Vec<StyledRun>>> {
+    let mut rows = vec![vec![Vec::new()]];
+    for run in runs {
+        let mut text = String::new();
+        for ch in run.text.chars() {
+            if ch == '\t' || ch == '\n' {
+                rows.last_mut()
+                    .unwrap()
+                    .last_mut()
+                    .unwrap()
+                    .push(styled_run_with_text(run, std::mem::take(&mut text)));
+                if ch == '\n' {
+                    rows.push(vec![Vec::new()]);
+                } else {
+                    rows.last_mut().unwrap().push(Vec::new());
+                }
+            } else {
+                text.push(ch);
+            }
+        }
+        rows.last_mut()
+            .unwrap()
+            .last_mut()
+            .unwrap()
+            .push(styled_run_with_text(run, text));
+    }
+    rows
+}
+
+fn page_row_height(columns: &[Vec<StyledRun>], style: &lo_core::TextStyle) -> f32 {
+    columns
+        .iter()
+        .flatten()
+        .map(|r| r.size * odf_line_metric(r.font))
+        .fold(exact_font_size(style, 12.0) * 1.15, f32::max)
+}
+
+fn page_field_height(
+    lines: &[Vec<lo_core::OdfPageField>],
+    style: &lo_core::TextStyle,
+    fonts: &FontResolver,
+) -> f32 {
+    lines
+        .iter()
+        .flat_map(|line| page_field_rows(&page_field_runs(line, style, 0, 1, fonts)))
+        .map(|columns| page_row_height(&columns, style))
+        .sum()
 }
 
 fn render_odf_page_fields(
@@ -123,29 +229,48 @@ fn render_odf_page_fields(
     layout: &lo_core::OdfDocumentLayout,
     fonts: &FontResolver,
 ) {
-    use lo_core::OdfPageField as Field;
     let pages = pdf.pages().len();
+    let images: Vec<_> = layout
+        .footer_images
+        .iter()
+        .filter_map(|(image, position)| {
+            register_pdf_image(pdf, image).map(|resource| (resource, position, image.size))
+        })
+        .collect();
     for index in 0..pages {
-        let select = |normal, first: &Option<Vec<Vec<Field>>>, left: &Option<Vec<Vec<Field>>>| {
+        let select = |normal: &Vec<Vec<lo_core::OdfPageField>>,
+                      first: &Option<Vec<Vec<lo_core::OdfPageField>>>,
+                      left: &Option<Vec<Vec<lo_core::OdfPageField>>>| {
             if index == 0 {
-                first.clone().unwrap_or(normal)
+                first.clone().unwrap_or_else(|| normal.clone())
             } else if index % 2 == 1 {
-                left.clone().unwrap_or(normal)
+                left.clone().unwrap_or_else(|| normal.clone())
             } else {
-                normal
+                normal.clone()
             }
         };
-        let header = select(
-            layout.headers.clone(),
-            &layout.first_headers,
-            &layout.left_headers,
-        );
-        let footer = select(
-            layout.footers.clone(),
-            &layout.first_footers,
-            &layout.left_footers,
-        );
+        let header = select(&layout.headers, &layout.first_headers, &layout.left_headers);
+        let footer = select(&layout.footers, &layout.first_footers, &layout.left_footers);
+        let footer_height =
+            layout
+                .footer_height
+                .max(page_field_height(&footer, &layout.footer_font, fonts));
         let page = pdf.page_mut(index).expect("header page");
+        if !(index == 0 && layout.first_footers.is_some())
+            && !(index % 2 == 1 && layout.left_footers.is_some())
+        {
+            for (resource, position, size) in &images {
+                page.begin_artifact();
+                page.image(
+                    resource,
+                    layout.margins[0] + position[0],
+                    layout.margins[3] + footer_height - position[1] - size.height.as_pt(),
+                    size.width.as_pt(),
+                    size.height.as_pt(),
+                );
+                page.end_artifact();
+            }
+        }
         for (lines, mut y, style) in [
             (
                 header,
@@ -154,39 +279,45 @@ fn render_odf_page_fields(
             ),
             (
                 footer,
-                layout.margins[3] + layout.footer_height.max(14.0),
+                layout.margins[3] + footer_height,
                 &layout.footer_font,
             ),
         ] {
-            let size = (style.font_size_pt as f32).max(1.0);
-            let font = fonts.pick(Some(&style.font_family), style.bold, style.italic);
-            y -= size;
             for line in lines {
-                let mut text = String::new();
-                for field in line {
-                    match field {
-                        Field::Text(s) => text.push_str(&s),
-                        Field::PageNumber => text.push_str(&(index + 1).to_string()),
-                        Field::PageCount => text.push_str(&pages.to_string()),
-                        Field::Tab => text.push('\t'),
-                        Field::LineBreak => text.push('\n'),
-                    }
-                }
-                for line in text.split('\n') {
-                    let columns: Vec<_> = line.split('\t').collect();
+                let runs = page_field_runs(&line, style, index, pages, fonts);
+                for columns in page_field_rows(&runs) {
+                    y -= page_row_height(&columns, style);
                     let available = layout.page[0] - layout.margins[0] - layout.margins[1];
-                    for (column, text) in columns.iter().enumerate() {
-                        let width = measure_text(text, size, font);
-                        let x = if column == 0 {
-                            layout.margins[0]
-                        } else if column == columns.len() - 1 {
-                            layout.page[0] - layout.margins[1] - width
-                        } else {
-                            layout.margins[0] + (available - width) / 2.0
-                        };
-                        page.text(x, y, size, font, text);
+                    for (i, runs) in columns.iter().enumerate() {
+                        let width = runs
+                            .iter()
+                            .map(|r| measure_text(&r.text, r.size, r.font))
+                            .sum();
+                        let x = layout.margins[0]
+                            + if i == 0 {
+                                0.0
+                            } else if i == columns.len() - 1 {
+                                available - width
+                            } else {
+                                (available - width) / 2.0
+                            };
+                        render_line(
+                            page,
+                            &LineLayout {
+                                runs: runs.clone(),
+                                width,
+                            },
+                            x,
+                            y + runs
+                                .iter()
+                                .map(|r| r.size * odf_descent(r.font))
+                                .fold(0.0, f32::max),
+                            Alignment::Start,
+                            available,
+                            false,
+                            "P",
+                        );
                     }
-                    y -= size * 1.2;
                 }
             }
         }
@@ -200,13 +331,30 @@ pub fn try_render_document_pdf(doc: &TextDocument) -> Result<Vec<u8>> {
         ctx.page_h = layout.page[1];
         ctx.margin_l = layout.margins[0];
         ctx.margin_r = layout.margins[1];
-        let header = if !layout.headers.is_empty() || layout.first_headers.is_some() {
+        let header = if !layout.headers.is_empty()
+            || layout
+                .first_headers
+                .as_ref()
+                .is_some_and(|lines| !lines.is_empty())
+        {
             layout.header_height.max(14.0)
         } else {
             0.0
         };
-        let footer = if !layout.footers.is_empty() || layout.first_footers.is_some() {
-            layout.footer_height.max(14.0)
+        let footer = if !layout.footers.is_empty()
+            || layout
+                .first_footers
+                .as_ref()
+                .is_some_and(|lines| !lines.is_empty())
+        {
+            layout
+                .footer_height
+                .max(page_field_height(
+                    &layout.footers,
+                    &layout.footer_font,
+                    &ctx.fonts,
+                ))
+                .max(14.0)
         } else {
             0.0
         };
@@ -261,6 +409,16 @@ pub fn try_render_document_pdf(doc: &TextDocument) -> Result<Vec<u8>> {
                 &mut page_index,
                 y,
                 &doc.body[block_index..end],
+                doc.odf_layout
+                    .as_ref()
+                    .and_then(|l| l.image_alignments.get(&block_index))
+                    .cloned()
+                    .unwrap_or_default(),
+                doc.odf_layout
+                    .as_ref()
+                    .and_then(|l| l.image_spacing.get(&block_index))
+                    .copied()
+                    .unwrap_or([0.0, 4.0]),
             );
             skip_until = end;
             continue;
@@ -542,24 +700,48 @@ fn render_list(
         let marker = if list.ordered {
             format!("{}.", index + 1)
         } else {
-            "•".to_string()
+            list.odf_layout
+                .as_ref()
+                .map(|l| l.bullet.clone())
+                .unwrap_or_else(|| "•".to_string())
         };
         y = ensure_room(ctx, pdf, page_index, y, 17.0);
         let marker_baseline = y - 15.0;
         let page = pdf.page_mut(*page_index).expect("page");
         page.begin_artifact();
         page.text(
-            ctx.margin_l + 2.0,
+            ctx.margin_l
+                + list
+                    .odf_layout
+                    .as_ref()
+                    .map(|l| l.label_indent)
+                    .unwrap_or(2.0),
             marker_baseline,
             BODY_FONT_SIZE,
             PdfFont::Helvetica,
             &marker,
         );
         page.end_artifact();
-        y = render_list_item(ctx, pdf, page_index, y, item);
-        y -= LIST_ITEM_GAP;
+        y = render_list_item(
+            ctx,
+            pdf,
+            page_index,
+            y,
+            item,
+            list.odf_layout
+                .as_ref()
+                .map(|l| l.text_indent)
+                .unwrap_or(18.0),
+        );
+        if list.odf_layout.is_none() {
+            y -= LIST_ITEM_GAP;
+        }
     }
-    y - LIST_TRAILING_GAP
+    y - if list.odf_layout.is_none() {
+        LIST_TRAILING_GAP
+    } else {
+        0.0
+    }
 }
 
 fn render_list_item(
@@ -568,15 +750,18 @@ fn render_list_item(
     page_index: &mut usize,
     mut y: f32,
     item: &ListItem,
+    indent: f32,
 ) -> f32 {
     for block in &item.blocks {
         match block {
             Block::Paragraph(paragraph) => {
-                y = render_paragraph(ctx, pdf, page_index, y, paragraph, 12.0, 18.0, "LI");
+                y = render_paragraph(ctx, pdf, page_index, y, paragraph, 12.0, indent, "LI");
             }
             Block::List(list) => {
                 let mut nested = ctx.clone();
-                nested.margin_l += 18.0;
+                if list.odf_layout.is_none() {
+                    nested.margin_l += 18.0;
+                }
                 y = render_list(&nested, pdf, page_index, y, list);
             }
             Block::Image(_) => {
@@ -588,6 +773,8 @@ fn render_list_item(
                     page_index,
                     y,
                     std::slice::from_ref(block),
+                    Alignment::Start,
+                    [0.0, 4.0],
                 );
             }
             Block::Table(table) => {
@@ -609,7 +796,12 @@ fn render_list_item(
 }
 
 fn list_height(ctx: &LayoutContext, list: &ListBlock) -> f32 {
-    let available_width = (ctx.page_w - ctx.margin_l - ctx.margin_r - 18.0).max(48.0);
+    let indent = list
+        .odf_layout
+        .as_ref()
+        .map(|l| l.text_indent)
+        .unwrap_or(18.0);
+    let available_width = (ctx.page_w - ctx.margin_l - ctx.margin_r - indent).max(48.0);
     list.items
         .iter()
         .flat_map(|item| item.blocks.iter())
@@ -624,8 +816,11 @@ fn list_height(ctx: &LayoutContext, list: &ListBlock) -> f32 {
             _ => None,
         })
         .sum::<f32>()
-        + list.items.len() as f32 * LIST_ITEM_GAP
-        + LIST_TRAILING_GAP
+        + if list.odf_layout.is_none() {
+            list.items.len() as f32 * LIST_ITEM_GAP + LIST_TRAILING_GAP
+        } else {
+            0.0
+        }
 }
 
 fn following_keep_height(ctx: &LayoutContext, block: &Block) -> f32 {
@@ -648,6 +843,19 @@ fn following_keep_height(ctx: &LayoutContext, block: &Block) -> f32 {
         Block::HorizontalRule => 14.0,
         Block::PageBreak => 0.0,
     }
+}
+
+fn exact_font_size(style: &lo_core::TextStyle, default: f32) -> f32 {
+    style
+        .font_size_mpt
+        .map(|mpt| mpt as f32 / 1000.0)
+        .unwrap_or_else(|| {
+            if style.font_size_pt > 0 {
+                style.font_size_pt as f32
+            } else {
+                default
+            }
+        })
 }
 
 fn paragraph_margins(paragraph: &Paragraph) -> [f32; 4] {
@@ -701,11 +909,7 @@ fn paragraph_empty_line_height(paragraph: &Paragraph, default_size: f32, empty: 
     if !empty {
         return 0.0;
     }
-    let size = if paragraph.text_style.font_size_pt > 0 {
-        paragraph.text_style.font_size_pt as f32
-    } else {
-        default_size
-    };
+    let size = exact_font_size(&paragraph.text_style, default_size);
     size * paragraph_line_factor(paragraph)
         * if paragraph.style.source_spacing {
             2355.0 / 2048.0
@@ -778,7 +982,8 @@ fn render_paragraph(
     };
     let margin_bottom = margins[1].max(mm_to_pt(minimum_bottom_mm));
     let runs = paragraph_runs(paragraph, default_size, &ctx.fonts);
-    let lines = layout_runs(&runs, available_width);
+    let first_indent = paragraph.style.odf_first_line_mpt as f32 / 1000.0;
+    let lines = layout_paragraph_runs(paragraph, &runs, available_width);
     let line_heights = lines
         .iter()
         .map(|line| {
@@ -876,7 +1081,7 @@ fn render_paragraph(
         render_line(
             pdf.page_mut(*page_index).expect("page"),
             line,
-            left,
+            left + if line_index == 0 { first_indent } else { 0.0 },
             y + if paragraph.style.source_spacing {
                 line.runs
                     .iter()
@@ -886,7 +1091,7 @@ fn render_paragraph(
                 0.0
             },
             paragraph.style.alignment.clone(),
-            available_width,
+            available_width - if line_index == 0 { first_indent } else { 0.0 },
             justify,
             semantic_role,
         );
@@ -909,7 +1114,8 @@ fn paragraph_height(
         .as_ref()
         .map(|b| b.padding_mpt.map(|v| v as f32 / 1000.0))
         .unwrap_or([0.0; 4]);
-    let lines = layout_runs(
+    let lines = layout_paragraph_runs(
+        paragraph,
         &paragraph_runs(paragraph, default_size, fonts),
         (available_width - margins[2] - margins[3] - padding[0] - padding[1]).max(48.0),
     );
@@ -1389,11 +1595,7 @@ fn paragraph_runs(
     } else {
         Some(paragraph.text_style.font_family.as_str())
     };
-    let size = if paragraph.text_style.font_size_pt == 0 {
-        default_size
-    } else {
-        paragraph.text_style.font_size_pt as f32
-    };
+    let size = exact_font_size(&paragraph.text_style, default_size);
     let base_color = parse_color(&paragraph.text_style.color).unwrap_or((0.0, 0.0, 0.0));
     let mut runs = Vec::new();
     for inline in &paragraph.spans {
@@ -1460,11 +1662,7 @@ fn paragraph_runs(
                         style.bold || paragraph.text_style.bold,
                         style.italic || paragraph.text_style.italic,
                     ),
-                    size: if style.font_size_pt == 0 {
-                        size
-                    } else {
-                        style.font_size_pt as f32
-                    },
+                    size: exact_font_size(style, size),
                     color: parse_color(&style.color).unwrap_or(base_color),
                     background: parse_color(&style.background),
                     underline: style.underline || paragraph.text_style.underline,
@@ -1482,6 +1680,18 @@ fn paragraph_runs(
             }),
         }
     }
+    // Explicit ODF spaces preserve indentation, but end-of-paragraph padding
+    // must not wrap into extra blank lines (common in exported code listings).
+    if paragraph.style.source_spacing {
+        for run in runs.iter_mut().rev() {
+            let length = run.text.trim_end_matches([' ', '\u{a0}', '\t']).len();
+            run.text.truncate(length);
+            if !run.text.is_empty() {
+                break;
+            }
+        }
+        runs.retain(|run| !run.text.is_empty());
+    }
     if runs.is_empty() {
         runs.push(StyledRun {
             text: String::new(),
@@ -1497,10 +1707,40 @@ fn paragraph_runs(
 }
 
 fn layout_runs(runs: &[StyledRun], max_width: f32) -> Vec<LineLayout> {
+    layout_runs_with_indent(runs, max_width, 0.0, false)
+}
+
+fn layout_paragraph_runs(paragraph: &Paragraph, runs: &[StyledRun], width: f32) -> Vec<LineLayout> {
+    layout_runs_with_indent(
+        runs,
+        width,
+        paragraph.style.odf_first_line_mpt as f32 / 1000.0,
+        paragraph.style.source_spacing,
+    )
+}
+
+fn layout_runs_with_indent(
+    runs: &[StyledRun],
+    normal_width: f32,
+    first_indent: f32,
+    odf_tabs: bool,
+) -> Vec<LineLayout> {
     let mut lines = Vec::new();
     let mut current = LineLayout::default();
     for run in runs {
-        for token in tokenize_run(run) {
+        for mut token in tokenize_run(run) {
+            let max_width = if lines.is_empty() {
+                normal_width - first_indent
+            } else {
+                normal_width
+            }
+            .max(1.0);
+            if odf_tabs && token.text == "\t" {
+                let position = current.width + if lines.is_empty() { first_indent } else { 0.0 };
+                let gap = 36.0 - position.rem_euclid(36.0);
+                let space = measure_text(" ", token.size, token.font).max(0.1);
+                token.text = "\u{a0}".repeat((gap / space).round().clamp(1.0, 1000.0) as usize);
+            }
             if token.text == "\n" {
                 lines.push(std::mem::take(&mut current));
                 continue;
@@ -1515,7 +1755,7 @@ fn layout_runs(runs: &[StyledRun], max_width: f32) -> Vec<LineLayout> {
                     trim_trailing_spaces(&mut current);
                     lines.push(std::mem::take(&mut current));
                 }
-                for fragment in split_run_to_width(&token, max_width) {
+                for fragment in split_run_to_width(&token, max_width.min(normal_width)) {
                     let fragment_width = measure_text(&fragment.text, fragment.size, fragment.font);
                     if !current.runs.is_empty() && current.width + fragment_width > max_width {
                         lines.push(std::mem::take(&mut current));
@@ -2496,5 +2736,83 @@ mod odf_box_tests {
         };
         let styled = styled_heading_paragraph(&heading, 20.0);
         assert_eq!(styled, paragraph);
+    }
+}
+
+#[cfg(test)]
+mod yocto_flow_tests {
+    use super::*;
+
+    #[test]
+    fn trailing_code_padding_does_not_create_blank_lines() {
+        let mut p = Paragraph::default();
+        p.style.source_spacing = true;
+        p.text_style.font_family = "Liberation Mono".into();
+        p.text_style.font_size_pt = 10;
+        p.spans.push(Inline::Text(format!(
+            "{}CONFIG_MTD=y{}",
+            "\u{a0}".repeat(4),
+            "\u{a0}".repeat(63)
+        )));
+        let fonts = FontResolver {
+            installed: Default::default(),
+        };
+        let runs = paragraph_runs(&p, 12.0, &fonts);
+        let lines = layout_runs(&runs, 150.0);
+        assert_eq!(lines.len(), 1);
+        assert!(runs[0].text.starts_with("\u{a0}\u{a0}\u{a0}\u{a0}"));
+        assert!(runs[0].text.ends_with("CONFIG_MTD=y"));
+    }
+
+    #[test]
+    fn page_fields_keep_styles_tabs_and_line_breaks() {
+        use lo_core::{OdfPageField as F, TextStyle};
+        let base = TextStyle {
+            font_size_pt: 11,
+            font_size_mpt: Some(10500),
+            ..Default::default()
+        };
+        let style = TextStyle {
+            bold: true,
+            color: "#000080".into(),
+            ..Default::default()
+        };
+        let fields = vec![
+            F::Text("Page ".into()),
+            F::Styled(vec![F::PageNumber], style),
+            F::Tab,
+            F::PageCount,
+            F::LineBreak,
+            F::Text("Second line".into()),
+        ];
+        let fonts = FontResolver {
+            installed: Default::default(),
+        };
+        let runs = page_field_runs(&fields, &base, 1, 31, &fonts);
+        assert_eq!(runs[1].text, "2");
+        assert_eq!(runs[1].font, PdfFont::HelveticaBold);
+        assert_eq!(runs[1].size, 10.5);
+        assert!(runs[1].color.2 > 0.49);
+        let rows = page_field_rows(&runs);
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].len(), 2);
+        assert_eq!(rows[1][0].last().unwrap().text, "Second line");
+    }
+
+    #[test]
+    fn hanging_indent_expands_only_the_first_line() {
+        let run = StyledRun {
+            text: "Tip:\tThese words should wrap onto subsequent indented lines".into(),
+            font: PdfFont::Helvetica,
+            size: 10.5,
+            color: (0.0, 0.0, 0.0),
+            background: None,
+            underline: false,
+            link: None,
+        };
+        let lines = layout_runs_with_indent(&[run], 100.0, -36.0, true);
+        assert!(lines.len() > 1);
+        assert!(lines[0].width <= 136.01);
+        assert!(lines[1..].iter().all(|l| l.width <= 100.01));
     }
 }

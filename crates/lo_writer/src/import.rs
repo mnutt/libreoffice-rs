@@ -28,6 +28,7 @@ struct SpanStyle {
 
 #[derive(Clone, Debug, Default)]
 struct StyleProps {
+    list_layout: Option<lo_core::writer::OdfListLayout>,
     paragraph_style: Option<lo_core::ParagraphStyle>,
     text_style: Option<lo_core::TextStyle>,
     bold: bool,
@@ -458,7 +459,14 @@ pub fn from_odt_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<TextDocu
         named.collect(&parse_xml_document(&zip.read_string("styles.xml")?)?);
     }
     named.collect(&content);
-    let styles = parse_odt_styles(&named);
+    let mut styles = parse_odt_styles(&named);
+    if zip.contains("styles.xml") {
+        collect_odt_list_styles(
+            &parse_xml_document(&zip.read_string("styles.xml")?)?,
+            &mut styles,
+        );
+    }
+    collect_odt_list_styles(&content, &mut styles);
     let body = content
         .child("body")
         .ok_or_else(|| LoError::Parse("content.xml missing office:body".to_string()))?;
@@ -471,9 +479,34 @@ pub fn from_odt_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<TextDocu
     if zip.contains("styles.xml") {
         let root = parse_xml_document(&zip.read_string("styles.xml")?)?;
         apply_odt_page_size(&root, &mut doc);
+        if let Some(footer) = root
+            .child("master-styles")
+            .and_then(|n| n.children_named("master-page").next())
+            .and_then(|m| m.child("footer"))
+        {
+            let mut frames = Vec::new();
+            footer.descendants_named("frame", &mut frames);
+            for frame in frames {
+                let mut blocks = Vec::new();
+                collect_odt_images(frame, &zip, &mut blocks);
+                if let Some(Block::Image(image)) = blocks.into_iter().next() {
+                    let position = ["x", "y"].map(|a| {
+                        frame
+                            .attr(a)
+                            .and_then(lo_core::style::odf_length)
+                            .unwrap_or(0.0)
+                    });
+                    doc.odf_layout
+                        .as_mut()
+                        .unwrap()
+                        .footer_images
+                        .push((image, position));
+                }
+            }
+        }
     }
     let mut pending_list = Vec::new();
-    parse_odt_text_children(text, &styles, &mut doc, &mut pending_list, &zip);
+    parse_odt_text_children(text, &styles, &mut doc, &mut pending_list, &zip, "", 0);
     flush_list(&mut doc, &mut pending_list);
     if doc.body.is_empty() {
         doc.body.push(Block::Paragraph(Paragraph::default()));
@@ -501,6 +534,12 @@ pub fn from_odt_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<TextDocu
         }
     }
     enrich(&mut doc.body, &table_nodes, &named);
+    enrich_odt_image_alignment(&content, &named, &mut doc);
+    if zip.contains("styles.xml") {
+        let root = parse_xml_document(&zip.read_string("styles.xml")?)?;
+        apply_odt_initial_master(&root, &content, &mut doc);
+    }
+
     if zip.contains("styles.xml") {
         let root = parse_xml_document(&zip.read_string("styles.xml")?)?;
         let mut outlines = Vec::new();
@@ -523,6 +562,7 @@ fn flush_list(doc: &mut TextDocument, pending: &mut Vec<ListItem>) {
 fn flush_list_with(doc: &mut TextDocument, pending: &mut Vec<ListItem>, ordered: bool) {
     if !pending.is_empty() {
         doc.body.push(Block::List(ListBlock {
+            odf_layout: None,
             ordered,
             items: std::mem::take(pending),
         }));
@@ -961,6 +1001,10 @@ fn parse_odt_styles(named: &lo_core::style::OdfStyles) -> BTreeMap<String, Style
             .trim_matches(char::from(39))
             .to_string();
         let text_style = lo_core::TextStyle {
+            font_size_mpt: get("text-properties", "font-size")
+                .and_then(lo_core::style::odf_length)
+                .filter(|v| *v > 0.0)
+                .map(|v| (v.clamp(1.0, 512.0) * 1000.0).round() as u32),
             font_size_pt: get("text-properties", "font-size")
                 .and_then(lo_core::style::odf_length)
                 .filter(|v| *v > 0.0)
@@ -1020,6 +1064,10 @@ fn parse_odt_styles(named: &lo_core::style::OdfStyles) -> BTreeMap<String, Style
                         }),
                         join: get("paragraph-properties", "join-border") != Some("false"),
                     }),
+                    odf_first_line_mpt: get("paragraph-properties", "text-indent")
+                        .and_then(lo_core::style::odf_length)
+                        .map(|v| (v.clamp(-3000.0, 3000.0) * 1000.0).round() as i32)
+                        .unwrap_or(0),
                     source_spacing: true,
                     line_height_percent: get("paragraph-properties", "line-height")
                         .and_then(|v| v.strip_suffix('%'))
@@ -1081,6 +1129,7 @@ fn odt_span_style(base: &SpanStyle, props: &StyleProps) -> SpanStyle {
         let target = out.text_style.get_or_insert_with(Default::default);
         if source.font_size_pt != 0 {
             target.font_size_pt = source.font_size_pt;
+            target.font_size_mpt = source.font_size_mpt;
         }
         if !source.font_family.is_empty() {
             target.font_family = source.font_family.clone();
@@ -1186,22 +1235,27 @@ fn parse_odt_text_children(
     doc: &mut TextDocument,
     pending_list: &mut Vec<ListItem>,
     zip: &ZipArchive,
+    list_name: &str,
+    list_level: usize,
 ) {
     for item in &root.items {
         let XmlItem::Node(node) = item else {
             continue;
         };
+        // A break before the first flow block selects the first page, not a
+        // blank preceding page. Headings honor the same inherited break rule.
+        if matches!(node.local_name(), "p" | "h") {
+            let breaks = node
+                .attr("style-name")
+                .and_then(|name| styles.get(&format!("paragraph:{name}")))
+                .is_some_and(|props| props.page_break_before);
+            if breaks && !doc.body.is_empty() {
+                flush_list(doc, pending_list);
+                doc.body.push(Block::PageBreak);
+            }
+        }
         match node.local_name() {
             "p" => {
-                let props = node
-                    .attr("style-name")
-                    .and_then(|name| styles.get(&format!("paragraph:{name}")))
-                    .cloned()
-                    .unwrap_or_default();
-                if props.page_break_before {
-                    flush_list(doc, pending_list);
-                    doc.body.push(Block::PageBreak);
-                }
                 flush_list(doc, pending_list);
                 doc.body
                     .push(Block::Paragraph(parse_odt_paragraph(node, styles)));
@@ -1219,12 +1273,26 @@ fn parse_odt_text_children(
                 }));
             }
             "list" => {
+                let list_name = node.attr("style-name").unwrap_or(list_name);
+                let list_level = list_level + 1;
+                let list_layout = styles
+                    .get(&format!("list:{list_name}:{list_level}"))
+                    .and_then(|s| s.list_layout.clone())
+                    .unwrap_or_default();
                 flush_list(doc, pending_list);
                 let mut items: Vec<ListItem> = Vec::new();
                 for list_item in node.children_named("list-item") {
                     let mut nested = TextDocument::default();
                     let mut pending = Vec::new();
-                    parse_odt_text_children(list_item, styles, &mut nested, &mut pending, zip);
+                    parse_odt_text_children(
+                        list_item,
+                        styles,
+                        &mut nested,
+                        &mut pending,
+                        zip,
+                        list_name,
+                        list_level,
+                    );
                     flush_list(&mut nested, &mut pending);
                     if !nested.body.is_empty() {
                         items.push(ListItem {
@@ -1241,6 +1309,7 @@ fn parse_odt_text_children(
                         .extend(items.into_iter().flat_map(|item| item.blocks));
                 } else if !items.is_empty() {
                     doc.body.push(Block::List(ListBlock {
+                        odf_layout: Some(list_layout),
                         ordered: false,
                         items,
                     }));
@@ -1250,10 +1319,20 @@ fn parse_odt_text_children(
                 flush_list(doc, pending_list);
                 doc.body.push(Block::Table(parse_odt_table(node, styles)));
             }
-            "section" => parse_odt_text_children(node, styles, doc, pending_list, zip),
+            "section" => {
+                parse_odt_text_children(node, styles, doc, pending_list, zip, list_name, list_level)
+            }
             "frame" => {
                 for text_box in node.children_named("text-box") {
-                    parse_odt_text_children(text_box, styles, doc, pending_list, zip);
+                    parse_odt_text_children(
+                        text_box,
+                        styles,
+                        doc,
+                        pending_list,
+                        zip,
+                        list_name,
+                        list_level,
+                    );
                 }
             }
             _ => {}
@@ -1277,9 +1356,12 @@ fn parse_odt_text_children(
     }
 }
 
-fn odf_page_lines(node: &XmlNode) -> Vec<Vec<lo_core::OdfPageField>> {
+fn odf_page_lines(
+    node: &XmlNode,
+    styles: &BTreeMap<String, StyleProps>,
+) -> Vec<Vec<lo_core::OdfPageField>> {
     use lo_core::OdfPageField as Field;
-    fn collect(node: &XmlNode, out: &mut Vec<Field>) {
+    fn collect(node: &XmlNode, out: &mut Vec<Field>, styles: &BTreeMap<String, StyleProps>) {
         for item in &node.items {
             match item {
                 XmlItem::Text(text) => out.push(Field::Text(text.clone())),
@@ -1298,7 +1380,20 @@ fn odf_page_lines(node: &XmlNode) -> Vec<Vec<lo_core::OdfPageField>> {
                         ),
                     )),
                     "frame" => {}
-                    _ => collect(child, out),
+                    "span" => {
+                        let mut fields = Vec::new();
+                        collect(child, &mut fields, styles);
+                        if let Some(style) = child
+                            .attr("style-name")
+                            .and_then(|n| styles.get(&format!("text:{n}")))
+                            .and_then(|s| s.text_style.clone())
+                        {
+                            out.push(Field::Styled(fields, style));
+                        } else {
+                            out.extend(fields);
+                        }
+                    }
+                    _ => collect(child, out, styles),
                 },
             }
         }
@@ -1308,7 +1403,7 @@ fn odf_page_lines(node: &XmlNode) -> Vec<Vec<lo_core::OdfPageField>> {
         .filter(|n| matches!(n.local_name(), "p" | "h"))
         .map(|n| {
             let mut out = Vec::new();
-            collect(n, &mut out);
+            collect(n, &mut out, styles);
             out
         })
         .collect()
@@ -1334,6 +1429,9 @@ fn apply_odt_page_size(styles: &XmlNode, doc: &mut TextDocument) {
     let Some(props) = layout.child("page-layout-properties") else {
         return;
     };
+    let mut named = lo_core::style::OdfStyles::default();
+    named.collect(styles);
+    let paragraph_styles = parse_odt_styles(&named);
     let imported = doc.odf_layout.get_or_insert_with(Default::default);
     for (i, attr) in ["page-width", "page-height"].iter().enumerate() {
         if let Some(v) = props.attr(attr).and_then(odf_length).filter(|v| *v > 72.0) {
@@ -1357,16 +1455,24 @@ fn apply_odt_page_size(styles: &XmlNode, doc: &mut TextDocument) {
     }
     imported.headers = master
         .child("header")
-        .map(odf_page_lines)
+        .map(|n| odf_page_lines(n, &paragraph_styles))
         .unwrap_or_default();
     imported.footers = master
         .child("footer")
-        .map(odf_page_lines)
+        .map(|n| odf_page_lines(n, &paragraph_styles))
         .unwrap_or_default();
-    imported.first_headers = master.child("header-first").map(odf_page_lines);
-    imported.first_footers = master.child("footer-first").map(odf_page_lines);
-    imported.left_headers = master.child("header-left").map(odf_page_lines);
-    imported.left_footers = master.child("footer-left").map(odf_page_lines);
+    imported.first_headers = master
+        .child("header-first")
+        .map(|n| odf_page_lines(n, &paragraph_styles));
+    imported.first_footers = master
+        .child("footer-first")
+        .map(|n| odf_page_lines(n, &paragraph_styles));
+    imported.left_headers = master
+        .child("header-left")
+        .map(|n| odf_page_lines(n, &paragraph_styles));
+    imported.left_footers = master
+        .child("footer-left")
+        .map(|n| odf_page_lines(n, &paragraph_styles));
     let mut named = lo_core::style::OdfStyles::default();
     named.collect(styles);
     for (kind, target) in [
@@ -1378,6 +1484,11 @@ fn apply_odt_page_size(styles: &XmlNode, doc: &mut TextDocument) {
             .and_then(|n| n.child("p"))
             .and_then(|n| n.attr("style-name"))
             .unwrap_or("Standard");
+        target.font_size_mpt = named
+            .property_in(name, "paragraph", "text-properties", "font-size")
+            .and_then(odf_length)
+            .filter(|v| *v > 0.0)
+            .map(|v| (v.clamp(1.0, 512.0) * 1000.0).round() as u32);
         target.font_size_pt = named
             .property_in(name, "paragraph", "text-properties", "font-size")
             .and_then(odf_length)
@@ -1891,5 +2002,265 @@ mod writer_template_tests {
                 "0.5pt solid #aaaaaa"
             ]
         );
+    }
+}
+
+fn apply_odt_initial_master(styles: &XmlNode, content: &XmlNode, doc: &mut TextDocument) {
+    let mut named = lo_core::style::OdfStyles::default();
+    named.collect(styles);
+    named.collect(content);
+    let paragraph_styles = parse_odt_styles(&named);
+    let Some(first) = content
+        .child("body")
+        .and_then(|b| b.child("text"))
+        .and_then(|t| {
+            t.children
+                .iter()
+                .find(|n| matches!(n.local_name(), "p" | "h"))
+        })
+    else {
+        return;
+    };
+    let mut definitions = Vec::new();
+    styles.descendants_named("style", &mut definitions);
+    content.descendants_named("style", &mut definitions);
+    let Some(name) = first.attr("style-name") else {
+        return;
+    };
+    let Some(first_style) = definitions
+        .iter()
+        .rev()
+        .find(|s| s.attr("name") == Some(name) && s.attr("family") == Some("paragraph"))
+    else {
+        return;
+    };
+    let Some(master_name) = first_style.attr("master-page-name") else {
+        return;
+    };
+    let Some(masters) = styles.child("master-styles") else {
+        return;
+    };
+    let Some(master) = masters
+        .children_named("master-page")
+        .find(|m| m.attr("name") == Some(master_name))
+    else {
+        return;
+    };
+    let Some(next) = master.attr("next-style-name").and_then(|name| {
+        masters
+            .children_named("master-page")
+            .find(|m| m.attr("name") == Some(name))
+    }) else {
+        return;
+    };
+    // A distinct first-page master sharing the body geometry is the common
+    // cover-page case. Different page geometries still need section layout.
+    if master.attr("page-layout-name") != next.attr("page-layout-name") {
+        return;
+    }
+    if let Some(layout) = &mut doc.odf_layout {
+        layout.first_headers = Some(
+            master
+                .child("header")
+                .map(|n| odf_page_lines(n, &paragraph_styles))
+                .unwrap_or_default(),
+        );
+        layout.first_footers = Some(
+            master
+                .child("footer")
+                .map(|n| odf_page_lines(n, &paragraph_styles))
+                .unwrap_or_default(),
+        );
+    }
+}
+
+fn enrich_odt_image_alignment(
+    content: &XmlNode,
+    named: &lo_core::style::OdfStyles,
+    doc: &mut TextDocument,
+) {
+    let mut frames = Vec::new();
+    content.descendants_named("frame", &mut frames);
+    let mut alignments = BTreeMap::new();
+    for frame in frames {
+        let name = frame.attr("style-name").unwrap_or("");
+        let alignment =
+            match named.property_in(name, "graphic", "graphic-properties", "horizontal-pos") {
+                Some("center") => lo_core::Alignment::Center,
+                Some("right") => lo_core::Alignment::End,
+                _ => continue,
+            };
+        for image in frame.children_named("image") {
+            if let Some(href) = image.attr("href") {
+                alignments.insert(href.strip_prefix("./").unwrap_or(href), alignment.clone());
+            }
+        }
+    }
+    let mut spacing = BTreeMap::new();
+    let mut paragraphs = Vec::new();
+    content.descendants_named("p", &mut paragraphs);
+    for paragraph in paragraphs {
+        let name = paragraph.attr("style-name").unwrap_or("");
+        let size = named
+            .property_in(name, "paragraph", "text-properties", "font-size")
+            .and_then(lo_core::style::odf_length)
+            .unwrap_or(12.0)
+            .clamp(1.0, 512.0);
+        let mut frames = Vec::new();
+        paragraph.descendants_named("frame", &mut frames);
+        for frame in frames {
+            let name = frame.attr("style-name").unwrap_or("");
+            if frame.attr("anchor-type") != Some("paragraph")
+                || named.property_in(name, "graphic", "graphic-properties", "wrap") != Some("none")
+            {
+                continue;
+            }
+            let offset = frame
+                .attr("y")
+                .and_then(lo_core::style::odf_length)
+                .unwrap_or(0.0)
+                .clamp(0.0, 1000.0);
+            for image in frame.children_named("image") {
+                if let Some(href) = image.attr("href") {
+                    spacing.insert(
+                        href.strip_prefix("./").unwrap_or(href),
+                        [offset, size * 2355.0 / 2048.0],
+                    );
+                }
+            }
+        }
+    }
+    if let Some(layout) = &mut doc.odf_layout {
+        for &index in layout.image_groups.keys() {
+            if let Some(Block::Image(image)) = doc.body.get(index) {
+                if let Some(spacing) = spacing.get(image.name.as_str()) {
+                    layout.image_spacing.insert(index, *spacing);
+                }
+                if let Some(alignment) = alignments.get(image.name.as_str()) {
+                    layout.image_alignments.insert(index, alignment.clone());
+                }
+            }
+        }
+    }
+}
+
+fn collect_odt_list_styles(root: &XmlNode, styles: &mut BTreeMap<String, StyleProps>) {
+    let mut lists = Vec::new();
+    root.descendants_named("list-style", &mut lists);
+    for list in lists {
+        let Some(name) = list.attr("name") else {
+            continue;
+        };
+        for rule in list.children_named("list-level-style-bullet") {
+            let Some(level) = rule
+                .attr("level")
+                .and_then(|s| s.parse::<usize>().ok())
+                .filter(|n| (1..=10).contains(n))
+            else {
+                continue;
+            };
+            let Some(props) = rule.child("list-level-properties") else {
+                continue;
+            };
+            let alignment = props.child("list-level-label-alignment");
+            let length =
+                |node: &XmlNode, attr| node.attr(attr).and_then(lo_core::style::odf_length);
+            let label = length(props, "space-before").unwrap_or(0.0);
+            let text = alignment
+                .and_then(|a| length(a, "margin-left"))
+                .unwrap_or(label + length(props, "min-label-width").unwrap_or(18.0))
+                .clamp(0.0, 1000.0);
+            let label = alignment
+                .and_then(|a| length(a, "text-indent"))
+                .map(|v| text + v)
+                .unwrap_or(label)
+                .clamp(0.0, 1000.0);
+            styles.insert(
+                format!("list:{name}:{level}"),
+                StyleProps {
+                    list_layout: Some(lo_core::writer::OdfListLayout {
+                        text_indent: text,
+                        label_indent: label,
+                        bullet: rule
+                            .attr("bullet-char")
+                            .unwrap_or("•")
+                            .chars()
+                            .take(8)
+                            .collect(),
+                    }),
+                    ..Default::default()
+                },
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod yocto_layout_tests {
+    use super::*;
+
+    #[test]
+    fn first_master_and_heading_breaks_preserve_cover_without_blank_page() {
+        let content = r#"<document-content><automatic-styles><style name="Start" family="paragraph" master-page-name="Cover"><paragraph-properties break-before="page"/></style></automatic-styles><body><text><p style-name="Start">Cover title</p><h style-name="Chapter" outline-level="1">Introduction</h><p style-name="Body">Body text</p></text></body></document-content>"#;
+        let styles = r#"<document-styles><styles><style name="Chapter" family="paragraph"><paragraph-properties break-before="page"/></style><style name="Body" family="paragraph"><text-properties font-size="10.5pt"/></style></styles><automatic-styles><page-layout name="Page"><page-layout-properties page-width="8.5in" page-height="11in"/></page-layout></automatic-styles><master-styles><master-page name="Normal" page-layout-name="Page"><footer><p>Body footer</p></footer></master-page><master-page name="Cover" page-layout-name="Page" next-style-name="Normal"><footer><p/></footer></master-page></master-styles></document-styles>"#;
+        let mut bytes = std::io::Cursor::new(Vec::new());
+        lo_zip::write_zip(
+            &mut bytes,
+            &[
+                lo_zip::ZipEntry::new("content.xml", content.as_bytes().to_vec()),
+                lo_zip::ZipEntry::new("styles.xml", styles.as_bytes().to_vec()),
+            ],
+        )
+        .unwrap();
+        let doc = from_odt_bytes("cover", &bytes.into_inner()).unwrap();
+        assert!(matches!(doc.body[0], Block::Paragraph(_)));
+        assert!(matches!(doc.body[1], Block::PageBreak));
+        assert!(matches!(doc.body[2], Block::Heading(_)));
+        let Block::Paragraph(body) = &doc.body[3] else {
+            panic!("body")
+        };
+        assert_eq!(body.text_style.font_size_mpt, Some(10500));
+        let layout = doc.odf_layout.unwrap();
+        assert_eq!(layout.first_footers, Some(vec![vec![]]));
+        assert!(
+            matches!(&layout.footers[0][0], lo_core::OdfPageField::Text(s) if s == "Body footer")
+        );
+    }
+
+    #[test]
+    fn list_alignment_and_bullets_are_imported_per_level() {
+        let root = parse_xml_document(r#"<styles><list-style name="Bullets"><list-level-style-bullet level="1" bullet-char="•"><list-level-properties><list-level-label-alignment margin-left="0.5in" text-indent="-0.25in"/></list-level-properties></list-level-style-bullet><list-level-style-bullet level="2" bullet-char="◦"><list-level-properties><list-level-label-alignment margin-left="0.75in" text-indent="-0.25in"/></list-level-properties></list-level-style-bullet></list-style></styles>"#).unwrap();
+        let mut styles = BTreeMap::new();
+        collect_odt_list_styles(&root, &mut styles);
+        let first = styles["list:Bullets:1"].list_layout.as_ref().unwrap();
+        let second = styles["list:Bullets:2"].list_layout.as_ref().unwrap();
+        assert_eq!((first.text_indent, first.label_indent), (36.0, 18.0));
+        assert_eq!((second.text_indent, second.label_indent), (54.0, 36.0));
+        assert_eq!(second.bullet, "◦");
+    }
+}
+
+#[cfg(test)]
+mod odf_image_placement_tests {
+    use super::*;
+    #[test]
+    fn paragraph_anchored_image_retains_alignment_offset_and_line_space() {
+        let content = r#"<document-content><automatic-styles><style name="Body" family="paragraph"><text-properties font-size="10.5pt"/></style><style name="Centered" family="graphic"><graphic-properties horizontal-pos="center" wrap="none"/></style></automatic-styles><body><text><p style-name="Body"><frame style-name="Centered" anchor-type="paragraph" y="0.1in" width="2in" height="1in"><image href="logo.png"/></frame></p></text></body></document-content>"#;
+        let mut bytes = std::io::Cursor::new(Vec::new());
+        lo_zip::write_zip(
+            &mut bytes,
+            &[
+                lo_zip::ZipEntry::new("content.xml", content.as_bytes().to_vec()),
+                lo_zip::ZipEntry::new("logo.png", vec![1, 2, 3]),
+            ],
+        )
+        .unwrap();
+        let doc = from_odt_bytes("image", &bytes.into_inner()).unwrap();
+        assert!(matches!(doc.body[0], Block::Image(_)));
+        let layout = doc.odf_layout.unwrap();
+        assert_eq!(layout.image_alignments[&0], lo_core::Alignment::Center);
+        let spacing = layout.image_spacing[&0];
+        assert!((spacing[0] - 7.2).abs() < 0.001);
+        assert!((spacing[1] - 10.5 * 2355.0 / 2048.0).abs() < 0.001);
     }
 }

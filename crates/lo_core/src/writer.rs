@@ -64,8 +64,25 @@ pub struct ListItem {
     pub blocks: Vec<Block>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct OdfListLayout {
+    pub text_indent: f32,
+    pub label_indent: f32,
+    pub bullet: String,
+}
+impl Default for OdfListLayout {
+    fn default() -> Self {
+        Self {
+            text_indent: 18.0,
+            label_indent: 2.0,
+            bullet: "•".into(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ListBlock {
+    pub odf_layout: Option<OdfListLayout>,
     pub ordered: bool,
     pub items: Vec<ListItem>,
 }
@@ -138,6 +155,7 @@ pub enum Block {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum OdfPageField {
+    Styled(Vec<OdfPageField>, TextStyle),
     Text(String),
     PageNumber,
     PageCount,
@@ -152,6 +170,7 @@ pub struct OdfDocumentLayout {
     pub header_font: TextStyle,
     pub footer_font: TextStyle,
     pub footer_height: f32,
+    pub footer_images: Vec<(ImageBlock, [f32; 2])>,
     pub headers: Vec<Vec<OdfPageField>>,
     pub footers: Vec<Vec<OdfPageField>>,
     pub first_headers: Option<Vec<Vec<OdfPageField>>>,
@@ -159,6 +178,8 @@ pub struct OdfDocumentLayout {
     pub left_headers: Option<Vec<Vec<OdfPageField>>>,
     pub left_footers: Option<Vec<Vec<OdfPageField>>>,
     pub image_groups: std::collections::BTreeMap<usize, usize>,
+    pub image_spacing: std::collections::BTreeMap<usize, [f32; 2]>,
+    pub image_alignments: std::collections::BTreeMap<usize, crate::Alignment>,
 }
 impl Default for OdfDocumentLayout {
     fn default() -> Self {
@@ -167,6 +188,7 @@ impl Default for OdfDocumentLayout {
             margins: [56.69; 4],
             header_height: 0.0,
             footer_height: 0.0,
+            footer_images: Vec::new(),
             headers: Vec::new(),
             footers: Vec::new(),
             header_font: TextStyle::default(),
@@ -176,6 +198,8 @@ impl Default for OdfDocumentLayout {
             left_headers: None,
             left_footers: None,
             image_groups: Default::default(),
+            image_spacing: Default::default(),
+            image_alignments: Default::default(),
         }
     }
 }

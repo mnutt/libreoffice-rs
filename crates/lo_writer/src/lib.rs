@@ -304,6 +304,7 @@ where
 
         if let Some((ordered, _)) = parse_list_item(trimmed) {
             let mut list = ListBlock {
+                odf_layout: None,
                 ordered,
                 items: Vec::new(),
             };
@@ -942,11 +943,7 @@ fn starts_with_currency_amount(chars: &[char], start: usize) -> bool {
             index += 1;
             continue;
         }
-        return saw_digit
-            && matches!(
-                character,
-                'k' | 'K' | 'm' | 'M' | 'b' | 'B' | 't' | 'T'
-            );
+        return saw_digit && matches!(character, 'k' | 'K' | 'm' | 'M' | 'b' | 'B' | 't' | 'T');
     }
     false
 }
