@@ -124,6 +124,10 @@ pub struct SheetLayout {
     pub horizontal_centered: bool,
     pub print_scale: f32,
     pub fit_to_pages: Option<(u16, u16)>,
+    /// Single rectangular print area, inclusive and zero-based.
+    pub print_area: Option<(CellAddr, CellAddr)>,
+    pub row_breaks: std::collections::BTreeSet<u32>,
+    pub column_breaks: std::collections::BTreeSet<u32>,
     pub repeat_rows: Option<(u32, u32)>,
     pub repeat_columns: Option<(u32, u32)>,
     /// Optional left, right, top, bottom margins in points.
@@ -156,6 +160,9 @@ impl Default for SheetLayout {
             horizontal_centered: false,
             print_scale: 1.0,
             fit_to_pages: None,
+            print_area: None,
+            row_breaks: Default::default(),
+            column_breaks: Default::default(),
             repeat_rows: None,
             repeat_columns: None,
             margins: None,

@@ -174,7 +174,15 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
             row = row.max(a.row.saturating_add(*rows).saturating_sub(1));
             col = col.max(a.col.saturating_add(*cols).saturating_sub(1));
         }
-        let mut w = (0..=col.min(16383))
+        let (first_row, first_col) = layout
+            .print_area
+            .map(|(a, b)| {
+                row = row.min(b.row);
+                col = col.min(b.col);
+                (a.row, a.col)
+            })
+            .unwrap_or((0, 0));
+        let mut w = (first_col..=col.min(16383))
             .map(|c| {
                 layout
                     .columns
@@ -183,7 +191,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                     .unwrap_or(layout.default_column_width)
             })
             .sum::<f32>();
-        let mut h = (0..=row.min(1048575))
+        let mut h = (first_row..=row.min(1048575))
             .map(|r| {
                 layout
                     .rows
@@ -199,8 +207,10 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
             .chain(layout.charts.iter().map(|c| c.frame))
             .chain(layout.text_boxes.iter().map(|t| t.frame))
         {
-            w = w.max(f.origin.x.as_pt() + f.size.width.as_pt());
-            h = h.max(f.origin.y.as_pt() + f.size.height.as_pt());
+            if layout.print_area.is_none() {
+                w = w.max(f.origin.x.as_pt() + f.size.width.as_pt());
+                h = h.max(f.origin.y.as_pt() + f.size.height.as_pt());
+            }
         }
         scale = 1.0;
         if across > 0 {
@@ -339,8 +349,21 @@ fn render_scaled_grid(
     };
     let repeat_columns = valid_repeat(layout.repeat_columns, &widths, available_w);
     let repeat_rows = valid_repeat(layout.repeat_rows, &heights, available_h);
-    let column_pages = grid_bands_repeated(&widths, available_w, repeat_columns);
-    let row_pages = grid_bands_repeated(&heights, available_h, repeat_rows);
+    let area = layout.print_area;
+    let column_pages = grid_bands_region(
+        &widths,
+        available_w,
+        repeat_columns,
+        &layout.column_breaks,
+        area.map(|(a, b)| (a.col, b.col)),
+    );
+    let row_pages = grid_bands_region(
+        &heights,
+        available_h,
+        repeat_rows,
+        &layout.row_breaks,
+        area.map(|(a, b)| (a.row, b.row)),
+    );
     for columns in column_pages {
         for rows in &row_pages {
             let repeated_columns = repeated_indices(repeat_columns, columns.start, widths.len());
@@ -747,35 +770,49 @@ fn repeated_indices(repeat: Option<(u32, u32)>, start: usize, len: usize) -> Vec
         _ => Vec::new(),
     }
 }
-fn grid_bands_repeated(
+fn grid_bands_region(
     sizes: &[f32],
     available: f32,
     repeat: Option<(u32, u32)>,
+    breaks: &std::collections::BTreeSet<u32>,
+    area: Option<(u32, u32)>,
 ) -> Vec<std::ops::Range<usize>> {
-    if repeat.is_none() {
-        return grid_bands(sizes, available);
-    }
-    let mut ranges = Vec::new();
-    let mut start = 0;
+    let (first, end) = area
+        .map(|(a, b)| (a as usize, (b as usize).saturating_add(1)))
+        .unwrap_or((0, sizes.len()));
+    let end = end.min(sizes.len());
+    let mut start = first.min(end);
     let mut occupied = 0.0;
-    for (i, size) in sizes.iter().enumerate() {
-        if i > start && occupied + size > available + 0.01 {
+    let mut ranges = Vec::new();
+    for i in start..end {
+        let size = sizes[i];
+        if i > start && (breaks.contains(&(i as u32)) || occupied + size > available + 0.01) {
             ranges.push(start..i);
             start = i;
             occupied = repeated_indices(repeat, start, sizes.len())
                 .iter()
                 .map(|i| sizes[*i])
                 .sum::<f32>()
-                .min((available - *size).max(0.0));
+                .min((available - size).max(0.0));
         }
         occupied += size;
     }
-    if start < sizes.len() {
-        ranges.push(start..sizes.len());
+    if start < end {
+        ranges.push(start..end);
     }
     ranges
 }
 
+#[cfg(test)]
+fn grid_bands_repeated(
+    sizes: &[f32],
+    available: f32,
+    repeat: Option<(u32, u32)>,
+) -> Vec<std::ops::Range<usize>> {
+    grid_bands_region(sizes, available, repeat, &Default::default(), None)
+}
+
+#[cfg(test)]
 fn grid_bands(sizes: &[f32], available: f32) -> Vec<std::ops::Range<usize>> {
     let mut ranges = Vec::new();
     let mut start = 0;
@@ -802,6 +839,40 @@ pub fn to_pdf(workbook: &Workbook) -> Vec<u8> {
 mod pagination_tests {
     use super::*;
     use lo_core::CellAddr;
+    #[test]
+    fn print_area_and_manual_breaks_bound_page_ranges() {
+        let sizes = [20.0; 10];
+        assert_eq!(
+            grid_bands_region(
+                &sizes,
+                200.0,
+                None,
+                &std::collections::BTreeSet::from([5]),
+                None
+            ),
+            vec![0..5, 5..10]
+        );
+        assert_eq!(
+            grid_bands_region(
+                &sizes,
+                200.0,
+                None,
+                &std::collections::BTreeSet::from([5]),
+                Some((1, 3))
+            ),
+            vec![1..4]
+        );
+        assert_eq!(
+            grid_bands_region(
+                &sizes,
+                60.0,
+                Some((0, 0)),
+                &std::collections::BTreeSet::from([4]),
+                None
+            ),
+            vec![0..3, 3..4, 4..6, 6..8, 8..10]
+        );
+    }
     #[test]
     fn print_fit_scales_content_without_changing_paper_size() {
         let mut book = Workbook::default();
@@ -919,7 +990,11 @@ pub fn to_pdf_preview(workbook: &Workbook) -> Vec<u8> {
         for (a, (cols, _)) in &layout.merges {
             max_col = max_col.max(a.col.saturating_add(*cols).saturating_sub(1));
         }
-        let width = (0..=max_col.min(16383))
+        let (first_col, last_col) = layout
+            .print_area
+            .map(|(a, b)| (a.col, b.col))
+            .unwrap_or((0, max_col));
+        let width = (first_col..=last_col.min(16383))
             .map(|c| {
                 layout
                     .columns
@@ -928,14 +1003,18 @@ pub fn to_pdf_preview(workbook: &Workbook) -> Vec<u8> {
                     .unwrap_or(layout.default_column_width)
             })
             .sum::<f32>();
-        let width = layout
-            .images
-            .iter()
-            .map(|i| i.frame)
-            .chain(layout.charts.iter().map(|c| c.frame))
-            .chain(layout.text_boxes.iter().map(|t| t.frame))
-            .map(|f| f.origin.x.as_pt() + f.size.width.as_pt())
-            .fold(width, f32::max);
+        let width = if layout.print_area.is_some() {
+            width
+        } else {
+            layout
+                .images
+                .iter()
+                .map(|i| i.frame)
+                .chain(layout.charts.iter().map(|c| c.frame))
+                .chain(layout.text_boxes.iter().map(|t| t.frame))
+                .map(|f| f.origin.x.as_pt() + f.size.width.as_pt())
+                .fold(width, f32::max)
+        };
         let margins = layout.margins.unwrap_or([layout.margin; 4]);
         layout.page_width = layout.page_width.max(
             (width + margins[0] + margins[1] + if layout.print_headings { 24.0 } else { 0.0 })
@@ -950,6 +1029,10 @@ pub(crate) fn cell_font(style: Option<&lo_core::style::CellStyle>) -> PdfFont {
     let Some(style) = style else {
         return PdfFont::Helvetica;
     };
+    if let Some(font) = lo_core::source_font::resolve(&style.font_family, style.bold, style.italic)
+    {
+        return font;
+    }
     let family = style.font_family.to_ascii_lowercase();
     if family.contains("courier")
         || family.contains("mono")

@@ -95,12 +95,38 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
             )?;
             if let Some(names) = workbook_root.child("definedNames") {
                 for name in names.children_named("definedName") {
-                    if name.attr("name") != Some("_xlnm.Print_Titles")
-                        || name
-                            .attr("localSheetId")
-                            .and_then(|v| v.parse::<usize>().ok())
-                            != Some(index)
+                    if name
+                        .attr("localSheetId")
+                        .and_then(|v| v.parse::<usize>().ok())
+                        != Some(index)
                     {
+                        continue;
+                    }
+                    if name.attr("name") == Some("_xlnm.Print_Area") {
+                        let text = name.text_content();
+                        // Disjoint areas need separate page sequences; do not silently
+                        // crop them to only their first rectangle.
+                        if !text.contains(',') {
+                            if let Some((_, range)) = text.rsplit_once('!') {
+                                let range = range.replace('$', "");
+                                let (a, b) = range.split_once(':').unwrap_or((&range, &range));
+                                if let (Some((ar, ac)), Some((br, bc))) =
+                                    (parse_cell_ref(a), parse_cell_ref(b))
+                                {
+                                    if ar <= br && ac <= bc {
+                                        sheet.layout.as_mut().unwrap().print_area = Some((
+                                            CellAddr::new(ar - 1, ac - 1),
+                                            CellAddr::new(br - 1, bc - 1),
+                                        ));
+                                    }
+                                }
+                            }
+                        } else {
+                            eprintln!("XLSX preview: disjoint print areas are not yet supported");
+                        }
+                        continue;
+                    }
+                    if name.attr("name") != Some("_xlnm.Print_Titles") {
                         continue;
                     }
                     for range in name.text_content().split(',') {
@@ -505,6 +531,20 @@ fn parse_xlsx_sheet(
             .entry(addr.row)
             .or_insert(layout.default_row_height);
         *current = current.max(height.min(409.0));
+    }
+    for (tag, limit, breaks) in [
+        ("rowBreaks", 1048576, &mut layout.row_breaks),
+        ("colBreaks", 16384, &mut layout.column_breaks),
+    ] {
+        if let Some(node) = root.child(tag) {
+            breaks.extend(
+                node.children_named("brk")
+                    .filter(|n| truth(n.attr("man")))
+                    .filter_map(|n| n.attr("id")?.parse::<u32>().ok())
+                    .filter(|id| *id > 0 && *id < limit)
+                    .take(1024),
+            );
+        }
     }
     if let Some(options) = root.child("printOptions") {
         layout.horizontal_centered = truth(options.attr("horizontalCentered"));
