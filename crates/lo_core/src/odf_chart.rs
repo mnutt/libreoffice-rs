@@ -37,6 +37,7 @@ struct OoxmlLayout {
     category_grid: bool,
     gap_ratio: f32,
     title_bold: bool,
+    stacked: bool,
 }
 fn text_properties(node: &XmlNode) -> Option<&XmlNode> {
     if matches!(node.local_name(), "defRPr" | "rPr") {
@@ -359,11 +360,12 @@ impl OdfChart {
         if !matches!(kind, "barChart" | "lineChart" | "scatterChart") {
             return None;
         }
-        if data
+        let grouping = data
             .child("grouping")
             .and_then(|n| n.attr("val"))
-            .is_some_and(|v| !matches!(v, "standard" | "clustered"))
-        {
+            .unwrap_or("standard");
+        let stacked = grouping == "stacked" && kind == "barChart";
+        if !matches!(grouping, "standard" | "clustered") && !stacked {
             return None;
         }
         if plot.children_named("valAx").any(|a| {
@@ -512,6 +514,7 @@ impl OdfChart {
         Some(Self {
             frame,
             ooxml_layout: Some(OoxmlLayout {
+                stacked,
                 legend_side: chart
                     .child("legend")
                     .and_then(|n| n.child("legendPos"))
@@ -585,6 +588,14 @@ impl OdfChart {
                 .and_then(|v| v.parse::<f64>().ok())
                 .filter(|v| v.is_finite() && *v > 0.0),
         })
+    }
+    fn stack_span(&self, series: usize, category: usize, value: f64) -> (f64, f64) {
+        let base = self.series[..series]
+            .iter()
+            .filter_map(|(_, data, _)| data.get(category).copied().flatten())
+            .filter(|previous| (*previous >= 0.0) == (value >= 0.0))
+            .sum::<f64>();
+        (base, base + value)
     }
     pub fn render(&self, page: &mut PdfPage, page_height: f32, dx: f32, dy: f32) {
         let x = self.frame.origin.x.as_pt() + dx;
@@ -704,12 +715,26 @@ impl OdfChart {
             page.line_rgb(left, bottom, left + pw, bottom, 0.55, 0.55, 0.55);
             page.line_rgb(left, bottom, left, top, 0.55, 0.55, 0.55);
         }
+        let stacked = self.ooxml_layout.as_ref().is_some_and(|l| l.stacked);
         let values: Vec<_> = self
             .series
             .iter()
             .flat_map(|s| s.1.iter().flatten())
             .copied()
             .collect();
+        let values = if stacked {
+            self.series
+                .iter()
+                .enumerate()
+                .flat_map(|(si, (_, data, _))| {
+                    data.iter()
+                        .enumerate()
+                        .filter_map(move |(i, value)| value.map(|v| self.stack_span(si, i, v).1))
+                })
+                .collect::<Vec<_>>()
+        } else {
+            values
+        };
         let min = values.iter().copied().fold(0.0f64, f64::min);
         let max = values.iter().copied().fold(0.0f64, f64::max);
         let span = (max - min).max(1e-12);
@@ -841,10 +866,15 @@ impl OdfChart {
                 );
             }
         }
+        let groups = if stacked {
+            1.0
+        } else {
+            self.series.len() as f32
+        };
         let bar_fraction = self
             .ooxml_layout
             .as_ref()
-            .map(|l| self.series.len() as f32 / (self.series.len() as f32 + l.gap_ratio))
+            .map(|l| groups / (groups + l.gap_ratio))
             .unwrap_or(0.6);
         for (si, (name, data, paint)) in self.series.iter().enumerate() {
             let (r, g, b) = color(paint);
@@ -860,6 +890,12 @@ impl OdfChart {
                     previous = None;
                     continue;
                 };
+                let (base_value, end_value) = if stacked {
+                    self.stack_span(si, i, *value)
+                } else {
+                    (0.0, *value)
+                };
+                let group_index = if stacked { 0.0 } else { si as f32 };
                 if self.line {
                     let cx = if let Some(xs) = &self.x_values {
                         let Some(Some(v)) = xs.get(si).and_then(|v| v.get(i)) else {
@@ -902,18 +938,19 @@ impl OdfChart {
                     }
                 } else if self.horizontal {
                     let band = ph / count as f32;
-                    let bh = band * bar_fraction / self.series.len() as f32;
+                    let bh = band * bar_fraction / groups;
                     let cy =
-                        bottom + band * (i as f32 + (1.0 - bar_fraction) / 2.0) + si as f32 * bh;
-                    let start = left + pw * fraction(0.0);
-                    let end = left + pw * fraction(*value);
+                        bottom + band * (i as f32 + (1.0 - bar_fraction) / 2.0) + group_index * bh;
+                    let start = left + pw * fraction(base_value);
+                    let end = left + pw * fraction(end_value);
                     page.rect_fill_rgb(start.min(end), cy, (end - start).abs(), bh, r, g, b);
                 } else {
                     let band = pw / count as f32;
-                    let bw = band * bar_fraction / self.series.len() as f32;
-                    let cx = left + band * (i as f32 + (1.0 - bar_fraction) / 2.0) + si as f32 * bw;
-                    let start = bottom + ph * fraction(0.0);
-                    let end = bottom + ph * fraction(*value);
+                    let bw = band * bar_fraction / groups;
+                    let cx =
+                        left + band * (i as f32 + (1.0 - bar_fraction) / 2.0) + group_index * bw;
+                    let start = bottom + ph * fraction(base_value);
+                    let end = bottom + ph * fraction(end_value);
                     page.rect_fill_rgb(cx, start.min(end), bw, (end - start).abs(), r, g, b);
                 }
             }
@@ -933,7 +970,14 @@ impl OdfChart {
                                 self.font_size,
                                 false,
                             ) / 2.0,
-                            bottom + ph * fraction(*value) + 3.0,
+                            bottom
+                                + ph * fraction(if stacked {
+                                    let (a, b) = self.stack_span(si, i, *value);
+                                    (a + b) / 2.0
+                                } else {
+                                    *value
+                                })
+                                + 3.0,
                             self.font_size,
                             PdfFont::Helvetica,
                             &label,
@@ -1025,6 +1069,19 @@ fn plot_axis_font(chart: &XmlNode, styles: &OdfStyles) -> Option<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn stacked_bars_accumulate_positive_and_negative_values_separately() {
+        let root = crate::parse_xml_document(r#"<chartSpace><chart><plotArea><barChart><grouping val="stacked"/><ser><val><numLit><pt idx="0"><v>2</v></pt></numLit></val></ser></barChart></plotArea></chart></chartSpace>"#).unwrap();
+        let mut c = OdfChart::from_ooxml(&root, Rect::default()).unwrap();
+        assert!(c.ooxml_layout.as_ref().unwrap().stacked);
+        c.series = vec![
+            ("a".into(), vec![Some(2.0)], "".into()),
+            ("b".into(), vec![Some(-3.0)], "".into()),
+            ("c".into(), vec![None], "".into()),
+        ];
+        assert_eq!(c.stack_span(3, 0, 4.0), (2.0, 6.0));
+        assert_eq!(c.stack_span(3, 0, -5.0), (-3.0, -8.0));
+    }
     #[test]
     fn horizontal_legends_wrap_and_center_each_row() {
         assert_eq!(
