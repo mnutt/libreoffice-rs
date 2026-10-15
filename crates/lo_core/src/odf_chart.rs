@@ -13,6 +13,9 @@ pub struct OdfChart {
     connect_points: bool,
     series_lines: Vec<bool>,
     value_labels: Vec<bool>,
+    point_colors: std::collections::BTreeMap<(usize,usize),String>,
+    axis_format: String,
+    data_formats: Vec<String>,
     horizontal: bool,
     line: bool,
     legend: bool,
@@ -258,13 +261,17 @@ impl OdfChart {
             connect_points: true,
             series_lines: Vec::new(),
             value_labels: Vec::new(),
+            point_colors: Default::default(),
+            axis_format: String::new(),
+            data_formats: Vec::new(),
             horizontal,
             line: kind == "line",
             legend: chart.child("legend").is_some(),
         })
     }
     /// Import cached OOXML chart values without executing formulas or external links.
-    pub fn from_ooxml(root: &XmlNode, frame: Rect) -> Option<Self> {
+    pub fn from_ooxml(root: &XmlNode, frame: Rect) -> Option<Self> {Self::from_ooxml_with_theme(root,frame,None)}
+    pub fn from_ooxml_with_theme(root: &XmlNode, frame: Rect, theme: Option<&XmlNode>) -> Option<Self> {
         fn cached(node: &XmlNode) -> Vec<String> {
             let cache = ["numCache", "strCache", "numLit", "strLit"]
                 .iter()
@@ -335,6 +342,8 @@ impl OdfChart {
         let mut xs = Vec::new();
         let mut series_lines = Vec::new();
         let mut value_labels = Vec::new();
+        let mut point_colors=std::collections::BTreeMap::new();
+        let mut data_formats=Vec::new();
         let palette = [
             "#4472C4", "#ED7D31", "#A5A5A5", "#FFC000", "#5B9BD5", "#70AD47",
         ];
@@ -367,17 +376,12 @@ impl OdfChart {
                         .collect(),
                 );
             }
-            let paint = ser
-                .child("spPr")
-                .and_then(|n| {
-                    n.child("solidFill")
-                        .or_else(|| n.child("ln").and_then(|n| n.child("solidFill")))
-                })
-                .and_then(|n| n.child("srgbClr"))
-                .and_then(|n| n.attr("val"))
-                .filter(|s| s.len() == 6 && s.is_ascii())
-                .map(|s| format!("#{s}"))
-                .unwrap_or_else(|| palette[i % palette.len()].into());
+            let paint=chart_paint(ser.child("spPr"),theme).unwrap_or_else(||palette[i%palette.len()].into());
+            for point in ser.children_named("dPt").take(10000) {
+                if let (Some(idx),Some(paint))=(point.child("idx").and_then(|n|n.attr("val")).and_then(|v|v.parse::<usize>().ok()).filter(|v|*v<10000),chart_paint(point.child("spPr"),theme)) {point_colors.insert((i,idx),paint);}
+            }
+            let format=ser.child("dLbls").and_then(|n|n.child("numFmt")).and_then(|n|n.attr("formatCode")).map(str::to_string).or_else(||ser.child("val").and_then(|n|n.child("numRef")).and_then(|n|n.child("numCache")).and_then(|n|n.child("formatCode")).map(|n|n.text_content())).unwrap_or_default();
+            data_formats.push(format);
             series_lines.push(
                 !ser.child("spPr")
                     .and_then(|n| n.child("ln"))
@@ -429,6 +433,7 @@ impl OdfChart {
             frame,
             series_lines,
             value_labels,
+            point_colors,data_formats,axis_format:axis.and_then(|n|n.child("numFmt")).and_then(|n|n.attr("formatCode")).unwrap_or("").into(),
             plot: [0.15, 0.12, 0.65, 0.7],
             title,
             categories,
@@ -517,6 +522,7 @@ impl OdfChart {
                     .trim_end_matches('.')
                     .to_string()
             };
+            let label=if self.axis_format.is_empty() || self.axis_format=="General" {label} else {crate::xlsx_format::number(value,&self.axis_format,false)};
             if self.horizontal {
                 let tx = left + pw * f;
                 page.line_rgb(tx, bottom, tx, top, 0.65, 0.65, 0.65);
@@ -606,6 +612,7 @@ impl OdfChart {
             let mut previous = None;
             page.raw(&format!("q {left} {bottom} {pw} {ph} re W n"));
             for (i, value) in data.iter().enumerate() {
+                let (r,g,b)=self.point_colors.get(&(si,i)).map(|s|color(s)).unwrap_or((r,g,b));
                 let Some(value) = value else {
                     previous = None;
                     continue;
@@ -648,7 +655,7 @@ impl OdfChart {
             if self.value_labels.get(si) == Some(&true) && !self.horizontal && !self.line {
                 for (i, value) in data.iter().enumerate() {
                     if let Some(value) = value {
-                        let label = format!("{value}");
+                        let label = crate::xlsx_format::number(*value,self.data_formats.get(si).map(String::as_str).unwrap_or(""),false);
                         let cx = left + pw * (i as f32 + 0.5) / count as f32;
                         page.text(
                             cx - crate::font_metrics::measure_helvetica(
@@ -696,6 +703,12 @@ fn plot_axis_font(chart: &XmlNode, styles: &OdfStyles) -> Option<f32> {
 mod tests {
     use super::*;
     #[test]
+    fn chart_points_use_workbook_theme_and_luminance() {
+        let theme=crate::parse_xml_document(r#"<theme><themeElements><clrScheme><accent1><srgbClr val="80C020"/></accent1></clrScheme></themeElements></theme>"#).unwrap();
+        let n=crate::parse_xml_document(r#"<spPr><solidFill><schemeClr val="accent1"><lumMod val="40000"/><lumOff val="60000"/></schemeClr></solidFill></spPr>"#).unwrap();
+        assert_eq!(chart_paint(Some(&n),Some(&theme)),Some("#CCE6A6".into()));
+    }
+    #[test]
     fn ooxml_scatter_preserves_sparse_numeric_coordinates_and_no_fill() {
         let xml=r#"<chartSpace><chart><autoTitleDeleted val="0"/><plotArea><scatterChart><ser><tx><v>Series</v></tx><spPr><ln><noFill/></ln></spPr><xVal><numLit><pt idx="1"><v>9</v></pt><pt idx="0"><v>2</v></pt></numLit></xVal><yVal><numRef><numCache><pt idx="0"><v>5</v></pt><pt idx="2"><v>NaN</v></pt></numCache></numRef></yVal></ser></scatterChart></plotArea></chart></chartSpace>"#;
         let root=crate::parse_xml_document(xml).unwrap();
@@ -723,4 +736,20 @@ mod tests {
         let root = crate::parse_xml_document(&xml.replace("chart:bar", "chart:pie")).unwrap();
         assert!(OdfChart::parse(&root, frame).is_none());
     }
+}
+
+fn chart_paint(node: Option<&XmlNode>, theme: Option<&XmlNode>) -> Option<String> {
+    let fill=node?.child("solidFill").or_else(||node?.child("ln")?.child("solidFill"))?;
+    let n=fill.children.first()?;
+    let fallback=[("accent1","4472C4"),("accent2","ED7D31"),("accent3","A5A5A5"),("accent4","FFC000"),("accent5","5B9BD5"),("accent6","70AD47")];
+    let raw=if n.local_name()=="schemeClr" {
+        let name=n.attr("val")?;
+        theme.and_then(|n|n.child("themeElements")).and_then(|n|n.child("clrScheme")).and_then(|n|n.child(name)).and_then(|n|n.children.first()).and_then(|n|n.attr("val").or_else(||n.attr("lastClr"))).or_else(||fallback.iter().find(|(k,_)|*k==name).map(|(_,v)|*v))?
+    } else if n.local_name()=="srgbClr" {n.attr("val")?} else {return None};
+    if raw.len()!=6 || !raw.is_ascii(){return None;}
+    let rgb=u32::from_str_radix(raw,16).ok()?;
+    let factor=|key,default| n.child(key).and_then(|n|n.attr("val")).and_then(|v|v.parse::<f32>().ok()).filter(|v|v.is_finite()).map(|v|(v/100000.0).clamp(0.0,1.0)).unwrap_or(default);
+    let m=factor("lumMod",1.0);let o=factor("lumOff",0.0);
+    let c=|shift| ((((rgb>>shift)&255u32) as f32*m+255.0*o).clamp(0.0,255.0).round()) as u8;
+    Some(format!("#{:02X}{:02X}{:02X}",c(16),c(8),c(0)))
 }

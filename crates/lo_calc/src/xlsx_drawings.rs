@@ -109,7 +109,7 @@ pub(crate) fn import(
             {
                 if let Some(path) = chart.attr("id").and_then(|id| rels.get(id)) {
                     let xml = lo_core::parse_xml_document(&zip.read_string(path)?)?;
-                    if let Some(chart) = lo_core::odf_chart::OdfChart::from_ooxml(&xml, frame) {
+                    if let Some(chart) = lo_core::odf_chart::OdfChart::from_ooxml_with_theme(&xml, frame, theme.as_ref()) {
                         layout.charts.push(chart);
                     }
                 }

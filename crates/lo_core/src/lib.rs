@@ -43,3 +43,5 @@ pub use xml_parser::{
     decode_entities, local_name, parse_xml_document, serialize_xml_document, serialize_xml_node,
     XmlItem, XmlNode,
 };
+
+pub mod xlsx_format;
