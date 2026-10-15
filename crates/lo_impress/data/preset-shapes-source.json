@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/apache/poi",
+  "revision": "df7d70faa13003593f272259c7fe8ed787f507df",
+  "path": "poi/src/main/resources/org/apache/poi/sl/draw/geom/presetShapeDefinitions.xml",
+  "source_sha256": "4a762444d8d85876881c02a5b1dedf6f73006fcd8acb7b4e393435615b37c780",
+  "modifications": "Retained avLst, gdLst and pathLst; removed XML namespaces and insignificant whitespace; compressed into deterministic ZIP.",
+  "presets": 187,
+  "uncompressed_bytes": 271518,
+  "archive_sha256": "39025ade624c2abc43d45acc8395c73c28d367663ef147658d7f9f47d5061b0f"
+}

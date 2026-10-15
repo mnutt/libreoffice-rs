@@ -1,0 +1,6 @@
+{
+  "source": "https://github.com/LibreOffice/core/blob/master/oox/inc/drawingml/hatchmap.hxx",
+  "sha256": "738422a09f43d550209263552ec1656e440901707db3017a1b96899ef85d23a2",
+  "license": "MPL-2.0",
+  "modifications": "Converted hatch mapping to Rust; distance stored in thousandths of a point."
+}
