@@ -6,6 +6,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let bytes = std::fs::read(&args[1])?;
     let workbook = lo_calc::from_xlsx_bytes("", &bytes)?;
-    std::fs::write(&args[2], lo_calc::to_pdf(&workbook))?;
+    std::fs::write(&args[2], lo_calc::pdf::to_pdf_preview(&workbook))?;
     Ok(())
 }

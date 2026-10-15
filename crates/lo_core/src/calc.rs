@@ -117,6 +117,12 @@ impl Range {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SheetLayout {
+    pub print_headings: bool,
+    pub print_gridlines: bool,
+    /// Optional left, right, top, bottom margins in points.
+    pub margins: Option<[f32; 4]>,
+    pub default_column_width: f32,
+    pub default_row_height: f32,
     pub headers: Vec<(u8, Vec<crate::OdfPageField>)>,
     pub footers: Vec<(u8, Vec<crate::OdfPageField>)>,
     pub header_height: f32,
@@ -133,6 +139,11 @@ pub struct SheetLayout {
 impl Default for SheetLayout {
     fn default() -> Self {
         Self {
+            print_headings: false,
+            print_gridlines: false,
+            margins: None,
+            default_column_width: 64.0,
+            default_row_height: 15.0,
             headers: Vec::new(),
             footers: Vec::new(),
             header_height: 0.0,

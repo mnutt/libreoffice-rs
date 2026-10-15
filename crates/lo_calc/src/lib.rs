@@ -4,6 +4,8 @@ pub mod markdown;
 pub mod pdf;
 pub mod svg;
 pub mod xlsx;
+mod xlsx_format;
+mod xlsx_styles;
 
 pub use html::to_html;
 pub use import::{from_ods_bytes, from_xlsx_bytes, load_bytes};

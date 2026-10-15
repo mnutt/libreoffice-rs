@@ -51,6 +51,22 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
         Vec::new()
     };
 
+    let styles_xml = if zip.contains("xl/styles.xml") {
+        Some(parse_xml_document(&zip.read_string("xl/styles.xml")?)?)
+    } else {
+        None
+    };
+    let theme_xml = if zip.contains("xl/theme/theme1.xml") {
+        Some(parse_xml_document(
+            &zip.read_string("xl/theme/theme1.xml")?,
+        )?)
+    } else {
+        None
+    };
+    let styles = crate::xlsx_styles::parse(styles_xml.as_ref(), theme_xml.as_ref());
+    let date_1904 = workbook_root
+        .child("workbookPr")
+        .is_some_and(|n| crate::xlsx_styles::truth(n.attr("date1904")));
     let mut workbook = Workbook::new(title);
     workbook.sheets.clear();
 
@@ -67,9 +83,11 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
                 continue;
             }
             let sheet_xml = parse_xml_document(&zip.read_string(&target)?)?;
-            workbook
-                .sheets
-                .push(parse_xlsx_sheet(&name, &sheet_xml, &shared_strings)?);
+            let mut sheet =
+                parse_xlsx_sheet(&name, &sheet_xml, &shared_strings, &styles, date_1904)?;
+            sheet.layout.as_mut().unwrap().hidden =
+                matches!(sheet_node.attr("state"), Some("hidden" | "veryHidden"));
+            workbook.sheets.push(sheet);
         }
     }
     if workbook.sheets.is_empty() {
@@ -145,6 +163,7 @@ fn xlsx_text(node: &XmlNode) -> String {
             XmlItem::Text(text) => out.push_str(text),
             XmlItem::Node(child) => match child.local_name() {
                 "t" => out.push_str(&child.text_content()),
+                "rPh" | "phoneticPr" => {}
                 _ => out.push_str(&xlsx_text(child)),
             },
         }
@@ -152,45 +171,339 @@ fn xlsx_text(node: &XmlNode) -> String {
     out
 }
 
-fn parse_xlsx_sheet(name: &str, root: &XmlNode, shared_strings: &[String]) -> Result<Sheet> {
+fn parse_xlsx_sheet(
+    name: &str,
+    root: &XmlNode,
+    shared_strings: &[String],
+    styles: &crate::xlsx_styles::Styles,
+    date_1904: bool,
+) -> Result<Sheet> {
+    use crate::xlsx_styles::{positive, truth};
+    use lo_core::{calc::SheetLayout, style::Alignment};
     let mut sheet = Sheet::new(name.to_string());
-    let Some(sheet_data) = root.child("sheetData") else {
-        return Ok(sheet);
+    let mut layout = SheetLayout {
+        page_width: 612.0,
+        page_height: 792.0,
+        margins: Some([50.4, 50.4, 54.0, 54.0]),
+        default_column_width: 48.0,
+        default_row_height: 15.0,
+        ..SheetLayout::default()
     };
-    let mut next_row: u32 = 1;
-    for row_node in sheet_data.children_named("row") {
-        let row_number = row_node
-            .attr("r")
-            .and_then(|value| value.parse::<u32>().ok())
-            .unwrap_or(next_row);
-        let mut next_col: u32 = 1;
-        for cell in row_node.children_named("c") {
-            let reference = cell.attr("r");
-            let (cell_row, cell_col) = reference
-                .and_then(parse_cell_ref)
-                .unwrap_or((row_number, next_col));
-            next_col = cell_col + 1;
-            let formula = cell.child("f").map(|node| node.text_content());
-            let value = if let Some(formula) = formula {
-                let trimmed = formula.trim();
-                if trimmed.is_empty() {
-                    parse_xlsx_value(cell, shared_strings)
-                } else {
-                    CellValue::Formula(trimmed.to_string())
-                }
+    let normal = &styles.cells[0];
+    let normal_size = normal.font_size_mpt.unwrap_or(11000) as f32 / 1000.0;
+    let digit = lo_core::font_metrics::measure_base_font(
+        "0",
+        normal_size,
+        crate::pdf::cell_font(Some(normal)),
+    )
+    .round()
+    .max(1.0);
+    layout.default_column_width = 10.0 * digit + 5.0;
+    layout.default_row_height = (normal_size * 1.2 + 3.0).ceil().max(15.0);
+    if let Some(format) = root.child("sheetFormatPr") {
+        layout.default_column_width = if format.attr("defaultColWidth").is_some() {
+            excel_column_width(positive(format, "defaultColWidth", 8.43), digit)
+        } else {
+            positive(format, "baseColWidth", 8.0) * digit + 5.0
+        };
+        layout.default_row_height = positive(format, "defaultRowHeight", 15.0).clamp(0.0, 409.0);
+    }
+    if let Some(setup) = root.child("pageSetup") {
+        let (w, h) = match setup.attr("paperSize") {
+            Some("9") => (595.28, 841.89),
+            Some("8") => (841.89, 1190.55),
+            Some("5") => (612.0, 1008.0),
+            Some("3" | "4") => (792.0, 1224.0),
+            _ => (612.0, 792.0),
+        };
+        (layout.page_width, layout.page_height) = if setup.attr("orientation") == Some("landscape")
+        {
+            (h, w)
+        } else {
+            (w, h)
+        };
+    }
+    if let Some(margins) = root.child("pageMargins") {
+        layout.margins = Some([
+            positive(margins, "left", 0.7) * 72.0,
+            positive(margins, "right", 0.7) * 72.0,
+            positive(margins, "top", 0.75) * 72.0,
+            positive(margins, "bottom", 0.75) * 72.0,
+        ]);
+    }
+    let margins = layout.margins.unwrap();
+    if margins[0] + margins[1] >= layout.page_width || margins[2] + margins[3] >= layout.page_height
+    {
+        return Err(LoError::InvalidInput(
+            "XLSX margins leave no printable area".into(),
+        ));
+    }
+    let mut column_styles = BTreeMap::new();
+    if let Some(cols) = root.child("cols") {
+        let mut expanded = 0usize;
+        for col in cols.children_named("col") {
+            let min = col
+                .attr("min")
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(1);
+            let max = col
+                .attr("max")
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(min);
+            if min == 0 || max < min || max > 16384 {
+                return Err(LoError::InvalidInput("Invalid XLSX column range".into()));
+            }
+            expanded += (max - min + 1) as usize;
+            if expanded > 100_000 {
+                return Err(LoError::InvalidInput("Excessive XLSX column ranges".into()));
+            }
+            let width = if truth(col.attr("hidden")) {
+                0.0
+            } else if col.attr("width").is_some() {
+                excel_column_width(positive(col, "width", 8.43), digit)
             } else {
-                parse_xlsx_value(cell, shared_strings)
+                layout.default_column_width
             };
-            if value != CellValue::Empty {
-                sheet.set(
-                    CellAddr::new(cell_row.saturating_sub(1), cell_col.saturating_sub(1)),
-                    value,
-                );
+            for c in min - 1..max {
+                layout.columns.insert(c, width);
+                if let Some(s) = col.attr("style").and_then(|s| s.parse::<usize>().ok()) {
+                    column_styles.insert(c, s);
+                }
             }
         }
-        next_row = row_number + 1;
     }
+    let mut missing_cache = 0;
+    let mut explicit_rows = std::collections::BTreeSet::new();
+    if let Some(sheet_data) = root.child("sheetData") {
+        let mut next_row = 1;
+        let mut cell_count = 0;
+        for row in sheet_data.children_named("row") {
+            let r = row
+                .attr("r")
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(next_row);
+            if !(1..=1_048_576).contains(&r) {
+                return Err(LoError::InvalidInput("Invalid XLSX row".into()));
+            }
+            next_row = r + 1;
+            if row.attr("ht").is_some() || truth(row.attr("hidden")) {
+                explicit_rows.insert(r - 1);
+                layout.rows.insert(
+                    r - 1,
+                    if truth(row.attr("hidden")) {
+                        0.0
+                    } else {
+                        positive(row, "ht", layout.default_row_height).clamp(0.0, 409.0)
+                    },
+                );
+            }
+            let row_style = row.attr("s").and_then(|s| s.parse::<usize>().ok());
+            let mut next_col = 1;
+            for cell in row.children_named("c") {
+                cell_count += 1;
+                if cell_count > 100_000 {
+                    return Err(LoError::InvalidInput(
+                        "XLSX preview exceeds 100,000 cells per sheet".into(),
+                    ));
+                }
+                let (cr, cc) = match cell.attr("r") {
+                    Some(reference) => parse_cell_ref(reference)
+                        .ok_or_else(|| LoError::InvalidInput("Invalid XLSX cell address".into()))?,
+                    None => (r, next_col),
+                };
+                next_col = cc + 1;
+                let addr = CellAddr::new(cr - 1, cc - 1);
+                let index = cell
+                    .attr("s")
+                    .and_then(|s| s.parse::<usize>().ok())
+                    .or(row_style)
+                    .or_else(|| column_styles.get(&(cc - 1)).copied())
+                    .unwrap_or(0);
+                let mut style = styles.cells.get(index).unwrap_or(&styles.cells[0]).clone();
+                let cached = parse_xlsx_value(cell, shared_strings);
+                if styles.general_alignment.get(index).copied().unwrap_or(true) {
+                    style.alignment = match cached {
+                        CellValue::Number(_) => Alignment::End,
+                        CellValue::Bool(_) | CellValue::Error(_) => Alignment::Center,
+                        _ => Alignment::Start,
+                    };
+                }
+                let display = match &cached {
+                    CellValue::Number(n) => {
+                        crate::xlsx_format::number(*n, &style.format_code, date_1904)
+                    }
+                    CellValue::Text(s) | CellValue::Error(s) => s.clone(),
+                    CellValue::Bool(b) => if *b { "TRUE" } else { "FALSE" }.into(),
+                    _ => String::new(),
+                };
+                let value = if let Some(formula) = cell.child("f") {
+                    if matches!(cached, CellValue::Empty) {
+                        missing_cache += 1;
+                    }
+                    CellValue::Formula(formula.text_content())
+                } else {
+                    cached
+                };
+                if value == CellValue::Empty
+                    && style.background.is_empty()
+                    && style.borders.iter().all(String::is_empty)
+                {
+                    continue;
+                }
+                sheet.set(addr, value);
+                sheet.display_values.insert(addr, display);
+                sheet.cells.get_mut(&addr).unwrap().style = Some(style);
+            }
+        }
+    }
+    if missing_cache > 0 {
+        eprintln!("XLSX preview: {missing_cache} formula cells have no saved result; left blank");
+    }
+    if let Some(merges) = root.child("mergeCells") {
+        let mut total = 0u64;
+        for merge in merges.children_named("mergeCell") {
+            let Some((a, b)) = merge.attr("ref").and_then(|s| s.split_once(':')) else {
+                continue;
+            };
+            let (ar, ac) = parse_cell_ref(a)
+                .ok_or_else(|| LoError::InvalidInput("Invalid XLSX merge".into()))?;
+            let (br, bc) = parse_cell_ref(b)
+                .ok_or_else(|| LoError::InvalidInput("Invalid XLSX merge".into()))?;
+            if br < ar || bc < ac {
+                return Err(LoError::InvalidInput("Reversed XLSX merge".into()));
+            }
+            total += u64::from(br - ar + 1) * u64::from(bc - ac + 1);
+            if total > 1_000_000 {
+                return Err(LoError::InvalidInput(
+                    "XLSX merged area exceeds preview limit".into(),
+                ));
+            }
+            let anchor = CellAddr::new(ar - 1, ac - 1);
+            // Blank anchors can carry borders/backgrounds and still occupy the merged region.
+            sheet.cells.entry(anchor).or_default();
+            layout.merges.insert(anchor, (bc - ac + 1, br - ar + 1));
+        }
+    }
+    let (mut max_r, mut max_c) = sheet.max_extent();
+    for (a, (cols, rows)) in &layout.merges {
+        max_r = max_r.max(a.row + rows - 1);
+        max_c = max_c.max(a.col + cols - 1);
+    }
+    if u64::from(max_r + 1) * u64::from(max_c + 1) > 2_000_000 {
+        return Err(LoError::InvalidInput(
+            "XLSX preview grid exceeds 2,000,000 positions".into(),
+        ));
+    }
+    // Grow automatic wrapped rows; explicit heights and merged multi-row boxes are authoritative.
+    for (addr, cell) in &sheet.cells {
+        if explicit_rows.contains(&addr.row) {
+            continue;
+        }
+        let Some(style) = cell.style.as_ref().filter(|s| s.wrap) else {
+            continue;
+        };
+        let (span, rows) = layout.merges.get(addr).copied().unwrap_or((1, 1));
+        if rows > 1 {
+            continue;
+        }
+        let width = (addr.col..addr.col + span)
+            .map(|c| {
+                layout
+                    .columns
+                    .get(&c)
+                    .copied()
+                    .unwrap_or(layout.default_column_width)
+            })
+            .sum::<f32>();
+        let size = style.font_size_mpt.unwrap_or(11000) as f32 / 1000.0;
+        let text = sheet
+            .display_values
+            .get(addr)
+            .map(String::as_str)
+            .unwrap_or("");
+        let height =
+            crate::pdf::grid_wrap(text, (width - 4.0).max(1.0), size).len() as f32 * size * 1.2
+                + 3.0;
+        let current = layout
+            .rows
+            .entry(addr.row)
+            .or_insert(layout.default_row_height);
+        *current = current.max(height.min(409.0));
+    }
+    if let Some(options) = root.child("printOptions") {
+        layout.print_headings = truth(options.attr("headings"));
+        layout.print_gridlines = truth(options.attr("gridLines"));
+    }
+    if let Some(hf) = root.child("headerFooter") {
+        layout.headers = xlsx_header_footer(hf.child("oddHeader"), name);
+        layout.footers = xlsx_header_footer(hf.child("oddFooter"), name);
+    }
+    sheet.layout = Some(layout);
     Ok(sheet)
+}
+
+fn excel_column_width(width: f32, digit: f32) -> f32 {
+    // Declared widths include padding and use the Normal font's digit advance.
+    // Substitute-font metrics are approximate when the original font is absent.
+    (width.min(255.0) * digit).round()
+}
+
+fn xlsx_header_footer(
+    node: Option<&XmlNode>,
+    sheet: &str,
+) -> Vec<(u8, Vec<lo_core::OdfPageField>)> {
+    use lo_core::OdfPageField as F;
+    let Some(node) = node else { return Vec::new() };
+    let text = node.text_content();
+    let mut chars = text.chars().peekable();
+    let mut regions: BTreeMap<u8, Vec<F>> = BTreeMap::new();
+    let mut region = 1;
+    let mut literal = String::new();
+    while let Some(c) = chars.next() {
+        if c != '&' {
+            literal.push(c);
+            continue;
+        }
+        let Some(code) = chars.next() else { break };
+        if !literal.is_empty() {
+            regions
+                .entry(region)
+                .or_default()
+                .push(F::Text(std::mem::take(&mut literal)));
+        }
+        match code {
+            'L' => region = 0,
+            'C' => region = 1,
+            'R' => region = 2,
+            'P' => regions.entry(region).or_default().push(F::PageNumber),
+            'N' => regions.entry(region).or_default().push(F::PageCount),
+            'A' => literal.push_str(sheet),
+            '&' => literal.push('&'),
+            '"' => {
+                for c in chars.by_ref() {
+                    if c == '"' {
+                        break;
+                    }
+                }
+            }
+            '0'..='9' => {
+                while chars.peek().is_some_and(char::is_ascii_digit) {
+                    chars.next();
+                }
+            }
+            'K' => {
+                for _ in 0..6 {
+                    chars.next();
+                }
+            }
+            // Formatting toggles and unsupported dynamic fields have no literal text.
+            _ => {}
+        }
+    }
+    if !literal.is_empty() {
+        regions.entry(region).or_default().push(F::Text(literal));
+    }
+    regions.into_iter().collect()
 }
 
 fn parse_xlsx_value(cell: &XmlNode, shared_strings: &[String]) -> CellValue {
@@ -222,24 +535,21 @@ fn parse_xlsx_value(cell: &XmlNode, shared_strings: &[String]) -> CellValue {
 
 /// Parse a cell reference like "A1" -> (row, col) (1-based).
 fn parse_cell_ref(reference: &str) -> Option<(u32, u32)> {
-    let mut letters = String::new();
-    let mut digits = String::new();
-    for ch in reference.chars() {
-        if ch.is_ascii_alphabetic() {
-            letters.push(ch.to_ascii_uppercase());
-        } else if ch.is_ascii_digit() {
-            digits.push(ch);
-        }
+    let reference = reference.strip_prefix('$').unwrap_or(reference);
+    let mut col = 0u32;
+    let mut index = 0;
+    for ch in reference.bytes().take_while(u8::is_ascii_alphabetic) {
+        col = col
+            .checked_mul(26)?
+            .checked_add((ch.to_ascii_uppercase() - b'A' + 1) as u32)?;
+        index += 1;
     }
-    if letters.is_empty() || digits.is_empty() {
-        return None;
-    }
-    let mut col: u32 = 0;
-    for ch in letters.chars() {
-        col = col * 26 + ((ch as u8 - b'A') as u32 + 1);
-    }
+    let digits = reference
+        .get(index..)?
+        .strip_prefix('$')
+        .unwrap_or(&reference[index..]);
     let row = digits.parse::<u32>().ok()?;
-    Some((row, col))
+    ((1..=1_048_576).contains(&row) && (1..=16_384).contains(&col)).then_some((row, col))
 }
 
 // ---------------------------------------------------------------------------
@@ -298,7 +608,7 @@ fn apply_ods_layout(
     page_styles: Option<&XmlNode>,
     sheet: &mut Sheet,
 ) {
-    use lo_core::style::{odf_length, CellStyle, Alignment};
+    use lo_core::style::{odf_length, Alignment, CellStyle};
     let mut layout = lo_core::calc::SheetLayout::default();
     let name = table.attr("style-name").unwrap_or("");
     layout.hidden = styles.property(name, "table-properties", "display") == Some("false");
@@ -544,7 +854,9 @@ fn parse_ods_sheet(node: &XmlNode) -> Result<Sheet> {
         let count = repeat_rows.min(1_048_576u32.saturating_sub(row_index - 1)) as usize;
         expanded_cells = expanded_cells.saturating_add(count.saturating_mul(row_values.len()));
         if expanded_cells > 100_000 {
-            return Err(LoError::Parse("ODS expanded cells exceed preview limit".into()));
+            return Err(LoError::Parse(
+                "ODS expanded cells exceed preview limit".into(),
+            ));
         }
         for _ in 0..count {
             for (col, value, display) in &row_values {
@@ -767,6 +1079,9 @@ mod expansion_tests {
     fn rejects_multiplicative_row_column_expansion() {
         let xml = r#"<table><table-row number-rows-repeated="1000000"><table-cell number-columns-repeated="16384" value-type="float" value="1"/></table-row></table>"#;
         let node = parse_xml_document(xml).unwrap();
-        assert!(parse_ods_sheet(&node).unwrap_err().to_string().contains("expanded cells"));
+        assert!(parse_ods_sheet(&node)
+            .unwrap_err()
+            .to_string()
+            .contains("expanded cells"));
     }
 }

@@ -102,8 +102,20 @@ fn render(workbook: &Workbook) -> PdfDocument {
     for (index, layout) in page_layouts {
         let page = pdf.page_mut(index).expect("sheet page");
         for (fields, y) in [
-            (&layout.headers, layout.page_height - layout.margin - 10.0),
-            (&layout.footers, layout.margin + 4.0),
+            (
+                &layout.headers,
+                layout
+                    .margins
+                    .map(|m| layout.page_height - m[2] / 2.0)
+                    .unwrap_or(layout.page_height - layout.margin - 10.0),
+            ),
+            (
+                &layout.footers,
+                layout
+                    .margins
+                    .map(|m| m[3] / 2.0)
+                    .unwrap_or(layout.margin + 4.0),
+            ),
         ] {
             for (alignment, fields) in fields {
                 use lo_core::OdfPageField as F;
@@ -122,8 +134,12 @@ fn render(workbook: &Workbook) -> PdfDocument {
                 let text: String = fields.iter().map(|f| field_text(f, index, count)).collect();
                 let width = lo_core::font_metrics::measure_helvetica(&text, 10.0, false);
                 let x = match alignment {
-                    0 => layout.margin,
-                    2 => layout.page_width - layout.margin - width,
+                    0 => layout.margins.map(|m| m[0]).unwrap_or(layout.margin),
+                    2 => {
+                        layout.page_width
+                            - layout.margins.map(|m| m[1]).unwrap_or(layout.margin)
+                            - width
+                    }
                     _ => (layout.page_width - width) / 2.0,
                 };
                 page.text(x, y, 10.0, PdfFont::Helvetica, &text);
@@ -159,16 +175,41 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
         max_col = max_col.max(addr.col.saturating_add(*columns - 1));
         max_row = max_row.max(addr.row.saturating_add(*rows - 1));
     }
-    let available_w = layout.page_width - layout.margin * 2.0;
-    let available_h =
-        layout.page_height - layout.margin * 2.0 - layout.header_height - layout.footer_height;
+    let [left, right, top_margin, bottom] = layout.margins.unwrap_or([layout.margin; 4]);
+    let heading_w = if layout.print_headings { 24.0 } else { 0.0 };
+    let heading_h = if layout.print_headings { 15.0 } else { 0.0 };
+    let available_w = layout.page_width - left - right - heading_w;
+    let available_h = layout.page_height
+        - top_margin
+        - bottom
+        - layout.header_height
+        - layout.footer_height
+        - heading_h;
+    let mut covered = std::collections::BTreeSet::new();
+    let mut merge_budget = 1_000_000_u64;
+    for (anchor, (cols, rows)) in &layout.merges {
+        // Bounds are enforced by importers; do not let public model input expand without limit.
+        let area = u64::from(*cols) * u64::from(*rows);
+        if area > merge_budget {
+            continue;
+        }
+        merge_budget -= area;
+        for r in anchor.row..anchor.row.saturating_add(*rows) {
+            for c in anchor.col..anchor.col.saturating_add(*cols) {
+                let addr = CellAddr::new(r, c);
+                if addr != *anchor {
+                    covered.insert(addr);
+                }
+            }
+        }
+    }
     let widths: Vec<_> = (0..=max_col.min(16_383))
         .map(|c| {
             layout
                 .columns
                 .get(&c)
                 .copied()
-                .unwrap_or(64.0)
+                .unwrap_or(layout.default_column_width)
                 .clamp(0.0, available_w)
         })
         .collect();
@@ -178,7 +219,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                 .rows
                 .get(&r)
                 .copied()
-                .unwrap_or(15.0)
+                .unwrap_or(layout.default_row_height)
                 .clamp(0.0, available_h)
         })
         .collect();
@@ -202,12 +243,41 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
             }
             let index = pdf.add_page(layout.page_width, layout.page_height);
             let page = pdf.page_mut(index).expect("grid page");
-            let mut top = layout.page_height - layout.margin - layout.header_height;
+            let mut top = layout.page_height - top_margin - layout.header_height - heading_h;
+            if layout.print_headings {
+                let mut hx = left + heading_w;
+                for c in columns.clone() {
+                    if widths[c] > 0.0 {
+                        let label = CellAddr::new(0, c as u32)
+                            .to_a1()
+                            .trim_end_matches('1')
+                            .to_string();
+                        let text_w = lo_core::font_metrics::measure_helvetica(&label, 10.0, false);
+                        page.text(
+                            hx + (widths[c] - text_w) / 2.0,
+                            top + 4.0,
+                            10.0,
+                            PdfFont::Helvetica,
+                            &label,
+                        );
+                    }
+                    hx += widths[c];
+                }
+            }
             for r in rows.clone() {
-                let mut x = layout.margin;
+                let mut x = left + heading_w;
                 let h = heights[r];
                 if h == 0.0 {
                     continue;
+                }
+                if layout.print_headings {
+                    page.text(
+                        left + 2.0,
+                        top - h + 3.0,
+                        10.0,
+                        PdfFont::Helvetica,
+                        &(r + 1).to_string(),
+                    );
                 }
                 for c in columns.clone() {
                     let w = widths[c];
@@ -215,6 +285,16 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                         continue;
                     }
                     let addr = CellAddr::new(r as u32, c as u32);
+                    if layout.print_gridlines && !covered.contains(&addr) {
+                        page.raw("q");
+                        page.line_width(0.25);
+                        page.rect_stroke_rgb(x, top - h, w, h, 0.75, 0.75, 0.75);
+                        page.raw("Q");
+                    }
+                    if covered.contains(&addr) {
+                        x += w;
+                        continue;
+                    }
                     if let Some(cell) = sheet.get(addr) {
                         let (col_span, row_span) =
                             layout.merges.get(&addr).copied().unwrap_or((1, 1));
@@ -235,40 +315,39 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                         {
                             page.rect_fill_rgb(x, top - h, w, h, red, green, blue);
                         }
-                        if let Some(border) = style
-                            .map(|s| s.border.as_str())
-                            .filter(|b| !b.is_empty() && *b != "none")
-                        {
-                            let color = border
-                                .split_whitespace()
-                                .last()
-                                .and_then(grid_color)
-                                .unwrap_or((0.0, 0.0, 0.0));
-                            let thickness = border
-                                .split_whitespace()
-                                .next()
-                                .and_then(lo_core::style::odf_length)
-                                .unwrap_or(0.75)
-                                .max(0.1);
-                            page.line_width(thickness);
-                            page.rect_stroke_rgb(x, top - h, w, h, color.0, color.1, color.2);
-                            page.line_width(1.0);
+                        if let Some(style) = style {
+                            let edges = [
+                                (x, top - h, x, top),
+                                (x + w, top - h, x + w, top),
+                                (x, top, x + w, top),
+                                (x, top - h, x + w, top - h),
+                            ];
+                            for (i, (x1, y1, x2, y2)) in edges.into_iter().enumerate() {
+                                let border = if style.borders[i].is_empty() {
+                                    &style.border
+                                } else {
+                                    &style.borders[i]
+                                };
+                                draw_border(page, border, x1, y1, x2, y2);
+                            }
                         }
                         let color = style
                             .and_then(|s| grid_color(&s.foreground))
                             .unwrap_or((0.0, 0.0, 0.0));
                         let size = style
-                            .map(|s| s.font_size_pt as f32)
+                            .map(|s| {
+                                s.font_size_mpt
+                                    .map(|v| v as f32 / 1000.0)
+                                    .unwrap_or(s.font_size_pt as f32)
+                            })
                             .filter(|v| *v > 0.0)
-                            .unwrap_or(10.0)
-                            .min((h - 1.0).max(1.0));
-                        let font = if style.is_some_and(|s| s.bold) {
-                            PdfFont::HelveticaBold
-                        } else if style.is_some_and(|s| s.italic) {
-                            PdfFont::HelveticaOblique
+                            .unwrap_or(10.0);
+                        let size = if style.is_some_and(|s| s.font_size_mpt.is_some()) {
+                            size
                         } else {
-                            PdfFont::Helvetica
+                            size.min((h - 1.0).max(1.0))
                         };
+                        let font = cell_font(style);
                         // Text can overflow into adjacent empty cells, as in Calc;
                         // occupied cells and page edges stop it. Numeric values stay
                         // within their own column. Clip to the source row height.
@@ -286,28 +365,30 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                                 visible_w += widths[next];
                             }
                             if !blocked {
-                                visible_w = layout.page_width - layout.margin - x;
+                                visible_w = layout.page_width - right - x;
                             }
                         }
                         page.raw(&format!("q {} {} {} {} re W n", x, top - h, visible_w, h));
-                        let estimated = lo_core::font_metrics::measure_helvetica(
-                            &text,
-                            size,
-                            font == PdfFont::HelveticaBold,
-                        );
-                        let offset = match style.map(|s| &s.alignment) {
-                            Some(Alignment::End) => (w - 2.0 - estimated).max(2.0),
-                            Some(Alignment::Center) => ((w - estimated) / 2.0).max(2.0),
-                            _ => 2.0,
-                        };
                         let lines = if style.is_some_and(|s| s.wrap) {
-                            grid_wrap(&text, (w - 4.0).max(1.0), size)
+                            grid_wrap_font(&text, (w - 4.0).max(1.0), size, font)
                         } else {
                             text.split('\n').map(str::to_string).collect()
                         };
+                        let text_height = size * 1.2 * lines.len() as f32;
+                        let baseline = match style.and_then(|s| s.vertical_alignment.as_ref()) {
+                            Some(Alignment::End) => top - h + text_height - size * 0.918 + 1.0,
+                            Some(Alignment::Center) => top - (h - text_height) / 2.0 - size * 0.918,
+                            _ => top - size * 0.718 - 2.0,
+                        };
                         for (line_index, line) in lines.iter().enumerate() {
-                            // Helvetica ascent is 0.718 em; a baseline is not a full em below the top.
-                            let y = top - size * 0.718 - 2.0 - line_index as f32 * size * 1.2;
+                            let estimated =
+                                lo_core::font_metrics::measure_base_font(line, size, font);
+                            let offset = match style.map(|s| &s.alignment) {
+                                Some(Alignment::End) => (w - 2.0 - estimated).max(2.0),
+                                Some(Alignment::Center) => ((w - estimated) / 2.0).max(2.0),
+                                _ => 2.0,
+                            };
+                            let y = baseline - line_index as f32 * size * 1.2;
                             if y < top - h {
                                 break;
                             }
@@ -331,10 +412,10 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
             if columns.start == 0 && rows.start == 0 {
                 page.raw(&format!(
                     "q {} {} {} {} re W n",
-                    layout.margin, layout.margin, available_w, available_h
+                    left, bottom, available_w, available_h
                 ));
                 for chart in &layout.charts {
-                    chart.render(page, layout.page_height, layout.margin, layout.margin);
+                    chart.render(page, layout.page_height, left, top_margin);
                 }
                 page.raw("Q");
             }
@@ -342,13 +423,17 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
     }
 }
 
-fn grid_wrap(text: &str, width: f32, size: f32) -> Vec<String> {
+pub(crate) fn grid_wrap(text: &str, width: f32, size: f32) -> Vec<String> {
+    grid_wrap_font(text, width, size, PdfFont::Helvetica)
+}
+
+fn grid_wrap_font(text: &str, width: f32, size: f32, font: PdfFont) -> Vec<String> {
     let mut out = Vec::new();
     for raw in text.split('\n') {
         let mut line = String::new();
         for word in raw.split_whitespace() {
             if !line.is_empty()
-                && lo_core::font_metrics::measure_helvetica(&format!("{line} {word}"), size, false)
+                && lo_core::font_metrics::measure_base_font(&format!("{line} {word}"), size, font)
                     > width
             {
                 out.push(std::mem::take(&mut line));
@@ -425,4 +510,99 @@ mod pagination_tests {
         book.sheets.push(sheet);
         assert_eq!(render(&book).pages().len(), 2);
     }
+}
+
+/// Davros-style preview: preserve natural column widths on one wide page band.
+/// Source page height and vertical pagination remain in effect; print scaling is ignored.
+pub fn to_pdf_preview(workbook: &Workbook) -> Vec<u8> {
+    let mut workbook = workbook.clone();
+    for sheet in &mut workbook.sheets {
+        let (_, mut max_col) = sheet.max_extent();
+        let Some(layout) = sheet.layout.as_mut() else {
+            continue;
+        };
+        for (a, (cols, _)) in &layout.merges {
+            max_col = max_col.max(a.col.saturating_add(*cols).saturating_sub(1));
+        }
+        let width = (0..=max_col.min(16383))
+            .map(|c| {
+                layout
+                    .columns
+                    .get(&c)
+                    .copied()
+                    .unwrap_or(layout.default_column_width)
+            })
+            .sum::<f32>();
+        let margins = layout.margins.unwrap_or([layout.margin; 4]);
+        layout.page_width = layout.page_width.max(
+            (width + margins[0] + margins[1] + if layout.print_headings { 24.0 } else { 0.0 })
+                .ceil()
+                + 1.0,
+        );
+    }
+    render(&workbook).finish()
+}
+
+pub(crate) fn cell_font(style: Option<&lo_core::style::CellStyle>) -> PdfFont {
+    let Some(style) = style else {
+        return PdfFont::Helvetica;
+    };
+    let family = style.font_family.to_ascii_lowercase();
+    if family.contains("courier") || family.contains("mono") || family == "consolas" {
+        return PdfFont::Courier;
+    }
+    if family.contains("times") || family.contains("serif") || family == "cambria" {
+        return if style.bold {
+            PdfFont::TimesBold
+        } else if style.italic {
+            PdfFont::TimesItalic
+        } else {
+            PdfFont::TimesRoman
+        };
+    }
+    match (style.bold, style.italic) {
+        (true, true) => PdfFont::HelveticaBoldOblique,
+        (true, false) => PdfFont::HelveticaBold,
+        (false, true) => PdfFont::HelveticaOblique,
+        _ => PdfFont::Helvetica,
+    }
+}
+
+fn draw_border(
+    page: &mut lo_core::pdf_canvas::PdfPage,
+    border: &str,
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+) {
+    if border.is_empty() || border == "none" {
+        return;
+    }
+    let mut parts = border.split_whitespace();
+    let thickness = parts
+        .next()
+        .and_then(lo_core::style::odf_length)
+        .unwrap_or(0.75)
+        .max(0.1);
+    let kind = parts.next().unwrap_or("solid");
+    let (r, g, b) = parts.next().and_then(grid_color).unwrap_or((0.0, 0.0, 0.0));
+    page.raw("q");
+    page.line_width(thickness);
+    match kind {
+        "dashed" | "mediumDashed" => page.raw("[3 2] 0 d"),
+        "dotted" => page.raw("[1 1] 0 d"),
+        "dashDot" | "mediumDashDot" => page.raw("[3 2 1 2] 0 d"),
+        _ => {}
+    }
+    page.line_rgb(x1, y1, x2, y2, r, g, b);
+    if kind == "double" {
+        let d = thickness * 2.0;
+        if x1 == x2 {
+            page.line_rgb(x1 + d, y1, x2 + d, y2, r, g, b);
+        } else {
+            page.line_rgb(x1, y1 + d, x2, y2 + d, r, g, b);
+        }
+    }
+    page.raw("Q");
 }

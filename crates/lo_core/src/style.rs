@@ -61,6 +61,12 @@ pub struct PageStyle {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CellStyle {
+    /// Per-edge borders (left, right, top, bottom), overriding the common border.
+    pub borders: [String; 4],
+    pub font_family: String,
+    pub font_size_mpt: Option<u32>,
+    /// None retains the legacy top-aligned ODF preview behavior.
+    pub vertical_alignment: Option<Alignment>,
     pub border: String,
     pub wrap: bool,
     pub font_size_pt: u16,
