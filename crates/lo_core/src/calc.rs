@@ -121,6 +121,14 @@ pub struct CellTextRun {
     pub style: CellStyle,
 }
 
+/// Selected built-in conditional icon; rank runs from low to high.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ConditionalIcon {
+    pub set: String,
+    pub rank: u8,
+    pub show_value: bool,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct SheetLayout {
     /// Chart sheets fit their drawing to one paper page even in natural-width preview.
@@ -156,6 +164,7 @@ pub struct SheetLayout {
     pub text_boxes: Vec<crate::TextBox>,
     /// Fraction, RGB color, and whether to retain text for cached conditional data bars.
     pub data_bars: BTreeMap<CellAddr, (f32, String, bool)>,
+    pub conditional_icons: BTreeMap<CellAddr, ConditionalIcon>,
     pub page_width: f32,
     pub page_height: f32,
     pub margin: f32,
@@ -191,6 +200,7 @@ impl Default for SheetLayout {
             rich_text: BTreeMap::new(),
             text_boxes: Vec::new(),
             data_bars: BTreeMap::new(),
+            conditional_icons: BTreeMap::new(),
             page_width: 595.28,
             page_height: 841.89,
             // Calc uses 2 cm when the ODF page style omits margins.

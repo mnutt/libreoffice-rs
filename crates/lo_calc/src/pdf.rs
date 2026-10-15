@@ -526,6 +526,12 @@ fn render_scaled_grid(
                                 draw_border(page, border, x1, y1, x2, y2);
                             }
                         }
+                        let icon_inset = if let Some(icon) = layout.conditional_icons.get(&addr) {
+                            if !icon.show_value { text.clear(); }
+                            crate::xlsx_icons::render(page, icon, x, top, w, h)
+                        } else { 0.0 };
+                        let text_x = x + icon_inset;
+                        let text_w = (w - icon_inset).max(0.0);
                         let color = style
                             .and_then(|s| grid_color(&s.foreground))
                             .unwrap_or((0.0, 0.0, 0.0));
@@ -546,7 +552,7 @@ fn render_scaled_grid(
                         let indent = style.map(|s| s.indent as f32).unwrap_or(0.0)
                             * lo_core::font_metrics::measure_base_font("   ", size, font);
                         let size = if style.is_some_and(|s| s.shrink_to_fit && !s.wrap) {
-                            size * ((w - 4.0 - indent).max(1.0)
+                            size * ((text_w - 4.0 - indent).max(1.0)
                                 / lo_core::font_metrics::measure_base_font(&text, size, font)
                                     .max(1.0))
                             .min(1.0)
@@ -557,7 +563,7 @@ fn render_scaled_grid(
                         // Text can overflow into adjacent empty cells, as in Calc;
                         // occupied cells and page edges stop it. Numeric values stay
                         // within their own column. Clip to the source row height.
-                        let mut visible_w = w;
+                        let mut visible_w = text_w;
                         if matches!(cell.value, CellValue::Text(_))
                             && !style.is_some_and(|s| s.wrap || s.rotation_degrees != 0)
                             && col_span == 1
@@ -571,7 +577,7 @@ fn render_scaled_grid(
                                 visible_w += widths[next];
                             }
                             if !blocked {
-                                visible_w = layout.page_width - right - x;
+                                visible_w = layout.page_width - right - text_x;
                             }
                         }
                         if rotation == 0 {
@@ -580,15 +586,15 @@ fn render_scaled_grid(
                                 style,
                             ) {
                                 crate::xlsx_rich_text::render(
-                                    page, runs, style, x, top, w, h, visible_w, indent,
+                                    page, runs, style, text_x, top, text_w, h, visible_w, indent,
                                 );
                                 x += w;
                                 continue;
                             }
                         }
-                        page.raw(&format!("q {} {} {} {} re W n", x, top - h, visible_w, h));
+                        page.raw(&format!("q {} {} {} {} re W n", text_x, top - h, visible_w, h));
                         let lines = if style.is_some_and(|s| s.wrap) {
-                            grid_wrap_font(&text, (w - 4.0 - indent).max(1.0), size, font)
+                            grid_wrap_font(&text, (text_w - 4.0 - indent).max(1.0), size, font)
                         } else {
                             text.split('\n').map(str::to_string).collect()
                         };
@@ -607,7 +613,7 @@ fn render_scaled_grid(
                                 page.raw(&format!(
                                     "q {cos} {sin} {} {cos} {} {} cm",
                                     -sin,
-                                    x + w / 2.0,
+                                    text_x + text_w / 2.0,
                                     top - h / 2.0
                                 ));
                                 page.text_rgb(
@@ -624,8 +630,8 @@ fn render_scaled_grid(
                                 continue;
                             }
                             let offset = match style.map(|s| &s.alignment) {
-                                Some(Alignment::End) => (w - 2.0 - indent - estimated).max(2.0),
-                                Some(Alignment::Center) => ((w - estimated) / 2.0).max(2.0),
+                                Some(Alignment::End) => (text_w - 2.0 - indent - estimated).max(2.0),
+                                Some(Alignment::Center) => ((text_w - estimated) / 2.0).max(2.0),
                                 _ => 2.0 + indent,
                             };
                             let y = baseline - line_index as f32 * size * 1.2;
@@ -634,9 +640,9 @@ fn render_scaled_grid(
                             }
                             if style.is_some_and(|s| s.underline) {
                                 page.line_rgb(
-                                    x + offset,
+                                    text_x + offset,
                                     y - 1.0,
-                                    x + offset
+                                    text_x + offset
                                         + lo_core::font_metrics::measure_base_font(
                                             line, size, font,
                                         ),
@@ -647,7 +653,7 @@ fn render_scaled_grid(
                                 );
                             }
                             page.text_rgb(
-                                x + offset,
+                                text_x + offset,
                                 y,
                                 size,
                                 font,

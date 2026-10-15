@@ -69,6 +69,83 @@ fn scale_threshold(
         _ => None,
     }
 }
+fn select_icon(
+    node: &XmlNode,
+    values: &[f64],
+    value: f64,
+    resolve: &impl Fn(&str) -> Option<String>,
+) -> Option<lo_core::calc::ConditionalIcon> {
+    let set = node.attr("iconSet").unwrap_or("3TrafficLights1");
+    if !matches!(
+        set,
+        "3Arrows" | "3ArrowsGray" | "3TrafficLights1" | "3Flags"
+    ) || crate::xlsx_styles::truth(node.attr("custom"))
+    {
+        return None;
+    }
+    let limits: Vec<_> = node.children_named("cfvo").collect();
+    if limits.len() != 3 {
+        return None;
+    }
+    // The first threshold is not a lower cutoff: every numeric cell gets an icon.
+    let low = scale_threshold(limits[1], values, resolve)?;
+    let high = scale_threshold(limits[2], values, resolve)?;
+    if low > high {
+        return None;
+    }
+    let passes = |n: &XmlNode, bound| {
+        if matches!(n.attr("gte"), Some("0" | "false")) {
+            value > bound
+        } else {
+            value >= bound
+        }
+    };
+    let mut rank = if passes(limits[2], high) {
+        2
+    } else if passes(limits[1], low) {
+        1
+    } else {
+        0
+    };
+    if crate::xlsx_styles::truth(node.attr("reverse")) {
+        rank = 2 - rank;
+    }
+    Some(lo_core::calc::ConditionalIcon {
+        set: set.into(),
+        rank,
+        show_value: !matches!(node.attr("showValue"), Some("0" | "false")),
+    })
+}
+fn bar_fraction(
+    node: &XmlNode,
+    values: &[f64],
+    value: f64,
+    resolve: &impl Fn(&str) -> Option<String>,
+) -> Option<f32> {
+    let limits: Vec<_> = node.children_named("cfvo").collect();
+    if limits.len() != 2 {
+        return None;
+    }
+    let lo = scale_threshold(limits[0], values, resolve)?;
+    let hi = scale_threshold(limits[1], values, resolve)?;
+    if hi <= lo {
+        return None;
+    }
+    let length = |key, default| {
+        node.attr(key)
+            .and_then(|s| s.parse::<f32>().ok())
+            .filter(|v| v.is_finite())
+            .unwrap_or(default)
+            .clamp(0.0, 100.0)
+            / 100.0
+    };
+    let min = length("minLength", 10.0);
+    let max = length("maxLength", 90.0);
+    if max < min {
+        return None;
+    }
+    Some(min + ((value - lo) / (hi - lo)).clamp(0.0, 1.0) as f32 * (max - min))
+}
 fn scale_color(
     scale: &XmlNode,
     values: &[f64],
@@ -192,7 +269,11 @@ pub(crate) fn apply(
     let mut budget = 1_000_000usize;
     let mut distributions = BTreeMap::new();
     for (_, range, rule) in &rules {
-        if rule.child("colorScale").is_none() || distributions.contains_key(range) {
+        if !["colorScale", "iconSet", "dataBar"]
+            .iter()
+            .any(|key| rule.child(key).is_some())
+            || distributions.contains_key(range)
+        {
             continue;
         }
         if numeric.len() > budget {
@@ -257,28 +338,40 @@ pub(crate) fn apply(
                 }
                 continue;
             }
+            if let Some(icons) = rule.child("iconSet") {
+                if let (Some(values), Some(value)) = (distributions.get(range), numeric.get(a)) {
+                    if let Some(icon) = select_icon(icons, values, *value, &resolve) {
+                        sheet
+                            .layout
+                            .as_mut()
+                            .unwrap()
+                            .conditional_icons
+                            .entry(*a)
+                            .or_insert(icon);
+                        if crate::xlsx_styles::truth(rule.attr("stopIfTrue")) {
+                            break;
+                        }
+                    }
+                }
+                continue;
+            }
             if let Some(bar) = rule.child("dataBar") {
-                let limits: Vec<_> = bar.children_named("cfvo").collect();
-                let bound = |n: &&XmlNode| -> Option<f32> {
-                    resolve(n.attr("val")?)?
-                        .parse::<f32>()
-                        .ok()
-                        .filter(|v| v.is_finite())
-                };
-                if let (Some(lo), Some(hi), Ok(v)) = (
-                    limits.first().and_then(bound),
-                    limits.get(1).and_then(bound),
-                    value.parse::<f32>(),
-                ) {
-                    if hi > lo && v.is_finite() {
-                        sheet.layout.as_mut().unwrap().data_bars.insert(
-                            *a,
-                            (
-                                ((v - lo) / (hi - lo)).clamp(0.0, 1.0),
+                if let (Some(values), Some(value)) = (distributions.get(range), numeric.get(a)) {
+                    if let Some(fraction) = bar_fraction(bar, values, *value, &resolve) {
+                        sheet
+                            .layout
+                            .as_mut()
+                            .unwrap()
+                            .data_bars
+                            .entry(*a)
+                            .or_insert((
+                                fraction,
                                 color(bar.child("color"), &colors, &[]),
-                                bar.attr("showValue") != Some("0"),
-                            ),
-                        );
+                                !matches!(bar.attr("showValue"), Some("0" | "false")),
+                            ));
+                        if crate::xlsx_styles::truth(rule.attr("stopIfTrue")) {
+                            break;
+                        }
                     }
                 }
                 continue;

@@ -164,7 +164,7 @@ fn conditional_priority_uses_cached_values_and_preserves_base_styles() {
     );
     assert_eq!(
         sheet.layout.as_ref().unwrap().data_bars[&CellAddr::new(0, 2)],
-        (0.4, "#112233".into(), false)
+        (0.42, "#112233".into(), false)
     );
 }
 
@@ -263,4 +263,40 @@ fn color_scales_use_numeric_percentiles_and_respect_rule_priority() {
     let two = sheet.replace(r#"<cfvo type="percentile" val="50"/>"#, "").replace(r#"<color rgb="FFFFFF00"/>"#, "");
     let book = lo_calc::from_xlsx_bytes("", &workbook(&two, STYLES, "")).unwrap();
     assert_eq!(book.sheets[0].get(CellAddr::new(1,0)).unwrap().style.as_ref().unwrap().background, "#E61A00");
+}
+
+#[test]
+fn icon_thresholds_preserve_boundaries_reverse_priority_and_numeric_types() {
+    let sheet = r#"<worksheet><sheetData><row><c r="A1"><v>0.8</v></c><c r="A2"><v>0.9</v></c><c r="A3"><f>UNSUPPORTED()</f><v>1</v></c><c r="A4"><v>1.1</v></c><c r="A5" t="inlineStr"><is><t>1.1</t></is></c><c r="A6" t="b"><v>1</v></c></row></sheetData><conditionalFormatting sqref="A1:A6"><cfRule type="iconSet" priority="1"><iconSet iconSet="3Arrows" reverse="1" showValue="0"><cfvo type="num" val="999"/><cfvo type="num" val="0.9"/><cfvo type="num" val="1" gte="0"/></iconSet></cfRule><cfRule type="iconSet" priority="2"><iconSet iconSet="3Flags"><cfvo type="num" val="0"/><cfvo type="num" val="0.9"/><cfvo type="num" val="1"/></iconSet></cfRule></conditionalFormatting></worksheet>"#;
+    let book = lo_calc::from_xlsx_bytes("", &workbook(sheet, STYLES, "")).unwrap();
+    let icons = &book.sheets[0].layout.as_ref().unwrap().conditional_icons;
+    assert_eq!(icons.len(), 4);
+    for (row, rank) in [2,1,1,0].iter().enumerate() {
+        let icon = &icons[&CellAddr::new(row as u32,0)];
+        assert_eq!(icon.rank, *rank);
+        assert_eq!(icon.set, "3Arrows");
+        assert!(!icon.show_value);
+    }
+    let stop = sheet.replace("<cfRule type=\"iconSet\" priority=\"1\">", r#"<cfRule type="cellIs" priority="0" operator="lessThan" stopIfTrue="1"><formula>0.9</formula></cfRule><cfRule type="iconSet" priority="1">"#);
+    let book = lo_calc::from_xlsx_bytes("", &workbook(&stop, STYLES, "")).unwrap();
+    assert!(!book.sheets[0].layout.as_ref().unwrap().conditional_icons.contains_key(&CellAddr::new(0,0)));
+}
+
+#[test]
+fn automatic_data_bars_use_numeric_extrema_lengths_and_first_matching_rule() {
+    let sheet = r#"<worksheet><sheetData><row><c r="A1"><v>10</v></c><c r="A2"><v>20</v></c><c r="A3"><v>30</v></c><c r="A4" t="inlineStr"><is><t>999</t></is></c><c r="A5" t="b"><v>1</v></c></row></sheetData><conditionalFormatting sqref="A1:A5"><cfRule type="dataBar" priority="1"><dataBar minLength="20" maxLength="80" showValue="false"><cfvo type="min"/><cfvo type="max"/><color rgb="FF123456"/></dataBar></cfRule><cfRule type="dataBar" priority="2"><dataBar><cfvo type="num" val="0"/><cfvo type="num" val="100"/><color rgb="FFFF0000"/></dataBar></cfRule></conditionalFormatting></worksheet>"#;
+    let book = lo_calc::from_xlsx_bytes("", &workbook(sheet, STYLES, "")).unwrap();
+    let bars = &book.sheets[0].layout.as_ref().unwrap().data_bars;
+    assert_eq!(bars.len(),3);
+    for (row, length) in [0.2,0.5,0.8].iter().enumerate() {
+        let (fraction, color, show) = &bars[&CellAddr::new(row as u32,0)];
+        assert!((fraction-length).abs() < 0.0001);
+        assert_eq!(color, "#123456");
+        assert!(!show);
+    }
+    let default = sheet.replace(r#"minLength="20" maxLength="80""#, "");
+    let book = lo_calc::from_xlsx_bytes("", &workbook(&default, STYLES, "")).unwrap();
+    let bars = &book.sheets[0].layout.as_ref().unwrap().data_bars;
+    assert!((bars[&CellAddr::new(0,0)].0-0.1).abs() < 0.0001);
+    assert!((bars[&CellAddr::new(2,0)].0-0.9).abs() < 0.0001);
 }
