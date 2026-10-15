@@ -25,6 +25,20 @@ than a representative sample of everyday presentations.
 
 ## Reproduce
 
+To create an offline, self-contained three-renderer report from four completed
+shards:
+
+```sh
+python3 tests/pptx_corpus/standalone_report.py tests/pptx_corpus/runs/fifth-final \
+  --output /tmp/pptx-three-renderers.html
+```
+
+The report embeds original PNG previews in aligned rows, ordered libreoffice-rs,
+LibreOffice, office2pdf, each capped at 30% width. Metrics and diagnostics appear
+below the images in expandable sections. Filtering and image enlargement work
+offline. The complete corpus report is approximately 186 MB; generated reports
+should not be committed.
+
 ```sh
 python3 tests/pptx_corpus/collect.py
 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_DEV_INCREMENTAL=false \
