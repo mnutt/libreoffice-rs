@@ -13,3 +13,7 @@ Cargo.lock
 *.odg
 *.odf
 *.odb
+/tests/xlsx_corpus/files/
+/tests/xlsx_corpus/runs/
+
+__pycache__/

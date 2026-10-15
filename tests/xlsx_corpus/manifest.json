@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/developer0hye/office2pdf",
+  "revision": "2e0ae824ac1b7f49a20e8fedcd019a87941d80c0",
+  "fixtures": [
+    {
+      "id": "poi-Formatting",
+      "path": "tests/fixtures/xlsx/poi/Formatting.xlsx",
+      "file": "poi-Formatting.xlsx",
+      "purpose": "cell styling",
+      "size": 8847,
+      "sha256": "5a0aa7c36c53b22cd26e3eeb2ee49bf16f7e4101aafa8b1503a0778f4010ddbc"
+    },
+    {
+      "id": "poi-WidthsAndHeights",
+      "path": "tests/fixtures/xlsx/poi/WidthsAndHeights.xlsx",
+      "file": "poi-WidthsAndHeights.xlsx",
+      "purpose": "row and column dimensions",
+      "size": 8597,
+      "sha256": "72a84c23b2939f31fa6357867e6b34d3454efb84c830739c10797f767de1007e"
+    },
+    {
+      "id": "poi-NumberFormatTests",
+      "path": "tests/fixtures/xlsx/poi/NumberFormatTests.xlsx",
+      "file": "poi-NumberFormatTests.xlsx",
+      "purpose": "number formats",
+      "size": 21470,
+      "sha256": "a11d437ee538abe36d630a4795dd30d5823a68dce02a404a45e085dd49c4435d"
+    },
+    {
+      "id": "poi-WithVariousData",
+      "path": "tests/fixtures/xlsx/poi/WithVariousData.xlsx",
+      "file": "poi-WithVariousData.xlsx",
+      "purpose": "mixed cell types",
+      "size": 10603,
+      "sha256": "1440a832bb810c09687d3498b841782964b0b697e9242428fed1072ab22d078a"
+    },
+    {
+      "id": "poi-WithMoreVariousData",
+      "path": "tests/fixtures/xlsx/poi/WithMoreVariousData.xlsx",
+      "file": "poi-WithMoreVariousData.xlsx",
+      "purpose": "mixed data and formatting",
+      "size": 11409,
+      "sha256": "9cf5ac25bbe59ee30d954983e7803a854909be6d53e184933d4c47e8f6b248bb"
+    },
+    {
+      "id": "merge_cells",
+      "path": "tests/fixtures/xlsx/merge_cells.xlsx",
+      "file": "merge_cells.xlsx",
+      "purpose": "merged cells",
+      "size": 8948,
+      "sha256": "34f6b2779f49991859045791d8be0c5027e09b395f067c4363e38813d1e6431c"
+    },
+    {
+      "id": "SH008-Table-With-Tall-Row",
+      "path": "tests/fixtures/xlsx/SH008-Table-With-Tall-Row.xlsx",
+      "file": "SH008-Table-With-Tall-Row.xlsx",
+      "purpose": "tall row",
+      "size": 9010,
+      "sha256": "27f6a013a7ea9b97a949e9bb7fc89561b8f362a9858f3d952cefa46819a9d7ea"
+    },
+    {
+      "id": "SH109-CellWithBorder",
+      "path": "tests/fixtures/xlsx/SH109-CellWithBorder.xlsx",
+      "file": "SH109-CellWithBorder.xlsx",
+      "purpose": "cell borders",
+      "size": 7788,
+      "sha256": "251e8c2a4fd640736bf67296e210865a48731497727fe9d3994abb43f2df4a1b"
+    },
+    {
+      "id": "date",
+      "path": "tests/fixtures/xlsx/date.xlsx",
+      "file": "date.xlsx",
+      "purpose": "dates",
+      "size": 4659,
+      "sha256": "0440916ec1b76ee4dd54955d59c2f42b266e9f5e4fccafb8cc1ed875908b26d2"
+    },
+    {
+      "id": "date_1904",
+      "path": "tests/fixtures/xlsx/date_1904.xlsx",
+      "file": "date_1904.xlsx",
+      "purpose": "1904 date system",
+      "size": 4922,
+      "sha256": "8b9f2b71a46833d7b9d2250d60b3c0948024f3d2b26f38ef990c0f2b2683fe08"
+    },
+    {
+      "id": "shared_formulas",
+      "path": "tests/fixtures/xlsx/shared_formulas.xlsx",
+      "file": "shared_formulas.xlsx",
+      "purpose": "cached formula results",
+      "size": 10137,
+      "sha256": "31612d513b5ea5aaa69764779f87ac52588687770f3ccbf4b420ec21bc70561f"
+    },
+    {
+      "id": "Booleans",
+      "path": "tests/fixtures/xlsx/Booleans.xlsx",
+      "file": "Booleans.xlsx",
+      "purpose": "booleans",
+      "size": 8612,
+      "sha256": "5803ffe3c16185b195d81bb475ed8b63623a4a19060f69165d97150708ec59da"
+    },
+    {
+      "id": "InlineString",
+      "path": "tests/fixtures/xlsx/InlineString.xlsx",
+      "file": "InlineString.xlsx",
+      "purpose": "inline strings",
+      "size": 8401,
+      "sha256": "c92383b48d5141248c7fb37e077b1aa02f716a995d57b779c357758b8afb5478"
+    },
+    {
+      "id": "GroupTest",
+      "path": "tests/fixtures/xlsx/GroupTest.xlsx",
+      "file": "GroupTest.xlsx",
+      "purpose": "grouped rows and columns",
+      "size": 8149,
+      "sha256": "a14e6d478004720480cb99844fd6b00260c804bfa02b3da3f496e2c1fb5c8949"
+    },
+    {
+      "id": "issue_1065_hidden_sheet_probe",
+      "path": "tests/fixtures/xlsx/issue_1065_hidden_sheet_probe.xlsx",
+      "file": "issue_1065_hidden_sheet_probe.xlsx",
+      "purpose": "hidden sheets",
+      "size": 7934,
+      "sha256": "fa6a7b14c727b90d3711d0cd13ed2272e59e64387e876849eb7bbf4590cfda3e"
+    },
+    {
+      "id": "Themes",
+      "path": "tests/fixtures/xlsx/Themes.xlsx",
+      "file": "Themes.xlsx",
+      "purpose": "theme colors",
+      "size": 9506,
+      "sha256": "675234ce15443e36e8bb41869cfc700143b1ac7152ebb7531fc49a92789b3be4"
+    },
+    {
+      "id": "WithChart",
+      "path": "tests/fixtures/xlsx/WithChart.xlsx",
+      "file": "WithChart.xlsx",
+      "purpose": "charts",
+      "size": 10138,
+      "sha256": "51f27aabf7417f5aaa0542857b6bb56a92d4afbabdc5c63f084c06f92b67429d"
+    },
+    {
+      "id": "SimpleScatterChart",
+      "path": "tests/fixtures/xlsx/SimpleScatterChart.xlsx",
+      "file": "SimpleScatterChart.xlsx",
+      "purpose": "scatter chart",
+      "size": 18278,
+      "sha256": "c3024ac94d6d42cbe48d20a798eda98b06d8dba6e2ed2b1fcda10659883c7be4"
+    },
+    {
+      "id": "picture",
+      "path": "tests/fixtures/xlsx/picture.xlsx",
+      "file": "picture.xlsx",
+      "purpose": "embedded images",
+      "size": 428616,
+      "sha256": "fea2f13189e87d06297d7b5313abca4d0b6cd8747d5ca450e4db11273b265279"
+    },
+    {
+      "id": "poi-WithConditionalFormatting",
+      "path": "tests/fixtures/xlsx/poi/WithConditionalFormatting.xlsx",
+      "file": "poi-WithConditionalFormatting.xlsx",
+      "purpose": "conditional formatting",
+      "size": 10219,
+      "sha256": "ead4aad13d2b975f795b50e7c8b7da443fb1525a8f9fa7347a5f09041a3ed426"
+    },
+    {
+      "id": "headerFooterTest",
+      "path": "tests/fixtures/xlsx/headerFooterTest.xlsx",
+      "file": "headerFooterTest.xlsx",
+      "purpose": "headers and footers",
+      "size": 27484,
+      "sha256": "db7483ac7bc96d071db57ec6239d2c1b8593a5ef3c7f5b7418df0309753c1fe2"
+    },
+    {
+      "id": "poi-RepeatingRowsCols",
+      "path": "tests/fixtures/xlsx/poi/RepeatingRowsCols.xlsx",
+      "file": "poi-RepeatingRowsCols.xlsx",
+      "purpose": "print titles",
+      "size": 20758,
+      "sha256": "ff67241b278977c97f8f540fe935e087763db0c0e404bd71777f913a3d698c0b"
+    },
+    {
+      "id": "simple-monthly-budget",
+      "path": "tests/fixtures/xlsx/simple-monthly-budget.xlsx",
+      "file": "simple-monthly-budget.xlsx",
+      "purpose": "budget template",
+      "size": 18700,
+      "sha256": "cae00c6894b95743017aeded4186f15a12c2d8382d71760029df490d58197db6"
+    },
+    {
+      "id": "100-customers",
+      "path": "tests/fixtures/xlsx/100-customers.xlsx",
+      "file": "100-customers.xlsx",
+      "purpose": "wide multi-page table",
+      "size": 38909,
+      "sha256": "f520110f531d75291223e4f76660fb4dc95dc9a67221fcde27b3bc71cbc11a34"
+    }
+  ],
+  "notices": [
+    {
+      "path": "LICENSE",
+      "file": "LICENSE",
+      "size": 10763,
+      "sha256": "a69f60df4102c74db295b45bdeca8bb300ecaa954a319de94cbe4e8e337e98f9"
+    },
+    {
+      "path": "tests/fixtures/THIRD-PARTY-LICENSES.md",
+      "file": "THIRD-PARTY-LICENSES.md",
+      "size": 9998,
+      "sha256": "2b805ba002ba8a288d892870b6662bee601ac6ef727ff31723772b23c3de222c"
+    }
+  ]
+}
