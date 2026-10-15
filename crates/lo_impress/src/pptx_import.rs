@@ -290,14 +290,23 @@ impl Theme {
                 }
             }
         }
+        let source_colors = colors.clone();
         for (alias, default) in [
+            ("accent1", "accent1"),
+            ("accent2", "accent2"),
+            ("accent3", "accent3"),
+            ("accent4", "accent4"),
+            ("accent5", "accent5"),
+            ("accent6", "accent6"),
+            ("hlink", "hlink"),
+            ("folHlink", "folHlink"),
             ("bg1", "lt1"),
             ("tx1", "dk1"),
             ("bg2", "lt2"),
             ("tx2", "dk2"),
         ] {
             let key = map.and_then(|n| n.attr(alias)).unwrap_or(default);
-            if let Some(v) = colors.get(key).cloned() {
+            if let Some(v) = source_colors.get(key).cloned() {
                 colors.insert(alias.into(), v);
             }
         }
@@ -418,7 +427,15 @@ pub(crate) fn load(title: String, bytes: &[u8]) -> Result<Presentation> {
             let master_root = master.as_ref().map(|(_, n, _)| n);
             let layout_root = layout.as_ref().map(|(_, n, _)| n);
             let theme_root = theme.as_ref().map(|(_, n, _)| n);
-            let theme = Theme::new(theme_root, master_root.and_then(|n| n.child("clrMap")));
+            let color_map = [Some(&slide_root), layout_root]
+                .into_iter()
+                .flatten()
+                .find_map(|n| {
+                    n.child("clrMapOvr")
+                        .and_then(|n| n.child("overrideClrMapping"))
+                })
+                .or_else(|| master_root.and_then(|n| n.child("clrMap")));
+            let theme = Theme::new(theme_root, color_map);
             let mut slide = Slide {
                 name: format!("Slide {}", i + 1),
                 ..Default::default()
@@ -1767,5 +1784,17 @@ mod tests {
         let line = parse_xml_document(r#"<ln w="12700"><custDash><ds d="200000" sp="50000"/><ds d="-10" sp="NaN"/></custDash></ln>"#).unwrap();
         assert_eq!(line_dashes(Some(&line)), vec![2000, 500, 1, 1000]);
         assert!(line_dashes(None).is_empty());
+    }
+    #[test]
+    fn color_map_swaps_resolve_against_original_theme_colors() {
+        let map = parse_xml_document(
+            r#"<overrideClrMapping bg1="dk1" tx1="lt1" accent1="accent2" accent2="accent1"/>"#,
+        )
+        .unwrap();
+        let theme = Theme::new(None, Some(&map));
+        assert_eq!(theme.colors["bg1"], "000000");
+        assert_eq!(theme.colors["tx1"], "FFFFFF");
+        assert_eq!(theme.colors["accent1"], "C0504D");
+        assert_eq!(theme.colors["accent2"], "4F81BD");
     }
 }

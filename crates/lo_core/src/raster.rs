@@ -27,7 +27,9 @@ impl Rgba {
 pub fn parse_hex_color(input: &str, fallback: Rgba) -> Rgba {
     let trimmed = input.trim();
     let hex = trimmed.strip_prefix('#').unwrap_or(trimmed);
-    if !hex.is_ascii() { return fallback; }
+    if !hex.is_ascii() {
+        return fallback;
+    }
     match hex.len() {
         6 => {
             let r = u8::from_str_radix(&hex[0..2], 16).ok();
@@ -392,7 +394,7 @@ impl RasterImage {
     }
 }
 
-/// Decode a non-interlaced, 8-bit PNG into RGBA pixels. Supports grayscale,
+/// Decode PNG (including Adam7 and packed/16-bit samples) into RGBA pixels. Supports grayscale,
 /// RGB, indexed color, grayscale+alpha, and RGBA, including every standard
 /// PNG scanline filter.
 pub fn decode_png(bytes: &[u8]) -> Result<RasterImage> {
@@ -436,9 +438,9 @@ pub fn decode_png(bytes: &[u8]) -> Result<RasterImage> {
         }
         offset = data_end + 4;
     }
-    if width == 0 || height == 0 || bit_depth != 8 || interlace != 0 {
+    if width == 0 || height == 0 || interlace > 1 {
         return Err(LoError::Unsupported(
-            "PNG images must be non-interlaced and 8-bit".to_string(),
+            "PNG dimensions or interlace method are invalid".to_string(),
         ));
     }
     let channels = match color_type {
@@ -452,74 +454,179 @@ pub fn decode_png(bytes: &[u8]) -> Result<RasterImage> {
             )))
         }
     };
-    let stride = (width as usize)
-        .checked_mul(channels)
-        .ok_or_else(|| LoError::InvalidInput("PNG dimensions are too large".to_string()))?;
-    let expected = (stride + 1)
-        .checked_mul(height as usize)
-        .ok_or_else(|| LoError::InvalidInput("PNG dimensions are too large".to_string()))?;
+    let valid_depth = match color_type {
+        0 => matches!(bit_depth, 1 | 2 | 4 | 8 | 16),
+        3 => matches!(bit_depth, 1 | 2 | 4 | 8),
+        _ => matches!(bit_depth, 8 | 16),
+    };
+    if !valid_depth {
+        return Err(LoError::Unsupported("unsupported PNG bit depth".into()));
+    }
+    let bits_per_pixel = channels * bit_depth as usize;
+    let filter_bytes = bits_per_pixel.div_ceil(8);
+    let row_bytes = |w: usize| {
+        w.checked_mul(bits_per_pixel)
+            .and_then(|v| v.checked_add(7))
+            .map(|v| v / 8)
+            .ok_or_else(|| LoError::InvalidInput("PNG dimensions are too large".into()))
+    };
+    let passes: &[(usize, usize, usize, usize)] = if interlace == 1 {
+        &[
+            (0, 0, 8, 8),
+            (4, 0, 8, 8),
+            (0, 4, 4, 8),
+            (2, 0, 4, 4),
+            (0, 2, 2, 4),
+            (1, 0, 2, 2),
+            (0, 1, 1, 2),
+        ]
+    } else {
+        &[(0, 0, 1, 1)]
+    };
+    let mut expected = 0usize;
+    for &(x, y, dx, dy) in passes {
+        let pw = (width as usize).saturating_sub(x).div_ceil(dx);
+        let ph = (height as usize).saturating_sub(y).div_ceil(dy);
+        if pw == 0 || ph == 0 {
+            continue;
+        }
+        let bytes = row_bytes(pw)?
+            .checked_add(1)
+            .and_then(|v| v.checked_mul(ph))
+            .ok_or_else(|| LoError::InvalidInput("PNG dimensions are too large".into()))?;
+        expected = expected
+            .checked_add(bytes)
+            .ok_or_else(|| LoError::InvalidInput("PNG dimensions are too large".into()))?;
+    }
     let limits = crate::preview_limits::PreviewLimits::from_env()?;
-    if expected > limits.inflate_bytes || u64::from(width) * u64::from(height) > limits.png_pixels as u64 {
+    if expected > limits.inflate_bytes
+        || u64::from(width) * u64::from(height) > limits.png_pixels as u64
+    {
         return Err(LoError::InvalidInput("PNG image is too large".to_string()));
     }
     let raw = crate::pdf::decode_flate_stream_limited(&compressed, expected)?;
     if raw.len() < expected {
         return Err(LoError::Parse("truncated PNG image data".to_string()));
     }
-    let mut scanlines = vec![0u8; stride * height as usize];
-    for row in 0..height as usize {
-        let source = &raw[row * (stride + 1) + 1..row * (stride + 1) + 1 + stride];
-        let filter = raw[row * (stride + 1)];
-        let (before, current_and_after) = scanlines.split_at_mut(row * stride);
-        let current = &mut current_and_after[..stride];
-        let previous = if row == 0 {
-            None
-        } else {
-            Some(&before[(row - 1) * stride..row * stride])
-        };
-        for index in 0..stride {
-            let left = if index >= channels {
-                current[index - channels]
-            } else {
-                0
-            };
-            let up = previous.map(|line| line[index]).unwrap_or(0);
-            let upper_left = if index >= channels {
-                previous.map(|line| line[index - channels]).unwrap_or(0)
-            } else {
-                0
-            };
-            current[index] = source[index].wrapping_add(match filter {
-                0 => 0,
-                1 => left,
-                2 => up,
-                3 => ((left as u16 + up as u16) / 2) as u8,
-                4 => paeth(left, up, upper_left),
-                other => return Err(LoError::Parse(format!("invalid PNG filter {other}"))),
-            });
+    let pixel_bytes = (width as usize)
+        .checked_mul(height as usize)
+        .and_then(|v| v.checked_mul(4))
+        .ok_or_else(|| LoError::InvalidInput("PNG dimensions are too large".into()))?;
+    let mut pixels = vec![0u8; pixel_bytes];
+    let mut offset = 0;
+    for &(x, y, dx, dy) in passes {
+        let pw = (width as usize).saturating_sub(x).div_ceil(dx);
+        let ph = (height as usize).saturating_sub(y).div_ceil(dy);
+        if pw == 0 || ph == 0 {
+            continue;
         }
-    }
-    let mut pixels = Vec::with_capacity(width as usize * height as usize * 4);
-    for pixel in scanlines.chunks_exact(channels) {
-        match color_type {
-            0 => pixels.extend_from_slice(&[pixel[0], pixel[0], pixel[0], 255]),
-            2 => pixels.extend_from_slice(&[pixel[0], pixel[1], pixel[2], 255]),
-            3 => {
-                let index = pixel[0] as usize;
-                let start = index * 3;
-                let rgb = palette.get(start..start + 3).ok_or_else(|| {
-                    LoError::Parse("PNG palette index is out of range".to_string())
-                })?;
-                pixels.extend_from_slice(&[
-                    rgb[0],
-                    rgb[1],
-                    rgb[2],
-                    transparency.get(index).copied().unwrap_or(255),
-                ]);
+        let pass_stride = row_bytes(pw)?;
+        let mut previous = vec![0u8; pass_stride];
+        let mut current = vec![0u8; pass_stride];
+        for row in 0..ph {
+            let filter = raw[offset];
+            let source = &raw[offset + 1..offset + 1 + pass_stride];
+            offset += pass_stride + 1;
+            for index in 0..pass_stride {
+                let left = if index >= filter_bytes {
+                    current[index - filter_bytes]
+                } else {
+                    0
+                };
+                let up = previous[index];
+                let upper_left = if index >= filter_bytes {
+                    previous[index - filter_bytes]
+                } else {
+                    0
+                };
+                current[index] = source[index].wrapping_add(match filter {
+                    0 => 0,
+                    1 => left,
+                    2 => up,
+                    3 => ((left as u16 + up as u16) / 2) as u8,
+                    4 => paeth(left, up, upper_left),
+                    other => return Err(LoError::Parse(format!("invalid PNG filter {other}"))),
+                });
             }
-            4 => pixels.extend_from_slice(&[pixel[0], pixel[0], pixel[0], pixel[1]]),
-            6 => pixels.extend_from_slice(pixel),
-            _ => unreachable!(),
+            for col in 0..pw {
+                let sample = |channel: usize| -> u16 {
+                    let index = col * channels + channel;
+                    match bit_depth {
+                        16 => u16::from_be_bytes([current[index * 2], current[index * 2 + 1]]),
+                        8 => current[index] as u16,
+                        depth => {
+                            let bit = index * depth as usize;
+                            ((current[bit / 8] >> (8 - depth as usize - bit % 8))
+                                & ((1u8 << depth) - 1)) as u16
+                        }
+                    }
+                };
+                let byte = |v: u16| -> u8 {
+                    if bit_depth == 16 {
+                        (v >> 8) as u8
+                    } else {
+                        (v as u32 * 255 / ((1u32 << bit_depth) - 1)) as u8
+                    }
+                };
+                let transparent = |i: usize| {
+                    transparency
+                        .get(i..i + 2)
+                        .map(|b| u16::from_be_bytes([b[0], b[1]]))
+                };
+                let rgba = match color_type {
+                    0 => {
+                        let v = sample(0);
+                        [
+                            byte(v),
+                            byte(v),
+                            byte(v),
+                            if transparent(0) == Some(v) { 0 } else { 255 },
+                        ]
+                    }
+                    2 => {
+                        let (r, g, b) = (sample(0), sample(1), sample(2));
+                        [
+                            byte(r),
+                            byte(g),
+                            byte(b),
+                            if transparent(0) == Some(r)
+                                && transparent(2) == Some(g)
+                                && transparent(4) == Some(b)
+                            {
+                                0
+                            } else {
+                                255
+                            },
+                        ]
+                    }
+                    3 => {
+                        let i = sample(0) as usize;
+                        let rgb = palette.get(i * 3..i * 3 + 3).ok_or_else(|| {
+                            LoError::Parse("PNG palette index is out of range".into())
+                        })?;
+                        [
+                            rgb[0],
+                            rgb[1],
+                            rgb[2],
+                            transparency.get(i).copied().unwrap_or(255),
+                        ]
+                    }
+                    4 => {
+                        let v = byte(sample(0));
+                        [v, v, v, byte(sample(1))]
+                    }
+                    6 => [
+                        byte(sample(0)),
+                        byte(sample(1)),
+                        byte(sample(2)),
+                        byte(sample(3)),
+                    ],
+                    _ => unreachable!(),
+                };
+                let target = ((y + row * dy) * width as usize + x + col * dx) * 4;
+                pixels[target..target + 4].copy_from_slice(&rgba);
+            }
+            std::mem::swap(&mut current, &mut previous);
         }
     }
     Ok(RasterImage {
@@ -1025,12 +1132,142 @@ fn magnitude_bits(value: i32, size: i32) -> u32 {
 #[cfg(test)]
 mod safety_tests {
     use super::*;
+    fn fixture(
+        w: u32,
+        h: u32,
+        depth: u8,
+        color: u8,
+        interlace: u8,
+        raw: &[u8],
+        palette: &[u8],
+        transparency: &[u8],
+    ) -> Vec<u8> {
+        let mut png = b"\x89PNG\r\n\x1a\n".to_vec();
+        let mut header = Vec::new();
+        header.extend(w.to_be_bytes());
+        header.extend(h.to_be_bytes());
+        header.extend([depth, color, 0, 0, interlace]);
+        write_chunk(&mut png, b"IHDR", &header);
+        if !palette.is_empty() {
+            write_chunk(&mut png, b"PLTE", palette);
+        }
+        if !transparency.is_empty() {
+            write_chunk(&mut png, b"tRNS", transparency);
+        }
+        let len = raw.len() as u16;
+        let mut z = vec![0x78, 0x01, 1];
+        z.extend(len.to_le_bytes());
+        z.extend((!len).to_le_bytes());
+        z.extend(raw);
+        z.extend(adler32(raw).to_be_bytes());
+        write_chunk(&mut png, b"IDAT", &z);
+        write_chunk(&mut png, b"IEND", &[]);
+        png
+    }
+    #[test]
+    fn adam7_reconstructs_odd_sizes_and_resets_previous_rows() {
+        for (w, h) in [(1, 1), (3, 5), (9, 9)] {
+            let pixel = |x: u32, y: u32| [(x * 17) as u8, (y * 23) as u8, (x + y) as u8, 255];
+            let mut raw = Vec::new();
+            for (x0, y0, dx, dy) in [
+                (0, 0, 8, 8),
+                (4, 0, 8, 8),
+                (0, 4, 4, 8),
+                (2, 0, 4, 4),
+                (0, 2, 2, 4),
+                (1, 0, 2, 2),
+                (0, 1, 1, 2),
+            ] {
+                if x0 >= w || y0 >= h {
+                    continue;
+                }
+                for y in (y0..h).step_by(dy as usize) {
+                    raw.push(2); // Up filter: first row of each pass starts with zero history.
+                    for x in (x0..w).step_by(dx as usize) {
+                        let previous = if y == y0 { [0; 4] } else { pixel(x, y - dy) };
+                        for (v, p) in pixel(x, y).into_iter().zip(previous) {
+                            raw.push(v.wrapping_sub(p));
+                        }
+                    }
+                }
+            }
+            let image = decode_png(&fixture(w, h, 8, 6, 1, &raw, &[], &[])).unwrap();
+            let expected: Vec<u8> = (0..h)
+                .flat_map(|y| (0..w).flat_map(move |x| pixel(x, y)))
+                .collect();
+            assert_eq!(image.pixels, expected);
+            raw.pop();
+            assert!(decode_png(&fixture(w, h, 8, 6, 1, &raw, &[], &[])).is_err());
+        }
+    }
+    #[test]
+    fn packed_samples_palette_alpha_and_sixteen_bit_transparency() {
+        let gray = decode_png(&fixture(
+            5,
+            1,
+            2,
+            0,
+            0,
+            &[0, 0b00011011, 0b01000000],
+            &[],
+            &[0, 1],
+        ))
+        .unwrap();
+        assert_eq!(
+            gray.pixels,
+            vec![
+                0, 0, 0, 255, 85, 85, 85, 0, 170, 170, 170, 255, 255, 255, 255, 255, 85, 85, 85, 0
+            ]
+        );
+        let indexed = decode_png(&fixture(
+            3,
+            1,
+            1,
+            3,
+            0,
+            &[0, 0b01000000],
+            &[255, 0, 0, 0, 255, 0],
+            &[255, 0],
+        ))
+        .unwrap();
+        assert_eq!(
+            indexed.pixels,
+            vec![255, 0, 0, 255, 0, 255, 0, 0, 255, 0, 0, 255]
+        );
+        let rgb = decode_png(&fixture(
+            1,
+            1,
+            16,
+            2,
+            0,
+            &[0, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc],
+            &[],
+            &[0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc],
+        ))
+        .unwrap();
+        assert_eq!(rgb.pixels, vec![0x12, 0x56, 0x9a, 0]);
+        let rgba = decode_png(&fixture(
+            1,
+            1,
+            16,
+            6,
+            0,
+            &[0, 0xff, 0xff, 0, 0, 0, 0, 0x80, 0],
+            &[],
+            &[],
+        ))
+        .unwrap();
+        assert_eq!(rgba.pixels, vec![255, 0, 0, 128]);
+    }
     #[test]
     fn malformed_unicode_colors_use_fallback() {
         for color in ["€123", "€12345", "#€123", "ééé", "zzzzzz"] {
             assert_eq!(parse_hex_color(color, Rgba::WHITE), Rgba::WHITE);
         }
-        assert_eq!(parse_hex_color("#ff0000", Rgba::WHITE), Rgba::rgba(255,0,0,255));
+        assert_eq!(
+            parse_hex_color("#ff0000", Rgba::WHITE),
+            Rgba::rgba(255, 0, 0, 255)
+        );
     }
     #[test]
     fn tiny_png_cannot_expand_beyond_declared_scanlines() {
@@ -1038,9 +1275,13 @@ mod safety_tests {
         let mut header = vec![];
         header.extend_from_slice(&1u32.to_be_bytes());
         header.extend_from_slice(&1u32.to_be_bytes());
-        header.extend_from_slice(&[8,6,0,0,0]);
+        header.extend_from_slice(&[8, 6, 0, 0, 0]);
         write_chunk(&mut png, b"IHDR", &header);
-        write_chunk(&mut png, b"IDAT", &[120, 156, 99, 96, 160, 61, 0, 0, 0, 100, 0, 1]);
+        write_chunk(
+            &mut png,
+            b"IDAT",
+            &[120, 156, 99, 96, 160, 61, 0, 0, 0, 100, 0, 1],
+        );
         write_chunk(&mut png, b"IEND", &[]);
         let error = decode_png(&png).unwrap_err().to_string();
         assert!(error.contains("decompressed data exceeds limit"), "{error}");
@@ -1051,8 +1292,9 @@ mod safety_tests {
 mod legacy_image_tests {
     #[test]
     fn oversized_gif_is_rejected_before_frame_allocation() {
-        let mut gif=b"GIF89a".to_vec();gif.extend_from_slice(&[255,255,255,255,0,0,0,59]);
-        assert!(super::decode_legacy_image(&gif,"image/gif").is_err());
-        assert!(super::decode_legacy_image(b"invalid","image/bmp").is_err());
+        let mut gif = b"GIF89a".to_vec();
+        gif.extend_from_slice(&[255, 255, 255, 255, 0, 0, 0, 59]);
+        assert!(super::decode_legacy_image(&gif, "image/gif").is_err());
+        assert!(super::decode_legacy_image(b"invalid", "image/bmp").is_err());
     }
 }
