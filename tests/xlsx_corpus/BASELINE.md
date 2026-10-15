@@ -1,5 +1,8 @@
 # Initial XLSX grid milestone
 
+Historical snapshot. See [FEATURES.md](FEATURES.md) for the subsequent drawing,
+chart, conditional-format and pagination milestone.
+
 Implementation: `616bc522bf6ab1d5e770ca22055b423f28d48d26`. Source files match the final report’s recorded source hash.
 
 All 24 documents convert through all three renderers. The candidate has 100%

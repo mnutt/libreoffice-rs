@@ -82,7 +82,9 @@ missing score means incomparable geometry, not a perfect match.
 
 `to_pdf_preview` widens the sheet at natural column widths and retains vertical
 pagination, matching Davros's preview policy. `to_pdf` retains source paper size
-and tiles horizontally. Neither yet implements full Excel print scaling/areas.
+and tiles horizontally, honoring explicit scale and fit-to-page settings. Both
+paths honor repeated print titles and horizontal centering. Print areas and
+manual page breaks remain unsupported.
 Real LibreOffice follows its own print settings and font substitutions; it is an
 independent comparison, not an authoritative Microsoft Excel export. Differences
 between the two reference renderers are useful evidence, not automatic failures.
@@ -106,11 +108,46 @@ The formatter supports common decimals, grouping, percentages, currency literals
 scientific notation, positive/negative/zero sections, common date/time formats,
 elapsed hours, and both Excel date systems (including serial 60). Fractions and
 value-conditional number formats fall back to unformatted values. Locale calendars,
-accounting alignment, per-section colors and fractional seconds remain incomplete.
+accounting alignment, indexed number-format colors and fractional seconds remain
+incomplete. Named section colors, such as negative `[Red]` amounts, are honored.
 Built-in date format 14 uses `m/d/yy`; locale-dependent reference exports may use a
 four-digit year.
 
 Regressions are in `crates/lo_calc/tests/xlsx_preview.rs` and the formatter's unit
-tests. Corpus failures remain diagnostic; they are not replaced with broad
-"conversion succeeds" assertions. See `BASELINE.md` for measurements and the next
-work items.
+tests in `lo_core`. `expectations.json` adds feature-specific PDF checks: image
+presence, retained chart pages and labels, budget drawing text, and date-system
+controls. Evaluation returns nonzero on a failed expectation or candidate
+conversion and preserves the report. These checks supplement visual review;
+they do not certify chart geometry or font fidelity.
+
+See `FEATURES.md` for the current milestone and remaining limitations.
+`BASELINE.md` and `baseline.json` preserve the historical grid-only milestone.
+
+## Drawing and conditional-format coverage
+
+The importer follows internal drawing relationships and resolves absolute,
+one-cell and two-cell anchors using visible row/column dimensions and EMU offsets.
+It imports embedded PNG/JPEG pictures, drawing text, cached bar/line/scatter charts,
+and drawing-only chart sheets. Drawing bounds participate in pagination; preview
+width includes drawings, avoiding the cropped picture in the office2pdf reference.
+No new runtime dependency was added.
+
+Charts use cached indexed points (including gaps), numeric scatter coordinates,
+series/point colors from the workbook theme, named series, legends, data labels,
+number formats and explicit value-axis bounds. Scatter series with no line remain
+unconnected. These are preview charts: combination/stacked/logarithmic charts,
+full source plot layout, marker families beyond circle/square, smoothing, and chart style extensions are not
+complete. Unsupported chart families are not approximated as a different type.
+
+Conditional rules support scalar `cellIs` and simple comparison expressions,
+relative/absolute cell references, priority and `stopIfTrue`, differential font
+and solid-fill styles. Data bars support numeric bounds and named values already
+saved by formula cells in the same sheet; no formulas are recalculated. The
+budget's `showValue=0` is honored (office2pdf displays the hidden value).
+Other expression syntax, color scales, icon sets, percentile bounds and negative
+bar axes remain outside this implementation. Rule processing is bounded.
+
+Cell styling also includes the complete indexed palette, underline, indentation,
+shrink-to-fit, and rotation through 90 degrees in either direction. Exact font
+metrics, vertical stacked text, complex rich text and table-style overrides still
+need broader coverage.
