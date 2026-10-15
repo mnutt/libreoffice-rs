@@ -300,3 +300,52 @@ fn automatic_data_bars_use_numeric_extrema_lengths_and_first_matching_rule() {
     assert!((bars[&CellAddr::new(0,0)].0-0.1).abs() < 0.0001);
     assert!((bars[&CellAddr::new(2,0)].0-0.9).abs() < 0.0001);
 }
+
+#[test]
+fn malformed_conditional_references_are_ignored_without_overflow() {
+    for reference in ["AAAAAAAAAAAAAAA1", "XFE1", "A1048577", "$A$$1", "A1B2"] {
+        let xml = format!(r#"<worksheet><sheetData><row><c r="A1"><v>1</v></c></row></sheetData><conditionalFormatting sqref="{reference}"><cfRule type="cellIs" priority="1" operator="equal" dxfId="0"><formula>1</formula></cfRule></conditionalFormatting><conditionalFormatting sqref="A1"><cfRule type="cellIs" priority="2" operator="equal" dxfId="0"><formula>{reference}</formula></cfRule></conditionalFormatting></worksheet>"#);
+        let styles = r#"<styleSheet><dxfs><dxf><font><b/></font></dxf></dxfs></styleSheet>"#;
+        let book = lo_calc::from_xlsx_bytes("", &workbook(&xml, styles, "")).unwrap();
+        assert!(!book.sheets[0].get(CellAddr::new(0,0)).unwrap().style.as_ref().unwrap().bold, "{reference}");
+    }
+}
+
+#[test]
+fn constant_data_bars_keep_minimum_length_and_hidden_values() {
+    for value in [-7, 0, 7] {
+        let xml = format!(r#"<worksheet><sheetData><row><c r="A1"><v>{value}</v></c><c r="A2"><v>{value}</v></c></row></sheetData><conditionalFormatting sqref="A1:A2"><cfRule type="dataBar"><dataBar minLength="20" maxLength="80" showValue="0"><cfvo type="min"/><cfvo type="max"/><color rgb="FF4472C4"/></dataBar></cfRule></conditionalFormatting></worksheet>"#);
+        let book = lo_calc::from_xlsx_bytes("", &workbook(&xml, STYLES, "")).unwrap();
+        let bars = &book.sheets[0].layout.as_ref().unwrap().data_bars;
+        assert_eq!(bars.len(), 2);
+        assert_eq!(bars[&CellAddr::new(0,0)], (0.2,"#4472C4".into(),false));
+    }
+}
+
+#[test]
+fn differential_borders_sizes_and_number_formats_merge_by_priority() {
+    let xml = r#"<worksheet><sheetData><row r="1" ht="40"><c r="A1"><f>UNSUPPORTED()</f><v>0.125</v></c><c r="B1"><v>0</v></c><c r="C1"><v>2</v></c><c r="D1"><f>NO_CACHE()</f></c></row></sheetData><conditionalFormatting sqref="A1 D1"><cfRule type="cellIs" priority="1" operator="greaterThan" dxfId="0"><formula>0</formula></cfRule><cfRule type="cellIs" priority="2" operator="greaterThan" dxfId="1"><formula>0</formula></cfRule></conditionalFormatting><conditionalFormatting sqref="B1"><cfRule type="cellIs" operator="equal" dxfId="2"><formula>0</formula></cfRule></conditionalFormatting></worksheet>"#;
+    let styles = STYLES.replace("</styleSheet>", r#"<dxfs><dxf><font><sz val="24.5"/></font><border><left style="none"/><right style="thick"><color rgb="FFFF0000"/></right></border><numFmt numFmtId="10"/></dxf><dxf><font><sz val="15"/></font><border><top style="dashed"><color rgb="FF00FF00"/></top><right style="thin"/></border><numFmt numFmtId="170" formatCode="0.0"/></dxf><dxf><numFmt numFmtId="171" formatCode="yyyy-mm-dd"/></dxf></dxfs></styleSheet>"#);
+    for (props, date) in [("", "1899-12-31"), ("date1904=\"1\"", "1904-01-01")] {
+        let book = lo_calc::from_xlsx_bytes("", &workbook(xml, &styles, props)).unwrap();
+        let sheet = &book.sheets[0];
+        assert_eq!(sheet.display_values[&CellAddr::new(0,0)], "12.50%");
+        assert_eq!(sheet.display_values[&CellAddr::new(0,1)], date);
+        assert_eq!(sheet.display_values[&CellAddr::new(0,2)], "2");
+        assert_eq!(sheet.display_values[&CellAddr::new(0,3)], "");
+        let style = sheet.get(CellAddr::new(0,0)).unwrap().style.as_ref().unwrap();
+        assert_eq!(style.font_size_mpt, Some(24500));
+        assert_eq!(sheet.layout.as_ref().unwrap().rows[&0], 40.0);
+        assert_eq!(style.borders, ["none", "2.25pt thick #FF0000", "0.75pt dashed #00FF00", "0.75pt double #445566"]);
+    }
+}
+
+#[test]
+fn conditional_font_size_grows_automatic_but_not_hidden_rows() {
+    for (attrs, expected) in [("",32.4), ("hidden=\"1\"",0.0)] {
+        let xml = format!(r#"<worksheet><sheetData><row r="1" {attrs}><c r="A1"><v>1</v></c></row></sheetData><conditionalFormatting sqref="A1"><cfRule type="cellIs" operator="equal" dxfId="0"><formula>1</formula></cfRule></conditionalFormatting></worksheet>"#);
+        let styles = r#"<styleSheet><dxfs><dxf><font><sz val="24.5"/></font></dxf></dxfs></styleSheet>"#;
+        let book = lo_calc::from_xlsx_bytes("", &workbook(&xml, styles, "")).unwrap();
+        assert!((book.sheets[0].layout.as_ref().unwrap().rows[&0]-expected).abs() < 0.001);
+    }
+}

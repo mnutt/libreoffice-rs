@@ -7,8 +7,8 @@ fn address(s: &str) -> Option<CellAddr> {
     if s.len() > 16 {
         return None;
     }
-    let a = CellAddr::from_a1(&s.replace('$', "")).ok()?;
-    (a.col < 16384 && a.row < 1048576).then_some(a)
+    let (row, col) = crate::import::parse_cell_ref(s)?;
+    Some(CellAddr::new(row - 1, col - 1))
 }
 fn within(s: &str, a: CellAddr) -> bool {
     s.split_whitespace().take(256).any(|r| {
@@ -42,6 +42,27 @@ fn condition(op: &str, a: &str, b: &str, c: &str) -> bool {
         _ => false,
     }
 }
+// Convex interpolation without overflowing when finite endpoints span zero.
+fn interpolate(a: f64, b: f64, t: f64) -> f64 {
+    if a <= 0.0 && b >= 0.0 {
+        a * (1.0 - t) + b * t
+    } else {
+        a + (b - a) * t
+    }
+}
+fn position(value: f64, lo: f64, hi: f64) -> f64 {
+    if value <= lo {
+        return 0.0;
+    }
+    if value >= hi {
+        return 1.0;
+    }
+    if lo < 0.0 && hi > 0.0 && !(hi - lo).is_finite() {
+        (value * 0.5 - lo * 0.5) / (hi * 0.5 - lo * 0.5)
+    } else {
+        (value - lo) / (hi - lo)
+    }
+}
 fn scale_threshold(
     node: &XmlNode,
     values: &[f64],
@@ -59,12 +80,12 @@ fn scale_threshold(
         "min" => Some(lo),
         "max" => Some(hi),
         "num" | "formula" => value(),
-        "percent" => Some(lo + (hi - lo) * value()?.clamp(0.0, 100.0) / 100.0),
+        "percent" => Some(interpolate(lo, hi, value()?.clamp(0.0, 100.0) / 100.0)),
         "percentile" => {
             let index = (values.len() - 1) as f64 * value()?.clamp(0.0, 100.0) / 100.0;
             let a = values[index.floor() as usize];
             let b = values[index.ceil() as usize];
-            Some(a + (b - a) * index.fract())
+            Some(interpolate(a, b, index.fract()))
         }
         _ => None,
     }
@@ -128,7 +149,7 @@ fn bar_fraction(
     }
     let lo = scale_threshold(limits[0], values, resolve)?;
     let hi = scale_threshold(limits[1], values, resolve)?;
-    if hi <= lo {
+    if hi < lo {
         return None;
     }
     let length = |key, default| {
@@ -144,7 +165,8 @@ fn bar_fraction(
     if max < min {
         return None;
     }
-    Some(min + ((value - lo) / (hi - lo)).clamp(0.0, 1.0) as f32 * (max - min))
+    // LibreOffice uses the saved minimum length for constant automatic ranges.
+    Some(min + position(value, lo, hi) as f32 * (max - min))
 }
 fn scale_color(
     scale: &XmlNode,
@@ -174,7 +196,7 @@ fn scale_color(
         0
     };
     let t = if limits[i + 1] > limits[i] {
-        ((value - limits[i]) / (limits[i + 1] - limits[i])).clamp(0.0, 1.0)
+        position(value, limits[i], limits[i + 1])
     } else {
         0.0
     };
@@ -201,6 +223,7 @@ pub(crate) fn apply(
     root: &XmlNode,
     styles: Option<&XmlNode>,
     theme: Option<&XmlNode>,
+    date_1904: bool,
 ) {
     let colors = theme_colors(theme);
     let dxfs: Vec<_> = styles
@@ -432,7 +455,47 @@ pub(crate) fn apply(
             let Some(dxf) = dxf else {
                 continue;
             };
+            if let Some(format) = dxf.child("numFmt") {
+                let code = format.attr("formatCode").map(str::to_string).or_else(|| {
+                    format
+                        .attr("numFmtId")?
+                        .parse::<u32>()
+                        .ok()
+                        .map(|id| crate::xlsx_format::builtin(id).to_string())
+                });
+                if let Some(code) = code {
+                    s.format_code = code;
+                    if let Some(value) = numeric.get(a) {
+                        sheet.display_values.insert(
+                            *a,
+                            crate::xlsx_format::number(*value, &s.format_code, date_1904),
+                        );
+                        if let Some(color) =
+                            lo_core::xlsx_format::number_color(*value, &s.format_code)
+                        {
+                            s.foreground = color.into();
+                        }
+                    }
+                }
+            }
+            if let Some(border) = dxf.child("border") {
+                for (i, edge) in ["left", "right", "top", "bottom"].iter().enumerate() {
+                    if let Some(node) = border.child(edge) {
+                        s.borders[i] = crate::xlsx_styles::border_edge(node, &colors, &[]);
+                    }
+                }
+            }
             if let Some(font) = dxf.child("font") {
+                if let Some(size) = font
+                    .child("sz")
+                    .and_then(|n| n.attr("val"))
+                    .and_then(|v| v.parse::<f32>().ok())
+                    .filter(|v| v.is_finite() && *v > 0.0)
+                {
+                    let size = size.clamp(1.0, 409.0);
+                    s.font_size_mpt = Some((size * 1000.0).round() as u32);
+                    s.font_size_pt = size.round() as u16;
+                }
                 for (key, slot) in [
                     ("b", &mut s.bold),
                     ("i", &mut s.italic),
@@ -457,5 +520,53 @@ pub(crate) fn apply(
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn extreme_finite_thresholds_remain_finite_and_ordered() {
+        let values = [-f64::MAX, f64::MAX];
+        let resolve = |s: &str| Some(s.to_string());
+        for kind in ["percent", "percentile"] {
+            for (percent, expected) in [
+                (0, -f64::MAX),
+                (25, -f64::MAX * 0.5),
+                (50, 0.0),
+                (75, f64::MAX * 0.5),
+                (100, f64::MAX),
+            ] {
+                let node = lo_core::parse_xml_document(&format!(
+                    r#"<cfvo type="{kind}" val="{percent}"/>"#
+                ))
+                .unwrap();
+                let actual = scale_threshold(&node, &values, &resolve).unwrap();
+                assert!(actual.is_finite());
+                assert!((actual / f64::MAX - expected / f64::MAX).abs() < 1e-15);
+            }
+        }
+        let bar = lo_core::parse_xml_document(
+            r#"<dataBar><cfvo type="min"/><cfvo type="max"/></dataBar>"#,
+        )
+        .unwrap();
+        let scale = lo_core::parse_xml_document(r#"<colorScale><cfvo type="min"/><cfvo type="max"/><color rgb="FF000000"/><color rgb="FFFFFFFF"/></colorScale>"#).unwrap();
+        for (value, length, color) in [
+            (-f64::MAX, 0.1, "#000000"),
+            (0.0, 0.5, "#808080"),
+            (f64::MAX, 0.9, "#FFFFFF"),
+        ] {
+            assert!((bar_fraction(&bar, &values, value, &resolve).unwrap() - length).abs() < 1e-6);
+            assert_eq!(
+                scale_color(&scale, &values, value, &[], &resolve).unwrap(),
+                color
+            );
+        }
+        assert_eq!(
+            position(f64::from_bits(2), f64::from_bits(1), f64::from_bits(3)),
+            0.5
+        );
+        assert_eq!(interpolate(f64::MAX, f64::MAX, 0.5), f64::MAX);
     }
 }

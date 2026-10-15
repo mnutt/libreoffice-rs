@@ -197,18 +197,8 @@ pub(crate) fn parse(root: Option<&XmlNode>, theme: Option<&XmlNode>) -> Styles {
         if let Some(border) = borders.get(id("borderId", "applyBorder")) {
             for (i, edge) in ["left", "right", "top", "bottom"].iter().enumerate() {
                 if let Some(n) = border.child(edge) {
-                    if let Some(kind) = n.attr("style").filter(|s| *s != "none") {
-                        let width = match kind {
-                            "hair" => 0.25,
-                            "medium" | "mediumDashed" | "mediumDashDot" => 1.5,
-                            "thick" => 2.25,
-                            _ => 0.75,
-                        };
-                        let rgb = color(n.child("color"), &colors, &indexed);
-                        style.borders[i] = format!(
-                            "{width}pt {kind} {}",
-                            if rgb.is_empty() { "#000000" } else { &rgb }
-                        );
+                    if n.attr("style").is_some_and(|s| s != "none") {
+                        style.borders[i] = border_edge(n, &colors, &indexed);
                     }
                 }
             }
@@ -256,4 +246,19 @@ pub(crate) fn parse(root: Option<&XmlNode>, theme: Option<&XmlNode>) -> Styles {
         cells,
         general_alignment,
     }
+}
+
+// An explicitly empty edge clears an inherited border; an absent edge is untouched.
+pub(crate) fn border_edge(node: &XmlNode, theme: &[String], indexed: &[String]) -> String {
+    let Some(kind) = node.attr("style").filter(|s| *s != "none") else {
+        return "none".into();
+    };
+    let width = match kind {
+        "hair" => 0.25,
+        "medium" | "mediumDashed" | "mediumDashDot" | "mediumDashDotDot" => 1.5,
+        "thick" => 2.25,
+        _ => 0.75,
+    };
+    let rgb = color(node.child("color"), theme, indexed);
+    format!("{width}pt {kind} {}", if rgb.is_empty() { "#000000" } else { &rgb })
 }

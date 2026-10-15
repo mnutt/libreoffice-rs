@@ -178,7 +178,9 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
                 &sheet_xml,
                 styles_xml.as_ref(),
                 theme_xml.as_ref(),
+                date_1904,
             );
+            refresh_xlsx_row_heights(&mut sheet, &sheet_xml);
             workbook.sheets.push(sheet);
         }
     }
@@ -553,56 +555,7 @@ fn parse_xlsx_sheet_rich(
             "XLSX preview grid exceeds 2,000,000 positions".into(),
         ));
     }
-    // Grow automatic wrapped rows; explicit heights and merged multi-row boxes are authoritative.
-    for (addr, cell) in &sheet.cells {
-        if explicit_rows.contains(&addr.row) {
-            continue;
-        }
-        let Some(style) = cell
-            .style
-            .as_ref()
-            .filter(|s| s.wrap || layout.rich_text.contains_key(addr))
-        else {
-            continue;
-        };
-        let (span, rows) = layout.merges.get(addr).copied().unwrap_or((1, 1));
-        if rows > 1 {
-            continue;
-        }
-        let width = (addr.col..addr.col + span)
-            .map(|c| {
-                layout
-                    .columns
-                    .get(&c)
-                    .copied()
-                    .unwrap_or(layout.default_column_width)
-            })
-            .sum::<f32>();
-        let size = style.font_size_mpt.unwrap_or(11000) as f32 / 1000.0;
-        let text = sheet
-            .display_values
-            .get(addr)
-            .map(String::as_str)
-            .unwrap_or("");
-        let font = crate::pdf::cell_font(Some(style));
-        let indent =
-            f32::from(style.indent) * lo_core::font_metrics::measure_base_font("   ", size, font);
-        let height = crate::pdf::grid_wrap_font(text, (width - 4.0 - indent).max(1.0), size, font)
-            .len() as f32
-            * size
-            * 1.2
-            + 3.0;
-        let height = if let Some(runs) = layout.rich_text.get(addr) {
-            crate::xlsx_rich_text::height(runs, (width - 4.0 - indent).max(1.0), style.wrap)
-        } else {
-            height
-        };
-        let current = layout
-            .rows
-            .entry(addr.row)
-            .or_insert(layout.default_row_height);
-        *current = current.max(height.min(409.0));
-    }
+    grow_xlsx_rows(&sheet, &mut layout, &explicit_rows);
     for (tag, limit, breaks) in [
         ("rowBreaks", 1048576, &mut layout.row_breaks),
         ("colBreaks", 16384, &mut layout.column_breaks),
@@ -628,6 +581,87 @@ fn parse_xlsx_sheet_rich(
     }
     sheet.layout = Some(layout);
     Ok(sheet)
+}
+
+fn grow_xlsx_rows(
+    sheet: &Sheet,
+    layout: &mut lo_core::calc::SheetLayout,
+    explicit_rows: &std::collections::BTreeSet<u32>,
+) {
+    // Grow automatic wrapped rows; explicit heights and merged multi-row boxes are authoritative.
+    for (addr, cell) in &sheet.cells {
+        if explicit_rows.contains(&addr.row) {
+            continue;
+        }
+        let Some(style) = cell.style.as_ref().filter(|s| {
+            s.wrap
+                || layout.rich_text.contains_key(addr)
+                || s.font_size_mpt.unwrap_or(11000) as f32 / 1000.0 > layout.default_row_height
+        }) else {
+            continue;
+        };
+        let (span, rows) = layout.merges.get(addr).copied().unwrap_or((1, 1));
+        if rows > 1 {
+            continue;
+        }
+        let width = (addr.col..addr.col + span)
+            .map(|c| {
+                layout
+                    .columns
+                    .get(&c)
+                    .copied()
+                    .unwrap_or(layout.default_column_width)
+            })
+            .sum::<f32>();
+        let size = style.font_size_mpt.unwrap_or(11000) as f32 / 1000.0;
+        let text = sheet
+            .display_values
+            .get(addr)
+            .map(String::as_str)
+            .unwrap_or("");
+        let font = crate::pdf::cell_font(Some(style));
+        let indent =
+            f32::from(style.indent) * lo_core::font_metrics::measure_base_font("   ", size, font);
+        let lines = if style.wrap {
+            crate::pdf::grid_wrap_font(text, (width - 4.0 - indent).max(1.0), size, font).len()
+        } else {
+            text.split('\n').count()
+        };
+        let height = lines as f32 * size * 1.2 + 3.0;
+        let height = if let Some(runs) = layout.rich_text.get(addr) {
+            crate::xlsx_rich_text::height(runs, (width - 4.0 - indent).max(1.0), style.wrap)
+        } else {
+            height
+        };
+        let current = layout
+            .rows
+            .entry(addr.row)
+            .or_insert(layout.default_row_height);
+        *current = current.max(height.min(409.0));
+    }
+}
+
+// Conditional styles may change wrapping or font size after initial import.
+fn refresh_xlsx_row_heights(sheet: &mut Sheet, root: &XmlNode) {
+    let mut explicit = std::collections::BTreeSet::new();
+    let mut next = 1;
+    if let Some(data) = root.child("sheetData") {
+        for row in data.children_named("row") {
+            let r = row
+                .attr("r")
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(next);
+            next = r.saturating_add(1);
+            if r > 0 && (row.attr("ht").is_some() || crate::xlsx_styles::truth(row.attr("hidden")))
+            {
+                explicit.insert(r - 1);
+            }
+        }
+    }
+    if let Some(mut layout) = sheet.layout.take() {
+        grow_xlsx_rows(sheet, &mut layout, &explicit);
+        sheet.layout = Some(layout);
+    }
 }
 
 fn excel_column_width(width: f32, digit_pixels: f32) -> f32 {
