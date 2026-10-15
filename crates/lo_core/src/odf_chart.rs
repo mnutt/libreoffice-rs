@@ -737,6 +737,7 @@ impl OdfChart {
         };
         let min = values.iter().copied().fold(0.0f64, f64::min);
         let max = values.iter().copied().fold(0.0f64, f64::max);
+        let max = if min == 0.0 && max == 0.0 { 1.0 } else { max };
         let span = (max - min).max(1e-12);
         let power = 10f64.powf((span / 10.0).log10().floor());
         let raw = span / 10.0 / power;
@@ -752,11 +753,13 @@ impl OdfChart {
                     10.0
                 },
         );
-        let lower = self.axis_min.unwrap_or((min / step).floor() * step);
-        let upper = self
-            .axis_max
-            .unwrap_or((max / step).ceil() * step)
-            .max(lower + step);
+        let (auto_lower, auto_upper) = if self.ooxml_layout.is_some() {
+            chart_bounds(min, max, step)
+        } else {
+            ((min / step).floor() * step, (max / step).ceil() * step)
+        };
+        let lower = self.axis_min.unwrap_or(auto_lower);
+        let upper = self.axis_max.unwrap_or(auto_upper).max(lower + step);
         let ticks = ((upper - lower) / step).round() as usize;
         let fraction = |v: f64| ((v - lower) / (upper - lower)) as f32;
         for tick in 0..=ticks.min(32) {
@@ -1034,6 +1037,20 @@ impl OdfChart {
     }
 }
 
+fn chart_bounds(min: f64, max: f64, step: f64) -> (f64, f64) {
+    let mut lower = (min / step).floor() * step;
+    let mut upper = (max / step).ceil() * step;
+    // Leave room above/below bars and markers that land exactly on a tick.
+    // Explicit source bounds are applied by the caller and remain authoritative.
+    if min < 0.0 && min - lower < step * 1e-9 {
+        lower -= step;
+    }
+    if max > 0.0 && upper - max < step * 1e-9 {
+        upper += step;
+    }
+    (lower, upper)
+}
+
 // Pack horizontal legends into centered rows using the same advances as rendering.
 fn legend_rows(widths: &[f32], available: f32, row_height: f32) -> Vec<[f32; 2]> {
     let mut positions: Vec<[f32; 2]> = Vec::with_capacity(widths.len());
@@ -1069,6 +1086,12 @@ fn plot_axis_font(chart: &XmlNode, styles: &OdfStyles) -> Option<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn automatic_chart_bounds_leave_space_at_exact_ticks() {
+        assert_eq!(chart_bounds(0.0, 3.0, 0.5), (0.0, 3.5));
+        assert_eq!(chart_bounds(-3.0, 2.0, 0.5), (-3.5, 2.5));
+        assert_eq!(chart_bounds(0.0, 3750.0, 500.0), (0.0, 4000.0));
+    }
     #[test]
     fn stacked_bars_accumulate_positive_and_negative_values_separately() {
         let root = crate::parse_xml_document(r#"<chartSpace><chart><plotArea><barChart><grouping val="stacked"/><ser><val><numLit><pt idx="0"><v>2</v></pt></numLit></val></ser></barChart></plotArea></chart></chartSpace>"#).unwrap();

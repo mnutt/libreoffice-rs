@@ -22,7 +22,7 @@ def generate():
             'xl/workbook.xml': f'<workbook xmlns="{NS}" xmlns:r="{REL}"><sheets><sheet name="Probe" sheetId="1" r:id="rId1"/></sheets>{names}</workbook>',
             'xl/_rels/workbook.xml.rels': f'<Relationships xmlns="{PKG}"><Relationship Id="rId1" Type="{REL}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="{REL}/styles" Target="styles.xml"/></Relationships>',
             'xl/styles.xml': styles(),
-            'xl/worksheets/sheet1.xml': f'<worksheet xmlns="{NS}" xmlns:r="{REL}"><cols><col min="1" max="1" width="24" customWidth="1"/><col min="2" max="2" width="24" customWidth="1"/></cols><sheetData>{body}</sheetData><pageMargins left="0.5" right="0.5" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="1"/>{extra}</worksheet>',
+            'xl/worksheets/sheet1.xml': f'<worksheet xmlns="{NS}" xmlns:r="{REL}"><sheetFormatPr baseColWidth="8" defaultRowHeight="15"/><cols><col min="1" max="1" width="24" customWidth="1"/><col min="2" max="2" width="24" customWidth="1"/></cols><sheetData>{body}</sheetData><pageMargins left="0.5" right="0.5" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="1"/>{extra}</worksheet>',
         }
         if name == 'authored-rich-shared':
             parts['xl/sharedStrings.xml'] = f'<sst xmlns="{NS}" count="1" uniqueCount="1"><si><r><rPr><b/><sz val="20"/><color rgb="FFFF0000"/></rPr><t xml:space="preserve">A large shared </t></r><r><rPr><i/></rPr><t>string wraps across styled runs and keeps TAIL</t></r></si></sst>'
@@ -68,7 +68,7 @@ def cases():
     yield 'authored-rich-text', 'mixed rich-text styles within one cell', f'<row r="1" ht="70" customHeight="1"><c r="A1" t="inlineStr"><is>{runs}</is></c></row>', '', ''
 
     yield 'authored-rich-shared', 'shared rich text, mixed-size wrapping and automatic row height', '<row r="1"><c r="A1" t="s"><v>0</v></c>'+cell('B1','Neighbor')+'</row><row r="2">'+cell('A2','NEXT ROW')+'</row>', '', ''
-    yield 'authored-stacked-chart', 'stacked columns must accumulate rather than cluster', '<row r="1">'+cell('A1','Stacked chart probe')+'</row>', '<drawing r:id="drawing"/>', ''
+    yield 'authored-stacked-chart', 'stacked columns must accumulate rather than cluster', '<row r="1">'+cell('A1','Stacked chart probe')+'</row><row r="2">'+cell('A2','Total')+'<c r="B2"><v>1</v></c></row><row r="3"><c r="B3"><v>2</v></c></row>', '<drawing r:id="drawing"/>', ''
     yield 'authored-cropped-image', 'image source crop removes left red half', '<row r="1">'+cell('A1','Crop probe: only blue should appear')+'</row>', '<drawing r:id="drawing"/>', ''
 
 def drawing_parts(name):
@@ -77,8 +77,8 @@ def drawing_parts(name):
     chartns = 'http://schemas.openxmlformats.org/drawingml/2006/chart'
     if name == 'authored-stacked-chart':
         node = f'<xdr:graphicFrame><xdr:nvGraphicFramePr><xdr:cNvPr id="1" name="Stacked"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="{chartns}"><c:chart xmlns:c="{chartns}" r:id="object"/></a:graphicData></a:graphic></xdr:graphicFrame>'
-        series = ''.join(f'<c:ser><c:idx val="{i}"/><c:order val="{i}"/><c:tx><c:v>Series {i+1}</c:v></c:tx><c:cat><c:strLit><c:ptCount val="1"/><c:pt idx="0"><c:v>Total</c:v></c:pt></c:strLit></c:cat><c:val><c:numLit><c:formatCode>0</c:formatCode><c:ptCount val="1"/><c:pt idx="0"><c:v>{i+1}</c:v></c:pt></c:numLit></c:val></c:ser>' for i in range(2))
-        data = { 'xl/charts/chart1.xml': f'<c:chartSpace xmlns:c="{chartns}"><c:chart><c:plotArea><c:barChart><c:barDir val="col"/><c:grouping val="stacked"/>{series}<c:overlap val="100"/><c:axId val="1"/><c:axId val="2"/></c:barChart><c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:axPos val="b"/><c:crossAx val="2"/></c:catAx><c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:axPos val="l"/><c:crossAx val="1"/></c:valAx></c:plotArea></c:chart></c:chartSpace>' }
+        series = ''.join(f'<c:ser><c:idx val="{i}"/><c:order val="{i}"/><c:tx><c:v>Series {i+1}</c:v></c:tx><c:spPr><a:solidFill><a:srgbClr val="{("4472C4","ED7D31")[i]}"/></a:solidFill></c:spPr><c:cat><c:strRef><c:f>Probe!$A$2</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>Total</c:v></c:pt></c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f>Probe!$B${i+2}</c:f><c:numCache><c:formatCode>0</c:formatCode><c:ptCount val="1"/><c:pt idx="0"><c:v>{i+1}</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser>' for i in range(2))
+        data = { 'xl/charts/chart1.xml': f'<c:chartSpace xmlns:c="{chartns}" xmlns:a="{a}"><c:chart><c:plotArea><c:barChart><c:barDir val="col"/><c:grouping val="stacked"/>{series}<c:overlap val="100"/><c:axId val="1"/><c:axId val="2"/></c:barChart><c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:axPos val="b"/><c:crossAx val="2"/></c:catAx><c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:axPos val="l"/><c:crossAx val="1"/></c:valAx></c:plotArea></c:chart></c:chartSpace>' }
         kind, target = 'chart', '../charts/chart1.xml'
     else:
         node = '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="1" name="Cropped"/><xdr:cNvPicPr/></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="object"/><a:srcRect l="50000"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic>'

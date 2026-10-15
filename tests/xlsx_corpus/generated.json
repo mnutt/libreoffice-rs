@@ -2,63 +2,63 @@
   "repository": "https://github.com/mnutt/libreoffice-rs",
   "revision": "e45b651b4541ce4388f18df5e7313b60e27855a1",
   "generated_by": "generate.py",
-  "generator_sha256": "bbfb17f3a87ffa3c2cd964344a9216f4f1ca27a15ad5509e14515250bf8b10ec",
+  "generator_sha256": "0bd43d517991c22dd9ecb9d3e994dceb0722e633234ea520d658f73b621886c9",
   "fixtures": [
     {
       "id": "authored-font-variants",
       "file": "authored-font-variants.xlsx",
       "path": "tests/xlsx_corpus/files/authored-font-variants.xlsx",
       "purpose": "real font variants, Unicode widths and automatic wrapping",
-      "size": 2105,
-      "sha256": "3ac71797c6b251f6fd378dd15a5e621b4081d17d716697831512999e4dd7c285"
+      "size": 2142,
+      "sha256": "0d947e21ecdf17b9d4b8067800b1276832eb00855dd35a3ed614b9f049b73455"
     },
     {
       "id": "authored-print-area",
       "file": "authored-print-area.xlsx",
       "path": "tests/xlsx_corpus/files/authored-print-area.xlsx",
       "purpose": "print area excludes outside cells",
-      "size": 2087,
-      "sha256": "872843ae8e705064a5d797d0afac776d75848c7ca63d8824e1e0ba47aa61db01"
+      "size": 2122,
+      "sha256": "b8ce8111560577a92d14a802dc9e664955f3608c6297d6e019ceea0562537498"
     },
     {
       "id": "authored-manual-break",
       "file": "authored-manual-break.xlsx",
       "path": "tests/xlsx_corpus/files/authored-manual-break.xlsx",
       "purpose": "explicit horizontal page break after row five",
-      "size": 2108,
-      "sha256": "fe0aae3e69a45b3799a9b3ab48246e118630a2d19e96b5e90cbd46e4eca3f436"
+      "size": 2144,
+      "sha256": "0892080b0215fcb3444bbd8d4b43dcd4929ec1f96b638c9fb12ec57f8aa5de05"
     },
     {
       "id": "authored-rich-text",
       "file": "authored-rich-text.xlsx",
       "path": "tests/xlsx_corpus/files/authored-rich-text.xlsx",
       "purpose": "mixed rich-text styles within one cell",
-      "size": 2023,
-      "sha256": "0a01338dc930d3ef339c5b7ac1f18b6f9284cd2984c8dcfb70208caf171eb683"
+      "size": 2054,
+      "sha256": "3fea6473eabcb4ec9947e1a17ff5835084921cfe54a3f9e9722fc26c1750e8dd"
     },
     {
       "id": "authored-rich-shared",
       "file": "authored-rich-shared.xlsx",
       "path": "tests/xlsx_corpus/files/authored-rich-shared.xlsx",
       "purpose": "shared rich text, mixed-size wrapping and automatic row height",
-      "size": 2369,
-      "sha256": "b3d864fba9acdb13cca592bf93d28c934c48029b67c8e9487df3e6026c816937"
+      "size": 2403,
+      "sha256": "5490904d5fc2649121174fa23a053c3c5999687b66bebd9d5f655f4721648da7"
     },
     {
       "id": "authored-stacked-chart",
       "file": "authored-stacked-chart.xlsx",
       "path": "tests/xlsx_corpus/files/authored-stacked-chart.xlsx",
       "purpose": "stacked columns must accumulate rather than cluster",
-      "size": 3514,
-      "sha256": "46975ffbca249acf19375daa5f9f95cc33666c549bead447ebac5e8599f45453"
+      "size": 3684,
+      "sha256": "c182b107d9b070cfcc9a398a5b5e99fdb2be472f21b5974c86fd340629491aca"
     },
     {
       "id": "authored-cropped-image",
       "file": "authored-cropped-image.xlsx",
       "path": "tests/xlsx_corpus/files/authored-cropped-image.xlsx",
       "purpose": "image source crop removes left red half",
-      "size": 3275,
-      "sha256": "b046c615fc78ef241c99dea0f07747808b3fc2af2741f5a26091e30609e25c58"
+      "size": 3311,
+      "sha256": "ac1c1659cfdd9d38125dd5bfbca4eb46397e592b07f0eab396c347ea37cf23d2"
     }
   ],
   "notices": []
