@@ -1180,7 +1180,8 @@ fn register_image(pdf: &mut PdfDocument, image: &lo_core::ImageElement) -> Optio
     }
     let w = u32::from_be_bytes(b.get(16..20)?.try_into().ok()?);
     let h = u32::from_be_bytes(b.get(20..24)?.try_into().ok()?);
-    if u64::from(w) * u64::from(h) > 16_000_000 {
+    let limits = lo_core::preview_limits::PreviewLimits::from_env().ok()?;
+    if u64::from(w) * u64::from(h) > limits.png_pixels as u64 {
         return None;
     }
     let i = lo_core::decode_png(b).ok()?;

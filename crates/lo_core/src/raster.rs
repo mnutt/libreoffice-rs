@@ -27,6 +27,7 @@ impl Rgba {
 pub fn parse_hex_color(input: &str, fallback: Rgba) -> Rgba {
     let trimmed = input.trim();
     let hex = trimmed.strip_prefix('#').unwrap_or(trimmed);
+    if !hex.is_ascii() { return fallback; }
     match hex.len() {
         6 => {
             let r = u8::from_str_radix(&hex[0..2], 16).ok();
@@ -423,10 +424,11 @@ pub fn decode_png(bytes: &[u8]) -> Result<RasterImage> {
     let expected = (stride + 1)
         .checked_mul(height as usize)
         .ok_or_else(|| LoError::InvalidInput("PNG dimensions are too large".to_string()))?;
-    if expected > 512 * 1024 * 1024 {
+    let limits = crate::preview_limits::PreviewLimits::from_env()?;
+    if expected > limits.inflate_bytes || u64::from(width) * u64::from(height) > limits.png_pixels as u64 {
         return Err(LoError::InvalidInput("PNG image is too large".to_string()));
     }
-    let raw = crate::pdf::decode_flate_stream(&compressed)?;
+    let raw = crate::pdf::decode_flate_stream_limited(&compressed, expected)?;
     if raw.len() < expected {
         return Err(LoError::Parse("truncated PNG image data".to_string()));
     }
@@ -983,5 +985,30 @@ fn magnitude_bits(value: i32, size: i32) -> u32 {
         value as u32
     } else {
         ((1 << size) - 1 + value) as u32
+    }
+}
+
+#[cfg(test)]
+mod safety_tests {
+    use super::*;
+    #[test]
+    fn malformed_unicode_colors_use_fallback() {
+        for color in ["€123", "€12345", "#€123", "ééé", "zzzzzz"] {
+            assert_eq!(parse_hex_color(color, Rgba::WHITE), Rgba::WHITE);
+        }
+        assert_eq!(parse_hex_color("#ff0000", Rgba::WHITE), Rgba::rgba(255,0,0,255));
+    }
+    #[test]
+    fn tiny_png_cannot_expand_beyond_declared_scanlines() {
+        let mut png = b"\x89PNG\r\n\x1a\n".to_vec();
+        let mut header = vec![];
+        header.extend_from_slice(&1u32.to_be_bytes());
+        header.extend_from_slice(&1u32.to_be_bytes());
+        header.extend_from_slice(&[8,6,0,0,0]);
+        write_chunk(&mut png, b"IHDR", &header);
+        write_chunk(&mut png, b"IDAT", &[120, 156, 99, 96, 160, 61, 0, 0, 0, 100, 0, 1]);
+        write_chunk(&mut png, b"IEND", &[]);
+        let error = decode_png(&png).unwrap_err().to_string();
+        assert!(error.contains("decompressed data exceeds limit"), "{error}");
     }
 }

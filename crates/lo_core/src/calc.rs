@@ -43,7 +43,9 @@ impl CellAddr {
         }
         let mut col = 0u32;
         for ch in letters.chars() {
-            col = col * 26 + ((ch as u8 - b'A') as u32 + 1);
+            col = col.checked_mul(26)
+                .and_then(|col| col.checked_add((ch as u8 - b'A') as u32 + 1))
+                .ok_or_else(|| crate::LoError::Parse("cell column overflow".into()))?;
         }
         let row: u32 = digits
             .parse()
@@ -60,14 +62,14 @@ impl CellAddr {
     }
 
     pub fn to_a1(self) -> String {
-        let mut col = self.col + 1;
+        let mut col = u64::from(self.col) + 1;
         let mut letters = String::new();
         while col > 0 {
             let remainder = ((col - 1) % 26) as u8;
             letters.insert(0, (b'A' + remainder) as char);
             col = (col - 1) / 26;
         }
-        format!("{}{}", letters, self.row + 1)
+        format!("{}{}", letters, u64::from(self.row) + 1)
     }
 }
 
@@ -306,5 +308,18 @@ impl Workbook {
         }
         self.sheets.push(Sheet::new(name));
         self.sheets.last_mut().expect("sheet was just inserted")
+    }
+}
+
+#[cfg(test)]
+mod address_safety_tests {
+    use super::*;
+    #[test]
+    fn extreme_addresses_return_errors_without_overflow() {
+        for value in ["AAAAAAAAAAAAAAA1", "A4294967296", "A0", "€1"] {
+            assert!(CellAddr::from_a1(value).is_err());
+        }
+        assert_eq!(CellAddr::from_a1("XFD1048576").unwrap().to_a1(), "XFD1048576");
+        assert_eq!(CellAddr::new(u32::MAX, u32::MAX).to_a1(), "MWLQKWV4294967296");
     }
 }

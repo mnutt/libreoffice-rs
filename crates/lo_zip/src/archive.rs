@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 
 use lo_core::{LoError, Result};
 
+
 #[derive(Clone, Debug)]
 pub struct ZipEntryMeta {
     pub name: String,
@@ -22,6 +23,7 @@ pub struct ZipArchive {
 
 impl ZipArchive {
     pub fn new(bytes: &[u8]) -> Result<Self> {
+        let limits = lo_core::preview_limits::PreviewLimits::from_env()?;
         let eocd = find_eocd(bytes)
             .ok_or_else(|| LoError::Parse("zip end-of-central-directory not found".to_string()))?;
         if eocd + 22 > bytes.len() {
@@ -39,6 +41,7 @@ impl ZipArchive {
         }
 
         let mut entries = BTreeMap::new();
+        let mut declared_total = 0u64;
         let mut offset = central_directory_offset;
         for _ in 0..total_entries {
             if read_u32(bytes, offset)? != 0x0201_4b50 {
@@ -49,6 +52,10 @@ impl ZipArchive {
             let method = read_u16(bytes, offset + 10)?;
             let compressed_size = read_u32(bytes, offset + 20)?;
             let uncompressed_size = read_u32(bytes, offset + 24)?;
+            declared_total += u64::from(uncompressed_size);
+            if uncompressed_size as usize > limits.zip_entry_bytes || declared_total > limits.zip_total_bytes as u64 {
+                return Err(LoError::InvalidInput("ZIP expansion exceeds preview budget".into()));
+            }
             let file_name_length = read_u16(bytes, offset + 28)? as usize;
             let extra_length = read_u16(bytes, offset + 30)? as usize;
             let comment_length = read_u16(bytes, offset + 32)? as usize;
@@ -103,7 +110,7 @@ impl ZipArchive {
                 entry.name
             )));
         }
-        let flags = read_u16(&self.bytes, local_offset + 6)?;
+
         let method = read_u16(&self.bytes, local_offset + 8)?;
         let file_name_length = read_u16(&self.bytes, local_offset + 26)? as usize;
         let extra_length = read_u16(&self.bytes, local_offset + 28)? as usize;
@@ -117,7 +124,16 @@ impl ZipArchive {
         }
         let compressed = &self.bytes[data_start..data_end];
         let out = match method {
-            0 => compressed.to_vec(),
+            0 => {
+                if compressed.len() != entry.uncompressed_size as usize {
+                    return Err(LoError::Parse("stored ZIP size mismatch".into()));
+                }
+                let mut out = Vec::new();
+                out.try_reserve_exact(compressed.len())
+                    .map_err(|_| LoError::InvalidInput("unable to allocate ZIP entry".into()))?;
+                out.extend_from_slice(compressed);
+                out
+            },
             8 => inflate_deflate(compressed, entry.uncompressed_size as usize)?,
             other => {
                 return Err(LoError::Unsupported(format!(
@@ -126,7 +142,7 @@ impl ZipArchive {
                 )))
             }
         };
-        if flags & 0x0008 == 0 && out.len() != entry.uncompressed_size as usize {
+        if out.len() != entry.uncompressed_size as usize {
             return Err(LoError::Parse(format!(
                 "zip size mismatch for {}: expected {}, got {}",
                 entry.name,
@@ -307,22 +323,35 @@ fn reverse_bits(mut code: u16, len: u8) -> u16 {
     out
 }
 
-fn inflate_deflate(data: &[u8], expected_len: usize) -> Result<Vec<u8>> {
+// Check before every literal, stored block and back-reference expansion.
+fn reserve_inflate(out: &mut Vec<u8>, additional: usize, limit: usize) -> Result<()> {
+    let required = out.len().checked_add(additional)
+        .filter(|len| *len <= limit)
+        .ok_or_else(|| LoError::InvalidInput("decompressed data exceeds limit".into()))?;
+    if required > out.capacity() {
+        let capacity = out.capacity().saturating_mul(2).max(256).max(required).min(limit);
+        out.try_reserve_exact(capacity - out.len())
+            .map_err(|_| LoError::InvalidInput("unable to allocate decompression buffer".into()))?;
+    }
+    Ok(())
+}
+
+fn inflate_deflate(data: &[u8], limit: usize) -> Result<Vec<u8>> {
     let mut reader = BitReader::new(data);
-    let mut out = Vec::with_capacity(expected_len.max(256));
+    let mut out = Vec::new();
     loop {
         let is_final = reader.read_bits(1)? != 0;
         let block_type = reader.read_bits(2)? as u8;
         match block_type {
-            0 => read_stored_block(&mut reader, &mut out)?,
+            0 => read_stored_block(&mut reader, &mut out, limit)?,
             1 => {
                 let litlen = fixed_literal_huffman()?;
                 let dist = fixed_distance_huffman()?;
-                read_huffman_block(&mut reader, &litlen, &dist, &mut out)?;
+                read_huffman_block(&mut reader, &litlen, &dist, &mut out, limit)?;
             }
             2 => {
                 let (litlen, dist) = read_dynamic_huffman_tables(&mut reader)?;
-                read_huffman_block(&mut reader, &litlen, &dist, &mut out)?;
+                read_huffman_block(&mut reader, &litlen, &dist, &mut out, limit)?;
             }
             3 => return Err(LoError::Parse("reserved deflate block type".to_string())),
             _ => unreachable!(),
@@ -334,7 +363,7 @@ fn inflate_deflate(data: &[u8], expected_len: usize) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-fn read_stored_block(reader: &mut BitReader<'_>, out: &mut Vec<u8>) -> Result<()> {
+fn read_stored_block(reader: &mut BitReader<'_>, out: &mut Vec<u8>, limit: usize) -> Result<()> {
     reader.align_byte();
     let header = reader.read_aligned_bytes(4)?;
     let len = u16::from_le_bytes([header[0], header[1]]);
@@ -345,6 +374,7 @@ fn read_stored_block(reader: &mut BitReader<'_>, out: &mut Vec<u8>) -> Result<()
         ));
     }
     let bytes = reader.read_aligned_bytes(len as usize)?;
+    reserve_inflate(out, bytes.len(), limit)?;
     out.extend_from_slice(bytes);
     Ok(())
 }
@@ -406,11 +436,15 @@ fn read_huffman_block(
     litlen: &Huffman,
     dist: &Huffman,
     out: &mut Vec<u8>,
+    limit: usize,
 ) -> Result<()> {
     loop {
         let symbol = litlen.decode_symbol(reader)?;
         match symbol {
-            0..=255 => out.push(symbol as u8),
+            0..=255 => {
+                reserve_inflate(out, 1, limit)?;
+                out.push(symbol as u8);
+            },
             256 => return Ok(()),
             257..=285 => {
                 let length = decode_length(reader, symbol)?;
@@ -421,6 +455,7 @@ fn read_huffman_block(
                         "invalid deflate back-reference distance".to_string(),
                     ));
                 }
+                reserve_inflate(out, length, limit)?;
                 let start = out.len() - distance;
                 for i in 0..length {
                     let byte = out[start + (i % distance)];
@@ -529,5 +564,61 @@ mod tests {
             rels_path_for("[Content_Types].xml"),
             "_rels/[Content_Types].xml.rels"
         );
+    }
+}
+
+#[cfg(test)]
+mod inflation_limits_tests {
+    use super::*;
+    #[test]
+    fn stored_fixed_and_dynamic_blocks_obey_exact_output_limits() {
+        let data: &[u8] = &[1, 3, 0, 252, 255, 97, 98, 99];
+        assert_eq!(inflate_deflate(data, 3).unwrap(), b"abc");
+        assert!(inflate_deflate(data, 2).is_err());
+        assert!(inflate_deflate(data, 0).is_err());
+        let data: &[u8] = &[115, 116, 28, 5, 163, 96, 20, 140, 130, 81, 48, 10, 70, 193, 40, 24, 5, 163, 96, 20, 140, 130, 81, 48, 10, 70, 193, 112, 7, 0];
+        assert_eq!(inflate_deflate(data, 4096).unwrap(), vec![65; 4096]);
+        assert!(inflate_deflate(data, 4095).is_err());
+        assert!(inflate_deflate(data, 0).is_err());
+        let data: &[u8] = &[237, 193, 1, 13, 0, 0, 0, 194, 160, 108, 239, 95, 202, 30, 14, 40, 0, 0, 0, 224, 221, 0];
+        assert_eq!(inflate_deflate(data, 4096).unwrap(), vec![65; 4096]);
+        assert!(inflate_deflate(data, 4095).is_err());
+        assert!(inflate_deflate(data, 0).is_err());
+    }
+}
+
+#[cfg(test)]
+mod allocation_limit_tests {
+    use super::*;
+    fn patch_size(bytes: &mut [u8], size: u32) {
+        let i = bytes.windows(4).position(|w| w == b"PK\x01\x02").unwrap();
+        bytes[i+24..i+28].copy_from_slice(&size.to_le_bytes());
+    }
+    #[test]
+    fn reject_oversized_metadata_before_allocating_entry() {
+        let mut bytes = crate::write_zip_to_vec(&[crate::ZipEntry::new("tiny", b"abc".to_vec())]).unwrap();
+        patch_size(&mut bytes, u32::MAX);
+        assert!(ZipArchive::new(&bytes).is_err());
+    }
+    #[test]
+    fn reject_excessive_total_declared_expansion() {
+        let entries: Vec<_> = (0..5).map(|i| crate::ZipEntry::new(format!("entry{i}"), vec![])).collect();
+        let mut bytes = crate::write_zip_to_vec(&entries).unwrap();
+        let offsets: Vec<_> = bytes.windows(4).enumerate().filter_map(|(i,w)| (w == b"PK\x01\x02").then_some(i)).collect();
+        for i in offsets { bytes[i+24..i+28].copy_from_slice(&(64u32 * 1024 * 1024).to_le_bytes()); }
+        assert!(ZipArchive::new(&bytes).is_err());
+    }
+    #[test]
+    fn descriptor_flag_does_not_bypass_central_size_validation() {
+        let mut bytes = vec![80, 75, 3, 4, 20, 0, 0, 0, 0, 0, 157, 190, 78, 93, 194, 65, 36, 53, 3, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 116, 105, 110, 121, 97, 98, 99, 80, 75, 1, 2, 20, 3, 20, 0, 0, 0, 0, 0, 157, 190, 78, 93, 194, 65, 36, 53, 3, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 1, 0, 0, 0, 0, 116, 105, 110, 121, 80, 75, 5, 6, 0, 0, 0, 0, 1, 0, 1, 0, 50, 0, 0, 0, 37, 0, 0, 0, 0, 0];
+        // Central-directory sizes remain authoritative for descriptor entries.
+        bytes[6..8].copy_from_slice(&8u16.to_le_bytes());
+        patch_size(&mut bytes, 2);
+        assert!(ZipArchive::new(&bytes).unwrap().read("tiny").is_err());
+        let mut bytes = vec![80, 75, 3, 4, 20, 0, 0, 0, 8, 0, 157, 190, 78, 93, 194, 65, 36, 53, 5, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 116, 105, 110, 121, 75, 76, 74, 6, 0, 80, 75, 1, 2, 20, 3, 20, 0, 0, 0, 8, 0, 157, 190, 78, 93, 194, 65, 36, 53, 5, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 1, 0, 0, 0, 0, 116, 105, 110, 121, 80, 75, 5, 6, 0, 0, 0, 0, 1, 0, 1, 0, 50, 0, 0, 0, 39, 0, 0, 0, 0, 0];
+        // Central-directory sizes remain authoritative for descriptor entries.
+        bytes[6..8].copy_from_slice(&8u16.to_le_bytes());
+        patch_size(&mut bytes, 2);
+        assert!(ZipArchive::new(&bytes).unwrap().read("tiny").is_err());
     }
 }

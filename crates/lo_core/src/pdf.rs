@@ -2447,6 +2447,10 @@ fn decode_run_length(data: &[u8]) -> Result<Vec<u8>> {
 }
 
 pub(crate) fn decode_flate_stream(data: &[u8]) -> Result<Vec<u8>> {
+    decode_flate_stream_limited(data, crate::preview_limits::PreviewLimits::from_env()?.inflate_bytes)
+}
+
+pub(crate) fn decode_flate_stream_limited(data: &[u8], limit: usize) -> Result<Vec<u8>> {
     if data.len() >= 2 {
         let cmf = data[0];
         let flg = data[1];
@@ -2458,10 +2462,10 @@ pub(crate) fn decode_flate_stream(data: &[u8]) -> Result<Vec<u8>> {
             if start > data.len().saturating_sub(4) {
                 return Err(LoError::Parse("invalid zlib stream".to_string()));
             }
-            return inflate_raw_deflate(&data[start..data.len() - 4], 0);
+            return inflate_raw_deflate(&data[start..data.len() - 4], limit);
         }
     }
-    inflate_raw_deflate(data, 0)
+    inflate_raw_deflate(data, limit)
 }
 
 fn decode_lzw(data: &[u8]) -> Result<Vec<u8>> {
@@ -2673,22 +2677,35 @@ fn reverse_bits(mut code: u16, len: u8) -> u16 {
     out
 }
 
-fn inflate_raw_deflate(data: &[u8], expected_len: usize) -> Result<Vec<u8>> {
+// Check before every literal, stored block and back-reference expansion.
+fn reserve_inflate(out: &mut Vec<u8>, additional: usize, limit: usize) -> Result<()> {
+    let required = out.len().checked_add(additional)
+        .filter(|len| *len <= limit)
+        .ok_or_else(|| LoError::InvalidInput("decompressed data exceeds limit".into()))?;
+    if required > out.capacity() {
+        let capacity = out.capacity().saturating_mul(2).max(256).max(required).min(limit);
+        out.try_reserve_exact(capacity - out.len())
+            .map_err(|_| LoError::InvalidInput("unable to allocate decompression buffer".into()))?;
+    }
+    Ok(())
+}
+
+fn inflate_raw_deflate(data: &[u8], limit: usize) -> Result<Vec<u8>> {
     let mut reader = BitReader::new(data);
-    let mut out = Vec::with_capacity(expected_len.max(256));
+    let mut out = Vec::new();
     loop {
         let is_final = reader.read_bits(1)? != 0;
         let block_type = reader.read_bits(2)? as u8;
         match block_type {
-            0 => read_stored_block(&mut reader, &mut out)?,
+            0 => read_stored_block(&mut reader, &mut out, limit)?,
             1 => {
                 let litlen = fixed_literal_huffman()?;
                 let dist = fixed_distance_huffman()?;
-                read_huffman_block(&mut reader, &litlen, &dist, &mut out)?;
+                read_huffman_block(&mut reader, &litlen, &dist, &mut out, limit)?;
             }
             2 => {
                 let (litlen, dist) = read_dynamic_huffman_tables(&mut reader)?;
-                read_huffman_block(&mut reader, &litlen, &dist, &mut out)?;
+                read_huffman_block(&mut reader, &litlen, &dist, &mut out, limit)?;
             }
             3 => return Err(LoError::Parse("reserved deflate block type".to_string())),
             _ => unreachable!(),
@@ -2700,7 +2717,7 @@ fn inflate_raw_deflate(data: &[u8], expected_len: usize) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-fn read_stored_block(reader: &mut BitReader<'_>, out: &mut Vec<u8>) -> Result<()> {
+fn read_stored_block(reader: &mut BitReader<'_>, out: &mut Vec<u8>, limit: usize) -> Result<()> {
     reader.align_byte();
     let header = reader.read_aligned_bytes(4)?;
     let len = u16::from_le_bytes([header[0], header[1]]);
@@ -2711,6 +2728,7 @@ fn read_stored_block(reader: &mut BitReader<'_>, out: &mut Vec<u8>) -> Result<()
         ));
     }
     let bytes = reader.read_aligned_bytes(len as usize)?;
+    reserve_inflate(out, bytes.len(), limit)?;
     out.extend_from_slice(bytes);
     Ok(())
 }
@@ -2778,11 +2796,15 @@ fn read_huffman_block(
     litlen: &Huffman,
     dist: &Huffman,
     out: &mut Vec<u8>,
+    limit: usize,
 ) -> Result<()> {
     loop {
         let symbol = litlen.decode_symbol(reader)?;
         match symbol {
-            0..=255 => out.push(symbol as u8),
+            0..=255 => {
+                reserve_inflate(out, 1, limit)?;
+                out.push(symbol as u8);
+            },
             256 => return Ok(()),
             257..=285 => {
                 let length = decode_length(reader, symbol)?;
@@ -2793,6 +2815,7 @@ fn read_huffman_block(
                         "invalid deflate back-reference distance".to_string(),
                     ));
                 }
+                reserve_inflate(out, length, limit)?;
                 let start = out.len() - distance;
                 for i in 0..length {
                     let byte = out[start + (i % distance)];
@@ -2926,5 +2949,25 @@ mod tests {
     fn decodes_run_length() {
         let data = [2u8, b'a', b'b', b'c', 253, b'Z', 128];
         assert_eq!(decode_run_length(&data).unwrap(), b"abcZZZZ");
+    }
+}
+
+#[cfg(test)]
+mod inflation_limits_tests {
+    use super::*;
+    #[test]
+    fn stored_fixed_and_dynamic_blocks_obey_exact_output_limits() {
+        let data: &[u8] = &[1, 3, 0, 252, 255, 97, 98, 99];
+        assert_eq!(inflate_raw_deflate(data, 3).unwrap(), b"abc");
+        assert!(inflate_raw_deflate(data, 2).is_err());
+        assert!(inflate_raw_deflate(data, 0).is_err());
+        let data: &[u8] = &[115, 116, 28, 5, 163, 96, 20, 140, 130, 81, 48, 10, 70, 193, 40, 24, 5, 163, 96, 20, 140, 130, 81, 48, 10, 70, 193, 112, 7, 0];
+        assert_eq!(inflate_raw_deflate(data, 4096).unwrap(), vec![65; 4096]);
+        assert!(inflate_raw_deflate(data, 4095).is_err());
+        assert!(inflate_raw_deflate(data, 0).is_err());
+        let data: &[u8] = &[237, 193, 1, 13, 0, 0, 0, 194, 160, 108, 239, 95, 202, 30, 14, 40, 0, 0, 0, 224, 221, 0];
+        assert_eq!(inflate_raw_deflate(data, 4096).unwrap(), vec![65; 4096]);
+        assert!(inflate_raw_deflate(data, 4095).is_err());
+        assert!(inflate_raw_deflate(data, 0).is_err());
     }
 }
