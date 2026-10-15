@@ -207,5 +207,41 @@
       }
     ],
     "reason": "An inherited master background retains the master color map despite the slide override."
+  },
+  "lo-smartart-children-e33436": {
+    "pages": 1,
+    "text": [
+      "a",
+      "b",
+      "c",
+      "x",
+      "y",
+      "z"
+    ]
+  },
+  "lo-smartart-cycle-4f1f4b": {
+    "pages": 1,
+    "text": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ]
+  },
+  "lo-n778859-99a2f0": {
+    "pages": 1,
+    "text": [
+      "Adding",
+      "9"
+    ]
+  },
+  "poi-alterman_security-59be94": {
+    "min_images": 24
+  },
+  "lo-tdf169781-72863a": {
+    "pages": 2,
+    "min_images": 4,
+    "reason": "Both legacy VML OLE previews remain visible without opening the embedded objects."
   }
 }

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "lo-smartart-children-e33436",
+    "before": {
+      "run": "sixth-all-3",
+      "pdf_sha256": "0dc22d6f5b5597812f725016ec3264787f72e974f9d421579ee75fbc07a1e9bc",
+      "failures": [
+        "missing text: a",
+        "missing text: b",
+        "missing text: c",
+        "missing text: x",
+        "missing text: y",
+        "missing text: z"
+      ]
+    },
+    "after": {
+      "run": "loop-20261015T175701279023/candidate-3",
+      "pdf_sha256": "ec6ed03b5b704e0183a7e68328e2372de03462c594604825dc920f47d3be9bb0",
+      "failures": []
+    }
+  },
+  {
+    "id": "lo-smartart-cycle-4f1f4b",
+    "before": {
+      "run": "sixth-all-3",
+      "pdf_sha256": "0dc22d6f5b5597812f725016ec3264787f72e974f9d421579ee75fbc07a1e9bc",
+      "failures": [
+        "missing text: a",
+        "missing text: b",
+        "missing text: c",
+        "missing text: d",
+        "missing text: e"
+      ]
+    },
+    "after": {
+      "run": "loop-20261015T181124718216/candidate-3",
+      "pdf_sha256": "434c268ae78bd3638edb0729702139d93b13ae355e43024165d3109597e0351d",
+      "failures": []
+    }
+  },
+  {
+    "id": "lo-n778859-99a2f0",
+    "before": {
+      "run": "loop-20261015T180633089601/candidate-0",
+      "pdf_sha256": "8044b9de88eb55881d009c3e33bbcab4a9ae4d9e28a8a80da9288c4364efe26f",
+      "failures": [
+        "missing text: 9"
+      ]
+    },
+    "after": {
+      "run": "loop-20261015T181530387985/candidate-0",
+      "pdf_sha256": "1832476b1285996e0bf90720c11d43071630f237fcfea8320215cfd038b8ec17",
+      "failures": []
+    }
+  },
+  {
+    "id": "poi-alterman_security-59be94",
+    "before": {
+      "run": "sixth-all-1",
+      "pdf_sha256": "219683f91ca93c20f0a3d7a4448c5b6389c2489947aedb2c7939941e05440849",
+      "failures": [
+        "image_count: 3 < 24"
+      ]
+    },
+    "after": {
+      "run": "loop-20261015T180450243908/candidate-1",
+      "pdf_sha256": "0186f62df1535088562647fd7e7bbdd08e822c7f8e1fc76725120f2259a20957",
+      "failures": []
+    }
+  },
+  {
+    "id": "lo-tdf169781-72863a",
+    "before": {
+      "run": "sixth-all-2",
+      "pdf_sha256": "e07f0d3f0fe985707cc77a90d25e4967d330e2f5212ee84aa578c5fe71f635c9",
+      "failures": [
+        "image_count: 2 < 4"
+      ]
+    },
+    "after": {
+      "run": "loop-20261015T184226262436/candidate-2",
+      "pdf_sha256": "32464449d638c3fc9f6ec03d49559ce2f84963bf63bcc49d741d1e0a19e1b1b6",
+      "failures": []
+    }
+  }
+]

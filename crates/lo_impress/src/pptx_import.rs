@@ -6,6 +6,8 @@ use lo_core::{
 };
 use lo_zip::{rels_path_for, resolve_part_target, ZipArchive};
 use std::collections::BTreeMap;
+#[path = "pptx_smartart.rs"]
+mod smartart;
 
 #[derive(Default)]
 struct Relations {
@@ -143,6 +145,44 @@ fn rect(x: f32, y: f32, w: f32, h: f32) -> Rect {
 }
 fn tree(n: &XmlNode) -> Option<&XmlNode> {
     n.child("cSld").and_then(|n| n.child("spTree"))
+}
+// Only use the stored raster/vector preview; embedded object payloads are never opened.
+fn ole_preview(data: &XmlNode) -> Option<&XmlNode> {
+    if let Some(pic) = data.child("oleObj").and_then(|n| n.child("pic")) {
+        return Some(pic);
+    }
+    let alternate = data.child("AlternateContent")?;
+    alternate
+        .children_named("Choice")
+        .chain(alternate.children_named("Fallback"))
+        .find_map(|branch| branch.child("oleObj").and_then(|n| n.child("pic")))
+}
+fn ole_object(data: &XmlNode) -> Option<&XmlNode> {
+    data.child("oleObj").or_else(|| {
+        data.child("AlternateContent")?
+            .children
+            .iter()
+            .find_map(|branch| branch.child("oleObj"))
+    })
+}
+fn vml_preview<'a>(root: &'a XmlNode, id: &str) -> Option<&'a XmlNode> {
+    let mut stack = vec![(root, 0)];
+    let mut visited = 0;
+    while let Some((node, depth)) = stack.pop() {
+        visited += 1;
+        if visited > 4096 {
+            break;
+        }
+        if node.local_name() == "shape"
+            && (node.attr("spid") == Some(id) || node.attr("id") == Some(id))
+        {
+            return node.child("imagedata");
+        }
+        if depth < 32 {
+            stack.extend(node.children.iter().rev().map(|n| (n.as_ref(), depth + 1)));
+        }
+    }
+    None
 }
 fn placeholder(n: &XmlNode) -> Option<&XmlNode> {
     n.child("nvSpPr")
@@ -665,7 +705,51 @@ impl Context<'_> {
                 "graphicFrame" => {
                     let data = n.child("graphic").and_then(|n| n.child("graphicData"));
                     let f = frame(&[n], t);
-                    if let Some(ids) = data.and_then(|n| n.child("relIds")) {
+                    if let Some(picture) = data.and_then(ole_preview) {
+                        let mut picture = picture.clone();
+                        if xfrm(&picture).is_none() {
+                            if let Some(transform) = n.child("xfrm") {
+                                let mut properties =
+                                    picture.child("spPr").cloned().unwrap_or_default();
+                                properties.name = "spPr".into();
+                                properties.children.push(transform.clone().into());
+                                picture.children.retain(|n| n.local_name() != "spPr");
+                                picture.children.push(properties.into());
+                            }
+                        }
+                        self.picture(&picture, rels, slide, t)?;
+                    } else if let Some(ole) = data.and_then(ole_object) {
+                        if let Some(id) = ole.attr("spid") {
+                            if let Some((_, vml, vml_rels)) =
+                                related(self.zip, rels, "legacyDrawing")?
+                            {
+                                if let Some(preview) = vml_preview(&vml, id) {
+                                    if let Some(image_id) =
+                                        preview.attr("relid").or_else(|| preview.attr("id"))
+                                    {
+                                        let mut picture = n.as_ref().clone();
+                                        picture.name = "pic".into();
+                                        picture.children.retain(|n| n.local_name() == "xfrm");
+                                        let blip = XmlNode {
+                                            name: "blip".into(),
+                                            attributes: BTreeMap::from([(
+                                                "r:embed".into(),
+                                                image_id.into(),
+                                            )]),
+                                            ..Default::default()
+                                        };
+                                        let fill = XmlNode {
+                                            name: "blipFill".into(),
+                                            children: vec![blip.into()],
+                                            ..Default::default()
+                                        };
+                                        picture.children.push(fill.into());
+                                        self.picture(&picture, &vml_rels, slide, t)?;
+                                    }
+                                }
+                            }
+                        }
+                    } else if let Some(ids) = data.and_then(|n| n.child("relIds")) {
                         self.diagram(ids, rels, slide, f)?;
                     } else if let Some(table) = data.and_then(|n| n.child("tbl")) {
                         self.table(table, slide, f);
@@ -748,14 +832,35 @@ impl Context<'_> {
             n.children.iter().find_map(|c| drawing_id(c))
         }
         let model_rels = relationships(self.zip, path)?;
-        let Some(drawing) = drawing_id(&model)
+        let drawing = drawing_id(&model)
             .and_then(|id| rels.paths.get(id).or_else(|| model_rels.paths.get(id)))
-        else {
+            .filter(|path| self.zip.contains(path));
+        let Some(drawing) = drawing else {
+            let read = |key| -> Result<Option<XmlNode>> {
+                let Some(path) = ids
+                    .attr(key)
+                    .and_then(|id| rels.paths.get(id))
+                    .filter(|p| self.zip.contains(p))
+                else {
+                    return Ok(None);
+                };
+                Ok(Some(parse_xml_document(&self.zip.read_string(path)?)?))
+            };
+            if let Some(layout) = read("lo")? {
+                let colors = read("cs")?;
+                let styles = read("qs")?;
+                smartart::render(
+                    self,
+                    &model,
+                    &layout,
+                    colors.as_ref(),
+                    styles.as_ref(),
+                    slide,
+                    f,
+                );
+            }
             return Ok(());
         };
-        if !self.zip.contains(drawing) {
-            return Ok(());
-        }
         let root = parse_xml_document(&self.zip.read_string(drawing)?)?;
         let dr = relationships(self.zip, drawing)?;
         if let Some(tree) = root.child("spTree") {
@@ -829,6 +934,25 @@ impl Context<'_> {
                     transform: None,
                     fill: color,
                     stroke: "none".into(),
+                    ..Default::default()
+                },
+            }));
+        } else if fill.local_name() == "pattFill" {
+            let foreground = fill
+                .child("fgClr")
+                .and_then(|n| theme.color(n))
+                .unwrap_or_else(|| "#000000".into());
+            let background = fill
+                .child("bgClr")
+                .and_then(|n| theme.color(n))
+                .unwrap_or_else(|| "#FFFFFF".into());
+            slide.elements.push(SlideElement::Shape(Shape {
+                frame: f,
+                kind: ShapeKind::Rectangle,
+                style: ShapeStyle {
+                    fill: background,
+                    stroke: "none".into(),
+                    hatch: crate::pptx_pattern::hatch(fill.attr("prst").unwrap_or(""), foreground),
                     ..Default::default()
                 },
             }));
@@ -926,7 +1050,7 @@ impl Context<'_> {
         if let Some(fill) = pr
             .children
             .iter()
-            .find(|n| matches!(n.local_name(), "solidFill" | "gradFill"))
+            .find(|n| matches!(n.local_name(), "solidFill" | "gradFill" | "pattFill"))
         {
             self.paint_fill(fill, slide, f);
         }
@@ -945,29 +1069,40 @@ impl Context<'_> {
         Ok(())
     }
     fn shape(&self, chain: &[&XmlNode], slide: &mut Slide, t: Transform) {
+        self.shape_with_fit(chain, slide, t, false);
+    }
+    fn shape_with_fit(
+        &self,
+        chain: &[&XmlNode],
+        slide: &mut Slide,
+        t: Transform,
+        generated_layout: bool,
+    ) {
         let f = frame(chain, t);
         let props = chain
             .iter()
             .filter_map(|n| n.child("spPr"))
             .collect::<Vec<_>>();
-        let referenced_fill = chain
-            .iter()
-            .find_map(|n| n.child("style").and_then(|n| n.child("fillRef")))
-            .and_then(|n| self.theme_fill(n));
-        let effective_fill = props
-            .iter()
-            .find_map(|n| {
-                n.children
-                    .iter()
-                    .find(|n| {
-                        matches!(
-                            n.local_name(),
-                            "noFill" | "solidFill" | "gradFill" | "blipFill" | "pattFill"
-                        )
-                    })
-                    .map(|n| n.as_ref())
-            })
-            .or(referenced_fill.as_ref());
+        let effective_fill = chain.iter().find_map(|n| {
+            n.child("spPr")
+                .and_then(|n| {
+                    n.children
+                        .iter()
+                        .find(|n| {
+                            matches!(
+                                n.local_name(),
+                                "noFill" | "solidFill" | "gradFill" | "blipFill" | "pattFill"
+                            )
+                        })
+                        .map(|n| n.as_ref().clone())
+                })
+                .or_else(|| {
+                    n.child("style")
+                        .and_then(|n| n.child("fillRef"))
+                        .and_then(|n| self.theme_fill(n))
+                })
+        });
+        let effective_fill = effective_fill.as_ref();
         let fill = effective_fill.map(|n| {
             if n.local_name() == "solidFill" {
                 self.theme.color(n).unwrap_or_else(|| "none".into())
@@ -1018,17 +1153,22 @@ impl Context<'_> {
                     },
                 }));
             }
-        } else if let Some(gradient) = effective_fill.filter(|n| n.local_name() == "gradFill") {
+        } else if let Some(gradient) =
+            effective_fill.filter(|n| matches!(n.local_name(), "gradFill" | "pattFill"))
+        {
             self.paint_fill(gradient, slide, f);
         }
-        let theme_line = chain
-            .iter()
-            .find_map(|n| n.child("style").and_then(|n| n.child("lnRef")))
-            .and_then(|n| self.theme_fill(n));
-        let line = props
-            .iter()
-            .find_map(|n| n.child("ln"))
-            .or(theme_line.as_ref());
+        let line = chain.iter().find_map(|n| {
+            n.child("spPr")
+                .and_then(|n| n.child("ln"))
+                .cloned()
+                .or_else(|| {
+                    n.child("style")
+                        .and_then(|n| n.child("lnRef"))
+                        .and_then(|n| self.theme_fill(n))
+                })
+        });
+        let line = line.as_ref();
         let stroke = line
             .and_then(|n| {
                 if n.child("noFill").is_some() || n.child("blipFill").is_some() {
@@ -1071,11 +1211,31 @@ impl Context<'_> {
                 SlideElement::Shape(shape) => {
                     shape.kind = kind.clone();
                     shape.style.rotation_millidegrees = (-angle * 1000.0) as i32;
+                    // Hatch directions in the reference are page-relative even
+                    // when the filled shape rotates.
+                    if let Some(hatch) = &mut shape.style.hatch {
+                        hatch.angle_degrees = (hatch.angle_degrees as f32 + angle)
+                            .rem_euclid(360.0)
+                            .round() as i16;
+                    }
                 }
                 _ => {}
             }
         }
         if fill.is_some() || stroke != "none" {
+            let arrowheads = line
+                .filter(|_| stroke != "none")
+                .map(|line| {
+                    crate::pptx_geometry::line_ends(
+                        &kind,
+                        line,
+                        f.size.width.as_pt(),
+                        f.size.height.as_pt(),
+                        pt(Some(line), "w", 0.75).clamp(0.0, 100.0),
+                    )
+                })
+                .unwrap_or_default();
+            let arrow_color = stroke.clone();
             slide.elements.push(SlideElement::Shape(Shape {
                 frame: f,
                 kind,
@@ -1087,11 +1247,37 @@ impl Context<'_> {
                     stroke_width_mm: 0,
                     stroke_width_mpt: Some((pt(line, "w", 0.75).clamp(0.0, 100.0) * 1000.0) as u32),
                     stroke_dash_mpt: line_dashes(line),
+                    hatch: None,
+                    stroke_cap: match line.and_then(|n| n.attr("cap")) {
+                        Some("rnd") => 1,
+                        Some("sq") => 2,
+                        _ => 0,
+                    },
                 },
             }));
+            if !arrowheads.is_empty() {
+                slide.elements.push(SlideElement::Shape(Shape {
+                    frame: rect(
+                        f.origin.x.as_pt(),
+                        f.origin.y.as_pt(),
+                        f.size.width.as_pt().max(1.0),
+                        f.size.height.as_pt().max(1.0),
+                    ),
+                    kind: ShapeKind::Custom(arrowheads),
+                    style: ShapeStyle {
+                        fill: arrow_color.clone(),
+                        stroke: arrow_color,
+                        rotation_millidegrees: (-angle * 1000.0) as i32,
+                        stroke_width_mpt: Some(
+                            (pt(line, "w", 0.75).clamp(0.0, 100.0) * 1000.0) as u32,
+                        ),
+                        ..Default::default()
+                    },
+                }));
+            }
         }
         if let Some(body) = chain[0].child("txBody") {
-            self.text(body, chain, slide, f, angle);
+            self.text_with_fit(body, chain, slide, f, angle, generated_layout);
         }
     }
     fn picture(
@@ -1238,6 +1424,17 @@ impl Context<'_> {
         Ok(())
     }
     fn text(&self, body: &XmlNode, chain: &[&XmlNode], slide: &mut Slide, f: Rect, angle: f32) {
+        self.text_with_fit(body, chain, slide, f, angle, false);
+    }
+    fn text_with_fit(
+        &self,
+        body: &XmlNode,
+        chain: &[&XmlNode],
+        slide: &mut Slide,
+        f: Rect,
+        angle: f32,
+        generated_layout: bool,
+    ) {
         let ph = chain
             .iter()
             .find_map(|n| placeholder(n))
@@ -1291,19 +1488,40 @@ impl Context<'_> {
         let bottom = pt(bodypr, "bIns", 3.6);
         let width = (f.size.width.as_pt() - left - right).max(1.0);
         let height = (f.size.height.as_pt() - top - bottom).max(1.0);
+        let columns = num(bodypr, "numCol", 1.0).clamp(1.0, 16.0) as usize;
+        let column_gap = pt(bodypr, "spcCol", 0.0).clamp(0.0, width / columns as f32);
+        let width = ((width - column_gap * (columns - 1) as f32) / columns as f32).max(1.0);
+        let rtl_columns = merged_body
+            .attr("rtlCol")
+            .is_some_and(|v| matches!(v, "1" | "true"));
         let scale = bodypr
             .and_then(|n| n.child("normAutofit"))
             .map(|n| num(Some(n), "fontScale", 100000.0) / 100000.0)
             .unwrap_or(1.0)
             .clamp(0.01, 1.0);
+        // LibreOffice's normal autofit rounds the resulting font size to whole
+        // points (SdrTextObj::setupAutoFitText). Measure and draw the same size.
+        let round_autofit = merged_body.child("normAutofit").is_some();
+        let scaled_font = |size: u32| {
+            let size = size as f32 * scale;
+            if round_autofit {
+                (size / 1000.0).round().max(1.0) as u32 * 1000
+            } else {
+                size.round().max(1.0) as u32
+            }
+        };
         let mut paragraphs = vec![];
-        for p in body.children_named("p") {
+        let mut numbering: [Option<(String, u32)>; 9] = std::array::from_fn(|_| None);
+        let paragraph_count = body.children_named("p").count();
+        for (paragraph_index, p) in body.children_named("p").enumerate() {
             let pp = p.child("pPr");
             let level = num(pp, "lvl", 0.0).clamp(0.0, 8.0) as usize;
             let key = format!("lvl{}pPr", level + 1);
             let mut properties = vec![];
-            if let Some(n) = self.default_text.and_then(|n| n.child(&key)) {
-                properties.push(n);
+            if master_style.and_then(|n| n.child(&key)).is_none() {
+                if let Some(n) = self.default_text.and_then(|n| n.child(&key)) {
+                    properties.push(n);
+                }
             }
             if let Some(n) = master_style.and_then(|n| n.child(&key)) {
                 properties.push(n);
@@ -1359,8 +1577,14 @@ impl Context<'_> {
             let mut indent = 0.0;
             let mut before = 0.0;
             let mut after = 0.0;
+            let mut before_percent = None;
+            let mut after_percent = None;
             let mut spacing = 1.2;
+            let mut percentage_spacing = false;
+            let mut point_spacing = None;
             let mut marker = None;
+            let mut auto_number = None;
+            let mut hanging_indent = 0.0;
             let property_count = properties.len();
             for (index, pr) in properties.into_iter().enumerate() {
                 if index == inherited_count {
@@ -1379,37 +1603,86 @@ impl Context<'_> {
                 if pr.attr("marL").is_some() {
                     indent = pt(Some(pr), "marL", 0.0);
                 }
+                if pr.attr("indent").is_some() {
+                    hanging_indent = pt(Some(pr), "indent", 0.0);
+                }
                 if let Some(n) = pr.child("lnSpc").and_then(|n| n.child("spcPct")) {
                     spacing = (num(Some(n), "val", 100000.0) / 100000.0 * 1.2).clamp(0.5, 5.0);
+                    percentage_spacing = true;
+                    point_spacing = None;
+                }
+                if let Some(n) = pr.child("lnSpc").and_then(|n| n.child("spcPts")) {
+                    point_spacing = Some((num(Some(n), "val", 100.0) / 100.0).clamp(0.01, 1000.0));
+                    percentage_spacing = false;
                 }
                 if let Some(n) = pr.child("spcBef").and_then(|n| n.child("spcPts")) {
                     before = num(Some(n), "val", 0.0) / 100.0;
+                    before_percent = None;
                 }
                 if let Some(n) = pr.child("spcAft").and_then(|n| n.child("spcPts")) {
                     after = num(Some(n), "val", 0.0) / 100.0;
+                    after_percent = None;
+                }
+                if let Some(n) = pr.child("spcBef").and_then(|n| n.child("spcPct")) {
+                    before_percent = Some((num(Some(n), "val", 0.0) / 100000.0).clamp(0.0, 10.0));
+                }
+                if let Some(n) = pr.child("spcAft").and_then(|n| n.child("spcPct")) {
+                    after_percent = Some((num(Some(n), "val", 0.0) / 100000.0).clamp(0.0, 10.0));
                 }
                 if let Some(n) = pr.child("buChar") {
                     marker = n.attr("char").map(str::to_string);
+                    auto_number = None;
+                }
+                if pr.child("buBlip").is_some() {
+                    marker = Some(String::new()); // Reserve the picture bullet's text indentation.
+                    auto_number = None;
                 }
                 if pr.child("buNone").is_some() {
                     marker = None;
+                    auto_number = None;
                 }
                 if let Some(n) = pr.child("buAutoNum") {
-                    marker = Some(format!(
-                        "{}.",
-                        num(Some(n), "startAt", 1.0) as u32 + paragraphs.len() as u32
+                    auto_number = Some((
+                        n.attr("type").unwrap_or("arabicPeriod").to_string(),
+                        num(Some(n), "startAt", 1.0).clamp(1.0, 32767.0) as u32,
                     ));
                 }
+            }
+            if let Some((kind, start)) = auto_number {
+                let value = numbering[level]
+                    .as_ref()
+                    .filter(|(k, _)| k == &kind)
+                    .map(|(_, n)| n.saturating_add(1).max(start))
+                    .unwrap_or(start);
+                marker = Some(crate::pptx_text::number_marker(value, &kind));
+                numbering[level] = Some((kind, value));
+            } else {
+                numbering[level] = None;
+            }
+            for entry in &mut numbering[level + 1..] {
+                *entry = None;
             }
             if inherited_count == property_count {
                 apply_font_ref(&mut base);
             }
+            if percentage_spacing {
+                if let Some(fit) = bodypr.and_then(|n| n.child("normAutofit")) {
+                    spacing = (spacing
+                        - 1.2 * (num(Some(fit), "lnSpcReduction", 0.0) / 100000.0).clamp(0.0, 0.8))
+                    .max(0.2);
+                }
+            }
             let mut runs = vec![];
             for n in &p.children {
                 if n.local_name() == "br" {
+                    let mut style = base.clone();
+                    if let Some(pr) = n.child("rPr") {
+                        self.run_style(pr, &mut style);
+                    }
+                    style.font_size_mpt = Some(scaled_font(style.font_size_mpt.unwrap_or(18000)));
                     runs.push(lo_core::calc::CellTextRun {
                         text: "\n".into(),
-                        style: base.clone(),
+                        style,
                     });
                     continue;
                 }
@@ -1420,8 +1693,7 @@ impl Context<'_> {
                 if let Some(pr) = n.child("rPr") {
                     self.run_style(pr, &mut style);
                 }
-                style.font_size_mpt =
-                    Some((style.font_size_mpt.unwrap_or(18000) as f32 * scale).round() as u32);
+                style.font_size_mpt = Some(scaled_font(style.font_size_mpt.unwrap_or(18000)));
                 let text = if n.local_name() == "fld" && n.attr("type") == Some("slidenum") {
                     self.slide_number.to_string()
                 } else {
@@ -1430,20 +1702,74 @@ impl Context<'_> {
                 runs.push(lo_core::calc::CellTextRun { text, style });
             }
             if runs.is_empty() {
+                let mut empty_style = base.clone();
+                if let Some(end) = p.child("endParaRPr") {
+                    self.run_style(end, &mut empty_style);
+                }
+                empty_style.font_size_mpt =
+                    Some(scaled_font(empty_style.font_size_mpt.unwrap_or(18000)));
                 runs.push(lo_core::calc::CellTextRun {
                     text: " ".into(),
-                    style: base.clone(),
+                    style: empty_style,
                 });
+            }
+            let mut hanging_marker = None;
+            let paragraph_size = runs
+                .iter()
+                .map(|r| r.style.font_size_mpt.unwrap_or(18000) as f32 / 1000.0)
+                .fold(0.0_f32, f32::max);
+            if paragraph_size > 0.0 {
+                spacing = if let Some(points) = point_spacing {
+                    points / paragraph_size
+                } else if percentage_spacing
+                    || !bodypr
+                        .and_then(|n| n.attr("compatLnSpc"))
+                        .is_some_and(|v| matches!(v, "1" | "true"))
+                {
+                    spacing
+                } else {
+                    spacing * crate::pptx_text::natural_line_height(&runs) / paragraph_size / 1.2
+                };
+            }
+            if let Some(percent) = before_percent {
+                before = paragraph_size * percent;
+            }
+            if let Some(percent) = after_percent {
+                after = paragraph_size * percent;
+            }
+            if paragraphs.is_empty() {
+                before = if percentage_spacing {
+                    paragraph_size * (spacing - 1.2).max(0.0)
+                } else {
+                    0.0
+                };
+            }
+            if paragraph_index + 1 == paragraph_count
+                && matches!(bodypr.and_then(|n| n.attr("anchor")), Some("ctr" | "b"))
+            {
+                after = crate::pptx_text::descent(&runs);
+            }
+            // The textbox height ends at its last baseline. Preserve the normal
+            // baseline-to-baseline leading before the next paragraph as well.
+            if paragraph_index + 1 < paragraph_count {
+                after += paragraph_size * (spacing - 1.0);
             }
             if let Some(marker) = marker.filter(|_| runs.iter().any(|r| !r.text.trim().is_empty()))
             {
-                runs.insert(
-                    0,
-                    lo_core::calc::CellTextRun {
-                        text: format!("{marker} "),
-                        style: base.clone(),
-                    },
-                );
+                let mut marker_style = base.clone();
+                marker_style.font_size_mpt =
+                    Some(scaled_font(marker_style.font_size_mpt.unwrap_or(18000)));
+                if hanging_indent < 0.0 {
+                    hanging_marker = Some(marker);
+                } else {
+                    runs.insert(
+                        0,
+                        lo_core::calc::CellTextRun {
+                            text: format!("{marker} "),
+                            style: marker_style,
+                        },
+                    );
+                }
             }
             let text = runs.iter().map(|r| r.text.as_str()).collect::<String>();
             let wrap_text = bodypr.and_then(|n| n.attr("wrap")) != Some("none")
@@ -1455,9 +1781,16 @@ impl Context<'_> {
             } else {
                 1e8
             };
-            let h = crate::pptx_text::height(&runs, text_width, spacing)
-                .max(base.font_size_mpt.unwrap_or(18000) as f32 / 1000.0 * scale);
+            let first_indent = if hanging_marker.is_some() {
+                0.0
+            } else {
+                hanging_indent
+            };
+            let h = crate::pptx_text::height_indented(&runs, text_width, spacing, first_indent)
+                .max(paragraph_size);
             let style = TextBoxStyle {
+                paragraph_markers: vec![hanging_marker],
+                paragraph_indents: vec![hanging_indent],
                 wrap_text,
                 runs,
                 line_spacing: spacing,
@@ -1475,16 +1808,169 @@ impl Context<'_> {
             };
             paragraphs.push((text, style, h, indent, before, after));
         }
+        if columns > 1
+            || generated_layout
+            || merged_body.child("normAutofit").is_some_and(|n| {
+                n.attr("fontScale").is_some() || n.attr("lnSpcReduction").is_some()
+            })
+        {
+            if columns > 1 {
+                if let Some(first) = paragraphs.first_mut() {
+                    first.4 = 0.0;
+                }
+            }
+            if merged_body.child("normAutofit").is_some() {
+                // Stored fontScale can be stale after a font substitution. Fit
+                // the measured lines into the requested column count as well.
+                let original = paragraphs.clone();
+                let fits = |paragraphs: &Vec<(String, TextBoxStyle, f32, f32, f32, f32)>| {
+                    let mut column = 0;
+                    let mut used = 0.0;
+                    // A trailing empty paragraph contributes to anchoring, but
+                    // must not force visible text into a smaller font size.
+                    let visible_end = paragraphs
+                        .iter()
+                        .rposition(|(text, ..)| !text.trim().is_empty())
+                        .map_or(0, |index| index + 1);
+                    for (_, style, _, indent, before, after) in &paragraphs[..visible_end] {
+                        used += before;
+                        let lines = crate::pptx_text::wrapped_runs(
+                            &style.runs,
+                            (width - indent).max(1.0),
+                            crate::pptx_text::first_line_indent(style),
+                        );
+                        for (index, (_, size)) in lines.iter().enumerate() {
+                            if used + *size > height && used > 0.0 {
+                                column += 1;
+                                used = 0.0;
+                            }
+                            if column >= columns || *size > height {
+                                return false;
+                            }
+                            used += size
+                                * if index + 1 == lines.len() {
+                                    1.0
+                                } else {
+                                    style.line_spacing
+                                };
+                        }
+                        used += after;
+                    }
+                    true
+                };
+                if !fits(&paragraphs) {
+                    let (mut low, mut high) = (0.01_f32, 1.0_f32);
+                    for _ in 0..12 {
+                        let factor = (low + high) / 2.0;
+                        paragraphs = original.clone();
+                        for (_, style, _, _, _, _) in &mut paragraphs {
+                            for run in &mut style.runs {
+                                run.style.font_size_mpt = Some(
+                                    (run.style.font_size_mpt.unwrap_or(18000) as f32 * factor)
+                                        .max(1.0) as u32,
+                                );
+                            }
+                        }
+                        if fits(&paragraphs) {
+                            low = factor;
+                        } else {
+                            high = factor;
+                        }
+                    }
+                    paragraphs = original;
+                    for (_, style, h, indent, _, _) in &mut paragraphs {
+                        style.font_size_pt *= low;
+                        for run in &mut style.runs {
+                            run.style.font_size_mpt = Some(
+                                (run.style.font_size_mpt.unwrap_or(18000) as f32 * low).max(1.0)
+                                    as u32,
+                            );
+                        }
+                        *h = crate::pptx_text::height_indented(
+                            &style.runs,
+                            (width - *indent).max(1.0),
+                            style.line_spacing,
+                            crate::pptx_text::first_line_indent(style),
+                        );
+                    }
+                }
+            }
+        }
         let total: f32 = paragraphs.iter().map(|(_, _, h, _, b, a)| h + b + a).sum();
         let anchor = bodypr.and_then(|n| n.attr("anchor"));
+        // Normal autofit anchors the scaled content, including trailing empty
+        // paragraphs. Keep the existing overflow handling for other modes.
+        let anchor_space = if round_autofit {
+            height - total
+        } else {
+            (height - total).max(0.0)
+        };
         let mut y = f.origin.y.as_pt()
             + top
             + match anchor {
-                Some("ctr") => (height - total).max(0.0) / 2.0,
-                Some("b") => (height - total).max(0.0),
+                Some("ctr") => anchor_space / 2.0,
+                Some("b") => anchor_space,
                 _ => 0.0,
             };
         for (text, style, h, indent, before, after) in paragraphs {
+            if columns > 1 {
+                // A paragraph can span columns. Splitting whole paragraphs would
+                // leave the first column overflowing for a single long paragraph.
+                let mut column =
+                    ((y - f.origin.y.as_pt() - top) / height).floor().max(0.0) as usize;
+                column = column.min(columns - 1);
+                let mut offset = (y - f.origin.y.as_pt() - top) - column as f32 * height;
+                offset += before;
+                let lines = crate::pptx_text::wrapped_runs(
+                    &style.runs,
+                    if style.wrap_text {
+                        (width - indent).max(1.0)
+                    } else {
+                        1e8
+                    },
+                    crate::pptx_text::first_line_indent(&style),
+                );
+                let line_count = lines.len();
+                for (line_index, (runs, line_height)) in lines.into_iter().enumerate() {
+                    if offset + line_height > height && offset > 0.0 && column + 1 < columns {
+                        column += 1;
+                        offset = 0.0;
+                    }
+                    let physical_column = if rtl_columns {
+                        columns - 1 - column
+                    } else {
+                        column
+                    };
+                    let mut line_style = style.clone();
+                    if line_index > 0 {
+                        line_style.paragraph_markers.clear();
+                        line_style.paragraph_indents.clear();
+                    }
+                    line_style.runs = runs;
+                    line_style.wrap_text = false;
+                    slide.elements.push(SlideElement::TextBox(TextBox {
+                        frame: rect(
+                            f.origin.x.as_pt()
+                                + left
+                                + physical_column as f32 * (width + column_gap)
+                                + indent,
+                            f.origin.y.as_pt() + top + offset,
+                            (width - indent).max(1.0),
+                            line_height + 0.5,
+                        ),
+                        text: line_style.runs.iter().map(|r| r.text.as_str()).collect(),
+                        style: line_style,
+                    }));
+                    offset += line_height
+                        * if line_index + 1 == line_count {
+                            1.0
+                        } else {
+                            style.line_spacing
+                        };
+                }
+                y = f.origin.y.as_pt() + top + column as f32 * height + offset + after;
+                continue;
+            }
             y += before;
             slide.elements.push(SlideElement::TextBox(TextBox {
                 frame: rect(
@@ -1521,6 +2007,19 @@ impl Context<'_> {
         }
         if let Some(v) = n.child("highlight").and_then(|n| self.theme.color(n)) {
             s.background = v;
+        }
+        if n.child("hlinkClick").is_some() {
+            if n.child("solidFill").is_none() {
+                s.foreground = self
+                    .theme
+                    .colors
+                    .get("hlink")
+                    .map(|c| format!("#{c}"))
+                    .unwrap_or_else(|| "#0000FF".into());
+            }
+            if n.attr("u").is_none() {
+                s.underline = true;
+            }
         }
     }
     fn table(&self, table: &XmlNode, slide: &mut Slide, f: Rect) {
@@ -1777,6 +2276,64 @@ mod tests {
                 .collect::<Vec<_>>(),
         )
         .unwrap()
+    }
+    #[test]
+    fn embedded_object_uses_preview_fallback_without_opening_payload() {
+        let xml = parse_xml_document(r#"<graphicData><AlternateContent><Choice Requires="v"><oleObj id="payload"><embed/></oleObj></Choice><Fallback><oleObj id="payload"><embed/><pic><blipFill><blip embed="preview"/></blipFill></pic></oleObj></Fallback></AlternateContent></graphicData>"#).unwrap();
+        let pic = ole_preview(&xml).unwrap();
+        assert_eq!(
+            pic.child("blipFill")
+                .unwrap()
+                .child("blip")
+                .unwrap()
+                .attr("embed"),
+            Some("preview")
+        );
+        let no_preview =
+            parse_xml_document("<graphicData><oleObj><embed/></oleObj></graphicData>").unwrap();
+        assert!(ole_preview(&no_preview).is_none());
+    }
+    #[test]
+    fn legacy_ole_uses_vml_preview_without_reading_embedded_object() {
+        let bytes = package(&[
+            (
+                "ppt/presentation.xml",
+                r#"<presentation><sldIdLst><sldId id="slide"/></sldIdLst></presentation>"#,
+            ),
+            (
+                "ppt/_rels/presentation.xml.rels",
+                r#"<Relationships><Relationship Id="slide" Target="slides/slide.xml"/></Relationships>"#,
+            ),
+            (
+                "ppt/slides/slide.xml",
+                r#"<sld><cSld><spTree><graphicFrame><xfrm><off x="127000" y="254000"/><ext cx="1270000" cy="635000"/></xfrm><graphic><graphicData><oleObj spid="object1" id="missing-payload"/></graphicData></graphic></graphicFrame></spTree></cSld></sld>"#,
+            ),
+            (
+                "ppt/slides/_rels/slide.xml.rels",
+                r#"<Relationships><Relationship Id="vml" Type="legacyDrawing" Target="../drawings/preview.vml"/></Relationships>"#,
+            ),
+            (
+                "ppt/drawings/preview.vml",
+                r#"<xml><shape id="unrelated"><imagedata relid="missing"/></shape><shape spid="object1"><imagedata relid="image"/></shape></xml>"#,
+            ),
+            (
+                "ppt/drawings/_rels/preview.vml.rels",
+                r#"<Relationships><Relationship Id="image" Type="image" Target="../media/preview.png"/></Relationships>"#,
+            ),
+            ("ppt/media/preview.png", "stored-preview"),
+        ]);
+        let deck = load("OLE".into(), &bytes).unwrap();
+        let image = deck.slides[0]
+            .elements
+            .iter()
+            .find_map(|e| match e {
+                SlideElement::Image(i) => Some(i),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(image.data, b"stored-preview");
+        assert_eq!(image.frame.origin.x.as_pt(), 10.0);
+        assert_eq!(image.frame.size.width.as_pt(), 100.0);
     }
     #[test]
     fn relationship_order_dimensions_and_fields() {
@@ -2107,6 +2664,189 @@ mod tests {
             })
             .collect();
         assert_eq!(colors, vec!["#FFFFFF", "#000000"]);
+    }
+    #[test]
+    fn local_theme_fill_beats_inherited_no_fill_and_numbering_restarts() {
+        let zip = ZipArchive::new(&package(&[("a", "b")])).unwrap();
+        let theme = Theme::new(None, None);
+        let mut budget = 100;
+        let root=parse_xml_document(r#"<theme><themeElements><fmtScheme><fillStyleLst><solidFill><srgbClr val="0000FF"/></solidFill></fillStyleLst></fmtScheme></themeElements></theme>"#).unwrap();
+        let ctx = Context {
+            zip: &zip,
+            theme: &theme,
+            theme_root: Some(&root),
+            master: None,
+            layout: None,
+            default_text: None,
+            table_styles: None,
+            background: None,
+            background_theme: None,
+            slide_number: 1,
+            budget: &mut budget,
+            diagram_depth: 0,
+        };
+        let parent = parse_xml_document(r#"<sp><spPr><noFill/></spPr></sp>"#).unwrap();
+        let child=parse_xml_document(r#"<sp><style><fillRef idx="1"/></style><txBody><bodyPr/><p><r><t>Heading</t></r></p><p><pPr><buAutoNum type="arabicPeriod"/></pPr><r><t>One</t></r></p><p><pPr><buAutoNum type="arabicPeriod"/></pPr><r><t>Two</t></r></p><p><pPr><buNone/></pPr><r><t>Break</t></r></p><p><pPr><buAutoNum type="arabicPeriod"/></pPr><r><t>Restart</t></r></p></txBody></sp>"#).unwrap();
+        let mut slide = Slide::default();
+        ctx.shape(&[&child, &parent], &mut slide, Transform::identity());
+        assert!(slide
+            .elements
+            .iter()
+            .any(|e| matches!(e,SlideElement::Shape(s) if s.style.fill=="#0000FF")));
+        let texts: Vec<_> = slide
+            .elements
+            .iter()
+            .filter_map(|e| match e {
+                SlideElement::TextBox(t) => Some(t.text.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            texts,
+            vec!["Heading", "1. One", "2. Two", "Break", "1. Restart"]
+        );
+    }
+    #[test]
+    fn autofit_reduction_applies_only_to_percentage_line_spacing() {
+        let zip = ZipArchive::new(&package(&[("a", "b")])).unwrap();
+        let theme = Theme::new(None, None);
+        let mut budget = 100;
+        let ctx = Context {
+            zip: &zip,
+            theme: &theme,
+            theme_root: None,
+            master: None,
+            layout: None,
+            default_text: None,
+            table_styles: None,
+            background: None,
+            background_theme: None,
+            slide_number: 1,
+            budget: &mut budget,
+            diagram_depth: 0,
+        };
+        for (properties, multiplier, points) in [
+            ("", 1.0, None),
+            (r#"<lnSpc><spcPct val="200000"/></lnSpc>"#, 1.8, None),
+            (r#"<lnSpc><spcPts val="2000"/></lnSpc>"#, 1.0, Some(20.0)),
+        ] {
+            let shape=parse_xml_document(&format!(r#"<sp><txBody><bodyPr><normAutofit fontScale="100000" lnSpcReduction="20000"/></bodyPr><p><pPr>{properties}</pPr><r><rPr sz="2000"/><t>One</t></r><br/><r><rPr sz="2000"/><t>Two</t></r></p></txBody></sp>"#)).unwrap();
+            let mut slide = Slide::default();
+            ctx.text(
+                shape.child("txBody").unwrap(),
+                &[&shape],
+                &mut slide,
+                rect(0.0, 0.0, 400.0, 400.0),
+                0.0,
+            );
+            let text = slide
+                .elements
+                .iter()
+                .find_map(|e| match e {
+                    SlideElement::TextBox(t) => Some(t),
+                    _ => None,
+                })
+                .unwrap();
+            let expected = points.unwrap_or(20.0 * 1.2 * multiplier) / 20.0;
+            assert!((text.style.line_spacing - expected).abs() < 0.001);
+        }
+    }
+    #[test]
+    fn stored_autofit_rounds_sizes_and_preserves_centered_overflow() {
+        let zip = ZipArchive::new(&package(&[("a", "b")])).unwrap();
+        let theme = Theme::new(None, None);
+        let mut budget = 100;
+        let ctx = Context {
+            zip: &zip,
+            theme: &theme,
+            theme_root: None,
+            master: None,
+            layout: None,
+            default_text: None,
+            table_styles: None,
+            background: None,
+            background_theme: None,
+            slide_number: 1,
+            budget: &mut budget,
+            diagram_depth: 0,
+        };
+        let shape = parse_xml_document(r#"<sp><txBody><bodyPr anchor="ctr" tIns="0" bIns="0"><normAutofit fontScale="62500"/></bodyPr><p><r><rPr sz="4400"/><t>One</t></r><br><rPr sz="4400"/></br><r><rPr sz="4400"/><t>Two</t></r><br><rPr sz="4400"/></br><r><rPr sz="4400"/><t>Three</t></r></p><p><endParaRPr sz="4400"/></p></txBody></sp>"#).unwrap();
+        let mut slide = Slide::default();
+        ctx.text(
+            shape.child("txBody").unwrap(),
+            &[&shape],
+            &mut slide,
+            rect(0.0, 50.0, 400.0, 110.0),
+            0.0,
+        );
+        let text = slide
+            .elements
+            .iter()
+            .find_map(|element| match element {
+                SlideElement::TextBox(text) => Some(text),
+                _ => None,
+            })
+            .unwrap();
+        assert!(text
+            .style
+            .runs
+            .iter()
+            .all(|run| run.style.font_size_mpt == Some(28000)));
+        assert!(text.frame.origin.y.as_pt() < 50.0);
+        assert_eq!(slide.elements.len(), 2);
+    }
+    #[test]
+    fn columns_flow_rich_text_and_fit_without_discarding_words() {
+        let zip = ZipArchive::new(&package(&[("a", "b")])).unwrap();
+        let theme = Theme::new(None, None);
+        let mut budget = 100;
+        let ctx = Context {
+            zip: &zip,
+            theme: &theme,
+            theme_root: None,
+            master: None,
+            layout: None,
+            default_text: None,
+            table_styles: None,
+            background: None,
+            background_theme: None,
+            slide_number: 1,
+            budget: &mut budget,
+            diagram_depth: 0,
+        };
+        for rtl in [false, true] {
+            let text =
+                "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu ".repeat(4);
+            let shape = parse_xml_document(&format!(r#"<sp><txBody><bodyPr numCol="2" spcCol="127000" rtlCol="{}"><normAutofit/></bodyPr><p><r><rPr sz="1800"/><t>{}</t></r></p></txBody></sp>"#, u8::from(rtl), text)).unwrap();
+            let mut slide = Slide::default();
+            ctx.text(
+                shape.child("txBody").unwrap(),
+                &[&shape],
+                &mut slide,
+                rect(0.0, 0.0, 200.0, 120.0),
+                0.0,
+            );
+            let boxes: Vec<_> = slide
+                .elements
+                .iter()
+                .filter_map(|e| match e {
+                    SlideElement::TextBox(t) => Some(t),
+                    _ => None,
+                })
+                .collect();
+            let actual = boxes.iter().map(|t| t.text.as_str()).collect::<String>();
+            assert_eq!(
+                actual.split_whitespace().collect::<Vec<_>>(),
+                text.split_whitespace().collect::<Vec<_>>()
+            );
+            assert!(boxes.len() > 2);
+            assert!(boxes
+                .iter()
+                .all(|t| t.frame.origin.y.as_pt() + t.frame.size.height.as_pt() <= 117.0));
+            let first = boxes.first().unwrap().frame.origin.x.as_pt();
+            let last = boxes.last().unwrap().frame.origin.x.as_pt();
+            assert!(if rtl { first > last } else { first < last });
+        }
     }
     #[test]
     fn local_gradient_clips_to_shape_and_suppresses_theme_solid_fill() {
