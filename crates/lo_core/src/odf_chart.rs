@@ -38,6 +38,17 @@ struct OoxmlLayout {
     gap_ratio: f32,
     title_bold: bool,
     stacked: bool,
+    pie_start: Option<f32>,
+    pie_vary_colors: bool,
+    category_title: (String, f32, bool),
+    value_title: (String, f32, bool),
+    gradients: std::collections::BTreeMap<usize, LinearGradient>,
+}
+#[derive(Clone, Debug, PartialEq)]
+struct LinearGradient {
+    angle: f32,
+    scaled: bool,
+    stops: Vec<(f32, String)>,
 }
 fn text_properties(node: &XmlNode) -> Option<&XmlNode> {
     if matches!(node.local_name(), "defRPr" | "rPr") {
@@ -357,7 +368,7 @@ impl OdfChart {
         }
         let data = kinds[0];
         let kind = data.local_name();
-        if !matches!(kind, "barChart" | "lineChart" | "scatterChart") {
+        if !matches!(kind, "barChart" | "lineChart" | "scatterChart" | "pieChart") {
             return None;
         }
         let grouping = data
@@ -382,6 +393,7 @@ impl OdfChart {
         let mut value_labels = Vec::new();
         let mut point_colors = std::collections::BTreeMap::new();
         let mut data_formats = Vec::new();
+        let mut gradients = std::collections::BTreeMap::new();
         let palette = [
             "#4472C4", "#ED7D31", "#A5A5A5", "#FFC000", "#5B9BD5", "#70AD47",
         ];
@@ -414,7 +426,13 @@ impl OdfChart {
                         .collect(),
                 );
             }
-            let paint = chart_paint(ser.child("spPr"), theme)
+            if let Some(gradient) = linear_gradient(ser.child("spPr"), theme) {
+                gradients.insert(i, gradient);
+            }
+            let paint = gradients
+                .get(&i)
+                .map(|g| g.stops[0].1.clone())
+                .or_else(|| chart_paint(ser.child("spPr"), theme))
                 .unwrap_or_else(|| palette[i % palette.len()].into());
             for point in ser.children_named("dPt").take(10000) {
                 if let (Some(idx), Some(paint)) = (
@@ -476,6 +494,24 @@ impl OdfChart {
         if series.is_empty() {
             return None;
         }
+        // Basic 2-D pies have one series; exploded/negative slices require
+        // separate placement/semantics and must not be silently approximated.
+        if kind == "pieChart"
+            && (series.len() != 1
+                || series[0].1.iter().flatten().any(|v| *v < 0.0)
+                || data.children_named("ser").any(|ser| {
+                    ser.child("explosion")
+                        .and_then(|n| n.attr("val"))
+                        .is_some_and(|v| v != "0")
+                        || ser.children_named("dPt").any(|p| {
+                            p.child("explosion")
+                                .and_then(|n| n.attr("val"))
+                                .is_some_and(|v| v != "0")
+                        })
+                }))
+        {
+            return None;
+        }
         if categories.is_empty() && kind != "scatterChart" {
             categories = (1..=series.iter().map(|s| s.1.len()).max().unwrap_or(0))
                 .map(|i| i.to_string())
@@ -511,10 +547,30 @@ impl OdfChart {
         } else {
             plot.child("catAx")
         };
+        let axis_title = |axis: Option<&XmlNode>| {
+            let title = axis.and_then(|a| a.child("title"));
+            (
+                title.map(text).unwrap_or_default(),
+                text_size(title, 10.0),
+                title.and_then(text_properties).and_then(|n| n.attr("b")) == Some("1"),
+            )
+        };
         Some(Self {
             frame,
             ooxml_layout: Some(OoxmlLayout {
                 stacked,
+                gradients,
+                pie_vary_colors: data.child("varyColors").and_then(|n| n.attr("val")) == Some("1"),
+                pie_start: (kind == "pieChart").then(|| {
+                    data.child("firstSliceAng")
+                        .and_then(|n| n.attr("val"))
+                        .and_then(|v| v.parse::<f32>().ok())
+                        .filter(|v| v.is_finite())
+                        .unwrap_or(0.0)
+                        .rem_euclid(360.0)
+                }),
+                category_title: axis_title(category_axis),
+                value_title: axis_title(axis),
                 legend_side: chart
                     .child("legend")
                     .and_then(|n| n.child("legendPos"))
@@ -576,7 +632,10 @@ impl OdfChart {
             horizontal: data.child("barDir").and_then(|n| n.attr("val")) == Some("bar"),
             line: kind != "barChart",
             legend: chart.child("legend").is_some(),
-            font_size: text_size(axis.and_then(|n| n.child("txPr")), 10.0),
+            font_size: text_size(
+                axis.and_then(|n| n.child("txPr")),
+                text_size(chart.child("legend").and_then(|n| n.child("txPr")), 10.0),
+            ),
             title_size: text_size(chart.child("title"), 14.0),
             title_position: [0.3, 0.02],
             legend_position,
@@ -597,6 +656,122 @@ impl OdfChart {
             .sum::<f64>();
         (base, base + value)
     }
+    fn bar_fill(
+        &self,
+        page: &mut PdfPage,
+        series: usize,
+        point: usize,
+        rect: [f32; 4],
+        paint: (f32, f32, f32),
+    ) {
+        if !self.point_colors.contains_key(&(series, point)) {
+            if let Some(gradient) = self
+                .ooxml_layout
+                .as_ref()
+                .and_then(|l| l.gradients.get(&series))
+            {
+                gradient.render(page, rect);
+                return;
+            }
+        }
+        page.rect_fill_rgb(
+            rect[0], rect[1], rect[2], rect[3], paint.0, paint.1, paint.2,
+        );
+    }
+    fn render_pie(
+        &self,
+        page: &mut PdfPage,
+        rect: [f32; 4],
+        start: f32,
+        legend: [f32; 2],
+        offsets: &[[f32; 2]],
+    ) {
+        let radius = rect[2].min(rect[3]) / 2.0;
+        let cx = rect[0] + rect[2] / 2.0;
+        let cy = rect[1] + rect[3] / 2.0;
+        let data = &self.series[0].1;
+        let palette = [
+            "#4472C4", "#ED7D31", "#A5A5A5", "#FFC000", "#5B9BD5", "#70AD47",
+        ];
+        let paint = |i| {
+            color(
+                self.point_colors
+                    .get(&(0, i))
+                    .map(String::as_str)
+                    .unwrap_or(
+                        if self
+                            .ooxml_layout
+                            .as_ref()
+                            .is_some_and(|l| l.pie_vary_colors)
+                        {
+                            palette[i % palette.len()]
+                        } else {
+                            &self.series[0].2
+                        },
+                    ),
+            )
+        };
+        for (i, angle, sweep) in pie_slices(data, start) {
+            let (r, g, b) = paint(i);
+            page.raw(&format!(
+                "q {r} {g} {b} rg {cx} {cy} m {} {} l",
+                cx + radius * angle.cos(),
+                cy + radius * angle.sin()
+            ));
+            let segments = (sweep.abs() / std::f32::consts::FRAC_PI_2).ceil().max(1.0) as usize;
+            let step = sweep / segments as f32;
+            for j in 0..segments {
+                let a = angle + j as f32 * step;
+                let z = a + step;
+                let k = 4.0 / 3.0 * (step / 4.0).tan();
+                page.raw(&format!(
+                    "{} {} {} {} {} {} c",
+                    cx + radius * (a.cos() - k * a.sin()),
+                    cy + radius * (a.sin() + k * a.cos()),
+                    cx + radius * (z.cos() + k * z.sin()),
+                    cy + radius * (z.sin() - k * z.cos()),
+                    cx + radius * z.cos(),
+                    cy + radius * z.sin()
+                ));
+            }
+            page.raw("h f Q");
+            if self.value_labels.first() == Some(&true) {
+                let label = crate::xlsx_format::number(
+                    data[i].unwrap(),
+                    self.data_formats.first().map(String::as_str).unwrap_or(""),
+                    false,
+                );
+                let mid = angle + sweep / 2.0;
+                let width = crate::font_metrics::measure_helvetica(&label, self.font_size, false);
+                page.text(
+                    cx + radius * 0.65 * mid.cos() - width / 2.0,
+                    cy + radius * 0.65 * mid.sin(),
+                    self.font_size,
+                    PdfFont::Helvetica,
+                    &label,
+                );
+            }
+        }
+        if self.legend {
+            for (i, name) in self.categories.iter().enumerate() {
+                let offset = offsets
+                    .get(i)
+                    .copied()
+                    .unwrap_or([0.0, i as f32 * self.font_size * 1.4]);
+                let lx = legend[0] + offset[0];
+                let ly = legend[1] - self.font_size - offset[1];
+                let (r, g, b) = paint(i);
+                page.rect_fill_rgb(lx, ly, self.font_size * 0.6, self.font_size * 0.6, r, g, b);
+                page.text(
+                    lx + self.font_size * 0.8,
+                    ly,
+                    self.font_size,
+                    PdfFont::Helvetica,
+                    name,
+                );
+            }
+        }
+    }
     pub fn render(&self, page: &mut PdfPage, page_height: f32, dx: f32, dy: f32) {
         let x = self.frame.origin.x.as_pt() + dx;
         let y = self.frame.origin.y.as_pt() + dy;
@@ -605,6 +780,12 @@ impl OdfChart {
         if !w.is_finite() || !h.is_finite() || w <= 0.0 || h <= 0.0 {
             return;
         }
+        let pie = self.ooxml_layout.as_ref().and_then(|l| l.pie_start);
+        let legend_names: Vec<&str> = if pie.is_some() {
+            self.categories.iter().map(String::as_str).collect()
+        } else {
+            self.series.iter().map(|s| s.0.as_str()).collect()
+        };
         let mut plot = self.plot;
         let mut legend_position = self.legend_position;
         let mut legend_offsets = Vec::new();
@@ -625,18 +806,16 @@ impl OdfChart {
                 .iter()
                 .map(|s| measure(s))
                 .fold(0.0_f32, f32::max);
-            let legend_width = self
-                .series
+            let legend_width = legend_names
                 .iter()
-                .map(|s| measure(&s.0) + self.font_size * 2.0)
+                .map(|s| measure(s) + self.font_size * 2.0)
                 .fold(0.0_f32, f32::max);
             let horizontal_legend = matches!(layout.legend_side.as_str(), "b" | "t");
             let mut legend_height = self.font_size * 1.4;
             if horizontal_legend {
-                let widths: Vec<_> = self
-                    .series
+                let widths: Vec<_> = legend_names
                     .iter()
-                    .map(|s| measure(&s.0) + self.font_size * 2.0)
+                    .map(|s| measure(s) + self.font_size * 2.0)
                     .collect();
                 legend_offsets = legend_rows(&widths, (w - 16.0).max(1.0), self.font_size * 1.4);
                 legend_height += legend_offsets.last().map_or(0.0, |p| p[1]);
@@ -646,13 +825,31 @@ impl OdfChart {
             } else {
                 max_label
             }) + 10.0;
+            if pie.is_some() {
+                left_pad = 10.0;
+            }
+            let (x_title, y_title) = if self.horizontal {
+                (&layout.value_title, &layout.category_title)
+            } else {
+                (&layout.category_title, &layout.value_title)
+            };
+            if !y_title.0.is_empty() {
+                left_pad += y_title.1 + 12.0;
+            }
             let mut right_pad = 10.0;
             let mut top_pad = if self.title.is_empty() {
                 12.0
             } else {
                 self.title_size + 20.0
             };
-            let mut bottom_pad = self.font_size * 2.0 + 10.0;
+            let mut bottom_pad = if pie.is_some() {
+                10.0
+            } else {
+                self.font_size * 2.0 + 10.0
+            };
+            if !x_title.0.is_empty() {
+                bottom_pad += x_title.1 + 8.0;
+            }
             if self.legend {
                 match layout.legend_side.as_str() {
                     "b" => bottom_pad += legend_height + 8.0,
@@ -710,6 +907,51 @@ impl OdfChart {
                 },
                 &self.title,
             );
+        }
+        if let Some(start) = pie {
+            self.render_pie(
+                page,
+                [left, bottom, pw, ph],
+                start,
+                [
+                    x + legend_position[0] * w,
+                    page_height - y - legend_position[1] * h,
+                ],
+                &legend_offsets,
+            );
+            return;
+        }
+        if let Some(layout) = &self.ooxml_layout {
+            let (xt, yt) = if self.horizontal {
+                (&layout.value_title, &layout.category_title)
+            } else {
+                (&layout.category_title, &layout.value_title)
+            };
+            let font = |bold| {
+                if bold {
+                    PdfFont::HelveticaBold
+                } else {
+                    PdfFont::Helvetica
+                }
+            };
+            if !xt.0.is_empty() {
+                let width = crate::font_metrics::measure_helvetica(&xt.0, xt.1, xt.2);
+                page.text(
+                    left + (pw - width) / 2.0,
+                    bottom - self.font_size * 2.0 - xt.1 - 3.0,
+                    xt.1,
+                    font(xt.2),
+                    &xt.0,
+                );
+            }
+            if !yt.0.is_empty() {
+                let width = crate::font_metrics::measure_helvetica(&yt.0, yt.1, yt.2);
+                let tx = x + yt.1 + 4.0;
+                let ty = bottom + (ph - width) / 2.0;
+                page.raw(&format!("q 0 1 -1 0 {tx} {ty} cm"));
+                page.text(0.0, 0.0, yt.1, font(yt.2), &yt.0);
+                page.raw("Q");
+            }
         }
         if self.ooxml_layout.is_some() {
             page.line_rgb(left, bottom, left + pw, bottom, 0.55, 0.55, 0.55);
@@ -946,7 +1188,13 @@ impl OdfChart {
                         bottom + band * (i as f32 + (1.0 - bar_fraction) / 2.0) + group_index * bh;
                     let start = left + pw * fraction(base_value);
                     let end = left + pw * fraction(end_value);
-                    page.rect_fill_rgb(start.min(end), cy, (end - start).abs(), bh, r, g, b);
+                    self.bar_fill(
+                        page,
+                        si,
+                        i,
+                        [start.min(end), cy, (end - start).abs(), bh],
+                        (r, g, b),
+                    );
                 } else {
                     let band = pw / count as f32;
                     let bw = band * bar_fraction / groups;
@@ -954,7 +1202,13 @@ impl OdfChart {
                         left + band * (i as f32 + (1.0 - bar_fraction) / 2.0) + group_index * bw;
                     let start = bottom + ph * fraction(base_value);
                     let end = bottom + ph * fraction(end_value);
-                    page.rect_fill_rgb(cx, start.min(end), bw, (end - start).abs(), r, g, b);
+                    self.bar_fill(
+                        page,
+                        si,
+                        i,
+                        [cx, start.min(end), bw, (end - start).abs()],
+                        (r, g, b),
+                    );
                 }
             }
             page.raw("Q");
@@ -1087,6 +1341,40 @@ fn plot_axis_font(chart: &XmlNode, styles: &OdfStyles) -> Option<f32> {
 mod tests {
     use super::*;
     #[test]
+    fn pie_slices_preserve_proportions_start_angle_and_missing_indexes() {
+        let slices = pie_slices(&[Some(1.0), None, Some(0.0), Some(3.0)], 90.0);
+        assert_eq!(slices.len(), 2);
+        assert_eq!(slices[0].0, 0);
+        assert_eq!(slices[1].0, 3);
+        assert!(slices[0].1.abs() < 1e-6);
+        assert!((slices[0].2 + std::f32::consts::FRAC_PI_2).abs() < 1e-6);
+        assert!((slices.iter().map(|s| s.2).sum::<f32>() + std::f32::consts::TAU).abs() < 1e-6);
+        assert!(pie_slices(&[None, Some(0.0)], 0.0).is_empty());
+    }
+    #[test]
+    fn linear_gradient_uses_fill_stops_instead_of_black_outline() {
+        let root = crate::parse_xml_document(r#"<spPr><gradFill><gsLst><gs pos="0"><srgbClr val="FF0000"/></gs><gs pos="100000"><srgbClr val="0000FF"/></gs></gsLst><lin ang="5400000" scaled="1"/></gradFill><ln><solidFill><srgbClr val="000000"/></solidFill></ln></spPr>"#).unwrap();
+        let g = linear_gradient(Some(&root), None).unwrap();
+        assert_eq!(g.angle, 90.0);
+        assert!(g.scaled);
+        assert_eq!(g.sample(0.0), (1.0, 0.0, 0.0));
+        assert_eq!(g.sample(0.5), (0.5, 0.0, 0.5));
+        assert_eq!(g.sample(1.0), (0.0, 0.0, 1.0));
+    }
+    #[test]
+    fn pie_import_retains_category_legend_and_rejects_exploded_slices() {
+        let xml = r#"<chartSpace><chart><plotArea><pieChart><firstSliceAng val="90"/><varyColors val="1"/><ser><cat><strLit><pt idx="0"><v>First</v></pt><pt idx="1"><v>Second</v></pt></strLit></cat><val><numLit><pt idx="0"><v>1</v></pt><pt idx="1"><v>3</v></pt></numLit></val></ser></pieChart></plotArea><legend><txPr><p><pPr><defRPr sz="800"/></pPr></p></txPr></legend></chart></chartSpace>"#;
+        let root = crate::parse_xml_document(xml).unwrap();
+        let c = OdfChart::from_ooxml(&root, Rect::default()).unwrap();
+        assert_eq!(c.categories, ["First", "Second"]);
+        assert_eq!(c.ooxml_layout.as_ref().unwrap().pie_start, Some(90.0));
+        assert_eq!(c.font_size, 8.0);
+        let exploded =
+            crate::parse_xml_document(&xml.replace("<ser>", r#"<ser><explosion val="10"/>"#))
+                .unwrap();
+        assert!(OdfChart::from_ooxml(&exploded, Rect::default()).is_none());
+    }
+    #[test]
     fn automatic_chart_bounds_leave_space_at_exact_ticks() {
         assert_eq!(chart_bounds(0.0, 3.0, 0.5), (0.0, 3.5));
         assert_eq!(chart_bounds(-3.0, 2.0, 0.5), (-3.5, 2.5));
@@ -1176,7 +1464,9 @@ fn chart_paint(node: Option<&XmlNode>, theme: Option<&XmlNode>) -> Option<String
     let fill = node?
         .child("solidFill")
         .or_else(|| node?.child("ln")?.child("solidFill"))?;
-    let n = fill.children.first()?;
+    chart_color(fill.children.first()?, theme)
+}
+fn chart_color(n: &XmlNode, theme: Option<&XmlNode>) -> Option<String> {
     let fallback = [
         ("accent1", "4472C4"),
         ("accent2", "ED7D31"),
@@ -1219,6 +1509,115 @@ fn chart_paint(node: Option<&XmlNode>, theme: Option<&XmlNode>) -> Option<String
             .round()) as u8
     };
     Some(format!("#{:02X}{:02X}{:02X}", c(16), c(8), c(0)))
+}
+
+fn pie_slices(data: &[Option<f64>], start_degrees: f32) -> Vec<(usize, f32, f32)> {
+    let sum: f64 = data.iter().flatten().filter(|v| **v > 0.0).sum();
+    if sum <= 0.0 || !sum.is_finite() {
+        return Vec::new();
+    }
+    let mut angle = std::f32::consts::FRAC_PI_2 - start_degrees.to_radians();
+    let mut slices = Vec::new();
+    for (i, v) in data.iter().enumerate() {
+        if let Some(v) = v.filter(|v| *v > 0.0) {
+            let sweep = -std::f32::consts::TAU * (v / sum) as f32;
+            slices.push((i, angle, sweep));
+            angle += sweep;
+        }
+    }
+    slices
+}
+fn linear_gradient(node: Option<&XmlNode>, theme: Option<&XmlNode>) -> Option<LinearGradient> {
+    let gradient = node?.child("gradFill")?;
+    let line = gradient.child("lin")?;
+    let angle = line.attr("ang").unwrap_or("0").parse::<f32>().ok()? / 60000.0;
+    if !angle.is_finite() {
+        return None;
+    }
+    let mut stops = Vec::new();
+    for stop in gradient.child("gsLst")?.children_named("gs").take(16) {
+        let position = stop.attr("pos")?.parse::<f32>().ok()? / 100000.0;
+        if !position.is_finite() {
+            return None;
+        }
+        stops.push((
+            position.clamp(0.0, 1.0),
+            chart_color(stop.children.first()?, theme)?,
+        ));
+    }
+    if stops.len() < 2 {
+        return None;
+    }
+    stops.sort_by(|a, b| a.0.total_cmp(&b.0));
+    Some(LinearGradient {
+        angle: angle.rem_euclid(360.0),
+        scaled: line.attr("scaled") == Some("1"),
+        stops,
+    })
+}
+impl LinearGradient {
+    fn sample(&self, t: f32) -> (f32, f32, f32) {
+        if t <= self.stops[0].0 {
+            return color(&self.stops[0].1);
+        }
+        for pair in self.stops.windows(2) {
+            if t <= pair[1].0 {
+                let a = color(&pair[0].1);
+                let b = color(&pair[1].1);
+                let f =
+                    ((t - pair[0].0) / (pair[1].0 - pair[0].0).max(f32::EPSILON)).clamp(0.0, 1.0);
+                return (
+                    a.0 + (b.0 - a.0) * f,
+                    a.1 + (b.1 - a.1) * f,
+                    a.2 + (b.2 - a.2) * f,
+                );
+            }
+        }
+        color(&self.stops.last().unwrap().1)
+    }
+    fn render(&self, page: &mut PdfPage, rect: [f32; 4]) {
+        let [x, y, w, h] = rect;
+        if w <= 0.0 || h <= 0.0 {
+            return;
+        }
+        page.raw(&format!("q {x} {y} {w} {h} re W n"));
+        let (width, height) = if self.scaled {
+            page.raw(&format!("{w} 0 0 {h} {x} {y} cm"));
+            (1.0, 1.0)
+        } else {
+            page.raw(&format!("1 0 0 1 {x} {y} cm"));
+            (w, h)
+        };
+        let angle = -self.angle.to_radians();
+        let (dy, dx) = angle.sin_cos();
+        let projections = [0.0, width * dx, height * dy, width * dx + height * dy];
+        let lo = projections.iter().copied().fold(f32::INFINITY, f32::min);
+        let hi = projections
+            .iter()
+            .copied()
+            .fold(f32::NEG_INFINITY, f32::max);
+        let extent = width + height;
+        // Fixed subdivision bounds PDF growth independently of gradient resolution.
+        for i in 0..64 {
+            let a = lo + (hi - lo) * i as f32 / 64.0;
+            let b = lo + (hi - lo) * (i + 1) as f32 / 64.0;
+            let (r, g, blue) = self.sample((i as f32 + 0.5) / 64.0);
+            let points = [(a, -extent), (b, -extent), (b, extent), (a, extent)]
+                .map(|(u, v)| (u * dx - v * dy, u * dy + v * dx));
+            page.raw(&format!(
+                "{r} {g} {blue} rg {} {} m {} {} l {} {} l {} {} l h f",
+                points[0].0,
+                points[0].1,
+                points[1].0,
+                points[1].1,
+                points[2].0,
+                points[2].1,
+                points[3].0,
+                points[3].1
+            ));
+        }
+        page.raw("Q");
+    }
 }
 
 fn scatter_axis(min: f64, max: f64, explicit: [Option<f64>; 3]) -> (f64, f64, f64) {

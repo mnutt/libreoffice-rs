@@ -131,7 +131,7 @@ def sandbox(source, work, bundle, executable=None):
                   '--nodefault', '--norestore', '--convert-to', 'pdf', '--outdir', '/work', '/input.xlsx']
 
 
-def raster_color_counts(pdf):
+def raster_color_counts(pdf, region=None):
     """Small deterministic semantic probes, independent of font antialiasing."""
     data = subprocess.check_output(['pdftoppm', '-f', '1', '-singlefile', '-scale-to', '600', str(pdf)], timeout=30)
     match = re.match(rb'P6\s+(\d+)\s+(\d+)\s+255\s', data)
@@ -140,7 +140,14 @@ def raster_color_counts(pdf):
     pixels = data[match.end():]
     if len(pixels) != int(match[1]) * int(match[2]) * 3:
         raise ValueError('Unexpected PPM dimensions')
-    colors = dict(red=0, blue=0, orange=0, green=0, rose=0)
+    width, height = int(match[1]), int(match[2])
+    if region is not None:
+        if len(region) != 4 or not all(isinstance(v, (int, float)) and 0 <= v <= 1 for v in region) or region[0] >= region[2] or region[1] >= region[3]:
+            raise ValueError('Invalid normalized raster region')
+        x0,y0,x1,y1 = region
+        pixels = b''.join(pixels[(y*width+int(x0*width))*3:(y*width+int(x1*width))*3]
+                          for y in range(int(y0*height), int(y1*height)))
+    colors = dict(red=0, blue=0, orange=0, green=0, rose=0, dark=0)
     for i in range(0, len(pixels), 3):
         r,g,b = pixels[i:i+3]
         colors['red'] += r > 180 and g < 100 and b < 100
@@ -148,6 +155,7 @@ def raster_color_counts(pdf):
         colors['orange'] += r > 180 and 80 < g < 180 and b < 100
         colors['green'] += g > 140 and r < 140 and b < 160
         colors['rose'] += r > 200 and g < 150 and b < 160
+        colors['dark'] += max(r,g,b) < 60
     return colors
 
 def inspect_pdf(pdf, previews):
@@ -199,6 +207,17 @@ def check_expectations(stage, text, expected):
     for color, maximum in expected.get('max_colors', {}).items():
         if stage['pdf'].get('colors', {}).get(color, 0) > maximum:
             failures.append(f'unexpected visible {color} pixels')
+    for i, region in enumerate(expected.get('regions', [])):
+        actual = stage['pdf'].get('regions', [])
+        if i >= len(actual):
+            failures.append(f'missing raster region {i}')
+            continue
+        for color, minimum in region.get('min_colors', {}).items():
+            if actual[i].get(color, 0) < minimum:
+                failures.append(f'region {i}: missing visible {color} pixels')
+        for color, maximum in region.get('max_colors', {}).items():
+            if actual[i].get(color, 0) > maximum:
+                failures.append(f'region {i}: unexpected visible {color} pixels')
     for font in expected.get('fonts', []):
         if not any(name.endswith(font) for name in stage['pdf'].get('font_names', [])):
             failures.append(f'missing font variant: {font}')
@@ -310,6 +329,8 @@ def evaluate(args, manifest):
                     expected = expectations.get(fixture['id'], {})
                     if expected.get('min_colors') or expected.get('max_colors'):
                         stage['pdf']['colors'] = raster_color_counts(pdf)
+                    if expected.get('regions'):
+                        stage['pdf']['regions'] = [raster_color_counts(pdf, r['box']) for r in expected['regions']]
                     if expected.get('fonts'):
                         font_listing = subprocess.check_output(['pdffonts', str(pdf)], text=True, timeout=30)
                         stage['pdf']['font_names'] = [line.split()[0] for line in font_listing.splitlines()[2:] if line.strip()]

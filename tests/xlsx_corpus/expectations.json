@@ -137,12 +137,38 @@
       "Camping Equipment",
       "Personal Accessories",
       "2004",
-      "2007"
+      "2007",
+      "Revenue",
+      "Year"
     ],
     "min_colors": {
       "blue": 100,
       "orange": 100
-    }
+    },
+    "regions": [
+      {
+        "box": [
+          0.5,
+          0.1,
+          0.78,
+          0.42
+        ],
+        "min_colors": {
+          "blue": 500
+        }
+      },
+      {
+        "box": [
+          0.18,
+          0.46,
+          0.35,
+          0.75
+        ],
+        "max_colors": {
+          "dark": 100
+        }
+      }
+    ]
   },
   "expanded-06_sales_dashboard_en": {
     "text": [

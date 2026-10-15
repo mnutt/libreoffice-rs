@@ -36,6 +36,16 @@ class CorpusTests(unittest.TestCase):
         self.assertEqual(colors['rose'], 1)
         self.assertEqual(colors['green'], 1)
 
+    def test_region_checks_do_not_count_colors_elsewhere_on_page(self):
+        data = b'P6\n2 1\n255\n' + bytes([0,0,255,0,0,0])
+        with patch.object(run.subprocess, 'check_output', return_value=data):
+            colors = run.raster_color_counts(Path('unused.pdf'), [.5,0,1,1])
+        self.assertEqual(colors['blue'], 0)
+        self.assertEqual(colors['dark'], 1)
+        stage = {'status':'ok','pdf':{'pages':1,'image_count':0,'regions':[colors]}}
+        expected = {'regions':[{'min_colors':{'blue':1},'max_colors':{'dark':0}}]}
+        self.assertEqual(len(run.check_expectations(stage,'',expected)), 2)
+
     def test_checked_in_manifest(self):
         for name in ['manifest.json', 'expanded.json']:
             run.validate_manifest(json.loads((run.HERE/name).read_text()))
