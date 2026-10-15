@@ -14,6 +14,15 @@ class CorpusTests(unittest.TestCase):
         stage['pdf']={'pages':2,'image_count':1}
         self.assertEqual(run.check_expectations(stage,'cells\fChart   title\f',expected),[])
 
+    def test_print_area_and_page_break_expectations(self):
+        stage={'status':'ok','pdf':{'pages':1,'image_count':0}}
+        self.assertEqual(len(run.check_expectations(stage,'OUTSIDE',{'pages':2,'absent_text':['outside']})),2)
+
+    def test_generated_manifest_and_generator_match(self):
+        manifest=json.loads((run.HERE/'generated.json').read_text())
+        run.validate_manifest(manifest)
+        self.assertEqual(manifest['generator_sha256'],run.digest(run.HERE/'generate.py'))
+
     def test_checked_in_manifest(self):
         run.validate_manifest(json.loads((run.HERE/'manifest.json').read_text()))
 

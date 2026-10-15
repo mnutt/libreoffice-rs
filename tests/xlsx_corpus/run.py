@@ -56,6 +56,10 @@ def validate_manifest(manifest):
 
 
 def fetch(manifest):
+    if manifest.get('generated_by'):
+        if manifest['generated_by'] != 'generate.py' or digest(HERE/'generate.py') != manifest['generator_sha256']:
+            raise ValueError('Generated corpus does not match its pinned generator')
+        subprocess.run(['python3', str(HERE/'generate.py')], check=True)
     for group, folder in [('fixtures', 'files'), ('notices', 'licenses')]:
         for record in manifest[group]:
             target = HERE / folder / record['file']
@@ -168,7 +172,12 @@ def check_expectations(stage, text, expected):
     for key, metric in [('min_images', 'image_count'), ('min_pages', 'pages')]:
         if stage['pdf'][metric] < expected.get(key, 0):
             failures.append(f'{metric}: {stage["pdf"][metric]} < {expected[key]}')
+    if 'pages' in expected and stage['pdf']['pages'] != expected['pages']:
+        failures.append(f'pages: {stage["pdf"]["pages"]} != {expected["pages"]}')
     normalize = lambda s: ' '.join(unicodedata.normalize('NFKC', s).casefold().split())
+    for phrase in expected.get('absent_text', []):
+        if normalize(phrase) in normalize(text):
+            failures.append(f'unexpected text: {phrase}')
     pages = text.split('\f')
     for phrase in expected.get('text', []):
         if normalize(phrase) not in normalize(text):
@@ -220,7 +229,7 @@ def evaluate(args, manifest):
     references = None
     if args.references:
         references = json.loads((args.references/'results.json').read_text())
-        if references['manifest_sha256'] != digest(HERE/'manifest.json') or references['office2pdf_sha256'] != digest(bundle/'davros-preview'):
+        if references['manifest_sha256'] != digest(args.manifest) or references['office2pdf_sha256'] != digest(bundle/'davros-preview'):
             raise ValueError('Reference run uses different corpus or baseline binary')
         fonts={p.name:digest(p) for p in sorted((bundle/'fonts').glob('*'))}
         if references.get('fontconfig_sha256') != digest(bundle/'fonts.conf'):
@@ -232,7 +241,7 @@ def evaluate(args, manifest):
     for path in sorted((ROOT/'crates').rglob('*')):
         if path.suffix in ('.rs','.toml'):
             source_hash.update(str(path.relative_to(ROOT)).encode()+b'\0'+path.read_bytes()+b'\0')
-    results = dict(schema_version=1, checkout_source_sha256=source_hash.hexdigest(), manifest_sha256=digest(HERE / 'manifest.json'),
+    results = dict(schema_version=1, checkout_source_sha256=source_hash.hexdigest(), manifest_sha256=digest(args.manifest),
                    runner_sha256=digest(Path(__file__)), candidate_sha256=digest(candidate),
                    expectations_sha256=digest(HERE/"expectations.json"),
                    office2pdf_sha256=digest(bundle / 'davros-preview'),
@@ -309,8 +318,10 @@ def evaluate(args, manifest):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('fetch')
+    fetch_parser = commands.add_parser('fetch')
+    fetch_parser.add_argument('--manifest', type=Path, default=HERE/'manifest.json')
     run = commands.add_parser('evaluate')
+    run.add_argument('--manifest', type=Path, default=HERE/'manifest.json')
     run.add_argument('--candidate', type=Path, default=ROOT/'target/debug/examples/xlsx-preview')
     run.add_argument('--bundle', type=Path, required=True, help='Davros runtime bundle with office2pdf and fonts')
     run.add_argument('--output', type=Path, required=True, help='new output directory')
@@ -319,7 +330,7 @@ def main():
     run.add_argument('--timeout', type=int, default=60)
     run.add_argument('--preview-pages', type=int, default=2)
     args=parser.parse_args()
-    manifest=json.loads((HERE/'manifest.json').read_text())
+    manifest=json.loads(args.manifest.read_text())
     validate_manifest(manifest)
     if args.command == 'fetch': fetch(manifest)
     else: evaluate(args, manifest)

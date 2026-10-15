@@ -39,5 +39,35 @@
       "2021-01-01",
       "255:10:10"
     ]
+  },
+  "authored-font-variants": {
+    "text": [
+      "caf\u00e9",
+      "space",
+      "Variant 4"
+    ],
+    "pages": 1
+  },
+  "authored-print-area": {
+    "text": [
+      "INCLUDED"
+    ],
+    "absent_text": [
+      "OUTSIDE"
+    ],
+    "pages": 1
+  },
+  "authored-manual-break": {
+    "pages": 2,
+    "page_text": {
+      "1": [
+        "Row 1",
+        "Row 5"
+      ],
+      "2": [
+        "Row 6",
+        "Row 10"
+      ]
+    }
   }
 }
