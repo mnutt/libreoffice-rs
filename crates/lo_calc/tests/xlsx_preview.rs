@@ -208,3 +208,22 @@ fn conditional_relative_references_follow_each_target_row() {
             .bold
     );
 }
+
+#[test]
+fn negative_number_sections_override_font_color_using_cached_values() {
+    let styles = r##"<styleSheet><numFmts><numFmt numFmtId="164" formatCode="0.00;[Red](0.00)"/></numFmts><cellXfs><xf numFmtId="164"/></cellXfs></styleSheet>"##;
+    let book=lo_calc::from_xlsx_bytes("",&workbook(r#"<worksheet><sheetData><row><c r="A1"><f>UNKNOWN()</f><v>-12.5</v></c></row></sheetData></worksheet>"#,styles,"")).unwrap();
+    let sheet = &book.sheets[0];
+    assert_eq!(sheet.display_values[&CellAddr::new(0, 0)], "(12.50)");
+    assert_eq!(
+        sheet
+            .get(CellAddr::new(0, 0))
+            .unwrap()
+            .style
+            .as_ref()
+            .unwrap()
+            .foreground,
+        "#FF0000"
+    );
+    assert_eq!(lo_core::xlsx_format::number_color(1.0, r#""[Red]"0"#), None);
+}

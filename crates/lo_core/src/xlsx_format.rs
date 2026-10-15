@@ -97,6 +97,41 @@ fn tokenize(code: &str) -> Vec<Token> {
     out
 }
 
+/// Named colors in the selected sign/zero format section override the cell font.
+pub fn number_color(value: f64, code: &str) -> Option<&'static str> {
+    if !value.is_finite() || ["[<", "[>", "[="].iter().any(|p| code.contains(p)) {
+        return None;
+    }
+    let parts = sections(code);
+    let index = if value < 0.0 && parts.len() > 1 {
+        1
+    } else if value == 0.0 && parts.len() > 2 {
+        2
+    } else {
+        0
+    };
+    let mut section = parts[index].trim_start();
+    while let Some(rest) = section.strip_prefix('[') {
+        let (name, remaining) = rest.split_once(']')?;
+        let color = match name.to_ascii_lowercase().as_str() {
+            "black" => Some("#000000"),
+            "white" => Some("#FFFFFF"),
+            "red" => Some("#FF0000"),
+            "green" => Some("#00FF00"),
+            "blue" => Some("#0000FF"),
+            "yellow" => Some("#FFFF00"),
+            "magenta" => Some("#FF00FF"),
+            "cyan" => Some("#00FFFF"),
+            _ => None,
+        };
+        if color.is_some() {
+            return color;
+        }
+        section = remaining.trim_start();
+    }
+    None
+}
+
 pub fn number(value: f64, code: &str, date_1904: bool) -> String {
     if !value.is_finite() || code.eq_ignore_ascii_case("General") || code == "@" || code.is_empty()
     {

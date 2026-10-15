@@ -395,6 +395,11 @@ fn parse_xlsx_sheet(
                 }
                 let display = match &cached {
                     CellValue::Number(n) => {
+                        if let Some(color) =
+                            lo_core::xlsx_format::number_color(*n, &style.format_code)
+                        {
+                            style.foreground = color.into();
+                        }
                         crate::xlsx_format::number(*n, &style.format_code, date_1904)
                     }
                     CellValue::Text(s) | CellValue::Error(s) => s.clone(),
