@@ -119,6 +119,8 @@ impl Range {
 pub struct SheetLayout {
     pub print_headings: bool,
     pub print_gridlines: bool,
+    pub repeat_rows: Option<(u32,u32)>,
+    pub repeat_columns: Option<(u32,u32)>,
     /// Optional left, right, top, bottom margins in points.
     pub margins: Option<[f32; 4]>,
     pub default_column_width: f32,
@@ -145,6 +147,8 @@ impl Default for SheetLayout {
         Self {
             print_headings: false,
             print_gridlines: false,
+            repeat_rows: None,
+            repeat_columns: None,
             margins: None,
             default_column_width: 64.0,
             default_row_height: 15.0,

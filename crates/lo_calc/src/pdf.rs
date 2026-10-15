@@ -233,12 +233,21 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
     extend_drawing_grid(&mut widths, drawing_width, layout.default_column_width, available_w);
     extend_drawing_grid(&mut heights, drawing_height, layout.default_row_height, available_h);
     let images: Vec<_> = layout.images.iter().filter_map(|i| register_image(pdf,i).map(|name|(i.frame,name))).collect();
-    let column_pages = grid_bands(&widths, available_w);
-    let row_pages = grid_bands(&heights, available_h);
+    let valid_repeat=|repeat:Option<(u32,u32)>,sizes:&[f32],available:f32| repeat.filter(|(a,b)|a<=b && (*b as usize)<sizes.len() && sizes[*a as usize..=*b as usize].iter().sum::<f32>()<available);
+    let repeat_columns=valid_repeat(layout.repeat_columns,&widths,available_w);
+    let repeat_rows=valid_repeat(layout.repeat_rows,&heights,available_h);
+    let column_pages = grid_bands_repeated(&widths, available_w, repeat_columns);
+    let row_pages = grid_bands_repeated(&heights, available_h, repeat_rows);
     for columns in column_pages {
         for rows in &row_pages {
-            let ox: f32 = widths[..columns.start].iter().sum();
-            let oy: f32 = heights[..rows.start].iter().sum();
+            let repeated_columns=repeated_indices(repeat_columns,columns.start,widths.len());
+            let repeated_rows=repeated_indices(repeat_rows,rows.start,heights.len());
+            let repeat_w: f32=repeated_columns.iter().map(|i|widths[*i]).sum();
+            let repeat_h: f32=repeated_rows.iter().map(|i|heights[*i]).sum();
+            let column_indices: Vec<_>=repeated_columns.into_iter().chain(columns.clone()).collect();
+            let row_indices: Vec<_>=repeated_rows.into_iter().chain(rows.clone()).collect();
+            let ox: f32 = widths[..columns.start].iter().sum::<f32>()-repeat_w;
+            let oy: f32 = heights[..rows.start].iter().sum::<f32>()-repeat_h;
             let tw: f32 = widths[columns.clone()].iter().sum();
             let th: f32 = heights[rows.clone()].iter().sum();
             let image_present = images.iter().map(|(f,_)| f).chain(layout.charts.iter().map(|c| &c.frame)).chain(layout.text_boxes.iter().map(|t| &t.frame)).any(|f| f.origin.x.as_pt() < ox+tw && f.origin.x.as_pt()+f.size.width.as_pt()>ox && f.origin.y.as_pt()<oy+th && f.origin.y.as_pt()+f.size.height.as_pt()>oy);
@@ -261,7 +270,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
             let mut top = layout.page_height - top_margin - layout.header_height - heading_h;
             if layout.print_headings {
                 let mut hx = left + heading_w;
-                for c in columns.clone() {
+                for c in column_indices.iter().copied() {
                     if widths[c] > 0.0 {
                         let label = CellAddr::new(0, c as u32)
                             .to_a1()
@@ -279,7 +288,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                     hx += widths[c];
                 }
             }
-            for r in rows.clone() {
+            for r in row_indices.iter().copied() {
                 let mut x = left + heading_w;
                 let h = heights[r];
                 if h == 0.0 {
@@ -294,7 +303,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                         &(r + 1).to_string(),
                     );
                 }
-                for c in columns.clone() {
+                for c in column_indices.iter().copied() {
                     let w = widths[c];
                     if w == 0.0 {
                         continue;
@@ -429,7 +438,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                 }
                 top -= h;
             }
-            page.raw(&format!("q {} {} {} {} re W n",left+heading_w,bottom+layout.footer_height,available_w,available_h));
+            page.raw(&format!("q {} {} {} {} re W n",left+heading_w+repeat_w,bottom+layout.footer_height,available_w-repeat_w,available_h-repeat_h));
             for (f,name) in &images {
                 page.image(name,left+heading_w+f.origin.x.as_pt()-ox,layout.page_height-top_margin-layout.header_height-heading_h-f.origin.y.as_pt()+oy-f.size.height.as_pt(),f.size.width.as_pt(),f.size.height.as_pt());
             }
@@ -437,7 +446,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
             {
                 page.raw(&format!(
                     "q {} {} {} {} re W n",
-                    left, bottom, available_w, available_h
+                    left+heading_w+repeat_w, bottom+layout.footer_height, available_w-repeat_w, available_h-repeat_h
                 ));
                 for text in &layout.text_boxes {
                     let f=text.frame;let x=left+heading_w+f.origin.x.as_pt()-ox;
@@ -483,6 +492,19 @@ fn grid_wrap_font(text: &str, width: f32, size: f32, font: PdfFont) -> Vec<Strin
     out
 }
 
+fn repeated_indices(repeat: Option<(u32,u32)>, start: usize, len: usize) -> Vec<usize> {
+    match repeat {Some((a,b)) if a<=b && (b as usize)<start && (b-a)<16384 => (a as usize..=b as usize).filter(|i|*i<len).collect(),_=>Vec::new()}
+}
+fn grid_bands_repeated(sizes:&[f32],available:f32,repeat:Option<(u32,u32)>)->Vec<std::ops::Range<usize>> {
+    if repeat.is_none(){return grid_bands(sizes,available);}
+    let mut ranges=Vec::new();let mut start=0;let mut occupied=0.0;
+    for (i,size) in sizes.iter().enumerate() {
+        if i>start && occupied+size>available+0.01 {ranges.push(start..i);start=i;occupied=repeated_indices(repeat,start,sizes.len()).iter().map(|i|sizes[*i]).sum::<f32>().min((available-*size).max(0.0));}
+        occupied+=size;
+    }
+    if start<sizes.len(){ranges.push(start..sizes.len());}ranges
+}
+
 fn grid_bands(sizes: &[f32], available: f32) -> Vec<std::ops::Range<usize>> {
     let mut ranges = Vec::new();
     let mut start = 0;
@@ -509,6 +531,16 @@ pub fn to_pdf(workbook: &Workbook) -> Vec<u8> {
 mod pagination_tests {
     use super::*;
     use lo_core::CellAddr;
+    #[test]
+    fn repeated_titles_reserve_space_on_later_pages() {
+        assert_eq!(grid_bands_repeated(&[20.0;8],60.0,Some((0,0))),[0..3,3..5,5..7,7..8]);
+        let mut book=Workbook::default();let sheet=&mut book.sheets[0];
+        for r in 0..8 {sheet.set(CellAddr::new(r,0),CellValue::Text(if r==0 {"Repeated title".into()}else {format!("row {r}")}));}
+        sheet.layout=Some(lo_core::calc::SheetLayout {page_width:200.0,page_height:100.0,margin:20.0,default_row_height:20.0,repeat_rows:Some((0,0)),..Default::default()});
+        let pdf=String::from_utf8_lossy(&to_pdf(&book)).into_owned();
+        assert_eq!(pdf.matches("(Repeated title)").count(),4);
+        assert_eq!(render(&book).pages().len(),4);
+    }
     #[test]
     fn grid_paginates_both_axes_and_skips_hidden_sheets() {
         let mut book = Workbook::default();
