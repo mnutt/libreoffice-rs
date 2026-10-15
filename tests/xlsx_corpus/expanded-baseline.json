@@ -1,0 +1,4157 @@
+{
+  "schema_version": 1,
+  "checkout_source_sha256": "61c06033f049c6c1761fae3cbae4b0da6f87d111d2f14356a1557e0061ecd350",
+  "manifest_sha256": "f8c939f2c0c9d51c5e0afca408311cdf383308d3a0728df4f738265b71a4d6fe",
+  "runner_sha256": "91dcee520d4a150b02aeb8ea6159db1119fdd89b5003ca8766806738d50114a5",
+  "candidate_sha256": "c357ced547d88e20da25a3ab60a8877eaceeeb39e4fe1b1e514ca09301b05059",
+  "expectations_sha256": "40b57a7251a7a5356f11400e9c1e34aa773218a3a06c8d462ac9ee6450f6d9a1",
+  "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
+  "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
+  "fonts": {
+    "LiberationMono-Bold.ttf": "1d8d631105d4cb6c562a0d90f591d6393007d71350c089aec81c37dc8da293ed",
+    "LiberationMono-BoldItalic.ttf": "bac30bbb26308b1a925d233a520fa764c80526f632b75defbf2b37e402eb6b1a",
+    "LiberationMono-Italic.ttf": "02312ecd02a6b7a96db60deb20468430abb7d3a91974ef9a90bd46ff78ea338d",
+    "LiberationMono-Regular.ttf": "47ed5b5fcfe6b3c9228937b05de9c769f5fa55b777d539af0f65172f0a24c90b",
+    "LiberationSans-Bold.ttf": "769673c4355020b1e28a14c366a152da410ab6b16239fe883ebc35b73624835b",
+    "LiberationSans-BoldItalic.ttf": "4b3d18cbd1b8c068115be4072f43418b194994313f47dbfd3588808903a55d34",
+    "LiberationSans-Italic.ttf": "8649cf5f2cbe4727549d78b714a3a7ee540718a13557769c4612fea105294c7e",
+    "LiberationSans-Regular.ttf": "baccc64becc3eb7d104b7c84d99f5314a0a1f896e2b3ea6c2f22fc08d2003bee",
+    "LiberationSerif-Bold.ttf": "28f2d4300ee366d1ff9ca95df967a27e77987c87857fad0d9c85034405aae39d",
+    "LiberationSerif-BoldItalic.ttf": "8de6363e9ca6c1e6f539ab032bd9ad6abfe138638f4fc53f3c26ea788b7724c5",
+    "LiberationSerif-Italic.ttf": "c7681827cba3bddb54f4673d0052cb944bdeac0b83c29c238240617e699311da",
+    "LiberationSerif-Regular.ttf": "86b9ea1c2f41bed9d7c09ccad4abc2894b33df5de60e5bbbece5d48610911870",
+    "NotoSans-Regular.ttf": "478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823"
+  },
+  "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
+  "checkout_tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "checkout_revision": "aa27a2ccf7411cd5834ec7adc79ffd6b5b744435",
+  "cases": [
+    {
+      "id": "expanded-ExcelTables",
+      "purpose": "structured table style and totals",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                720.0,
+                841.89
+              ]
+            ],
+            "bytes": 16446,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                725.0,
+                841.89
+              ]
+            ],
+            "bytes": 18144,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 21760,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-ExcelPivotTableSample",
+      "purpose": "saved pivot-table report",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 3,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 25457,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.065,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 3,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 21147,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 3,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 37570,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0602167,
+            0.0658585,
+            0.0566254
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.8461538461538461,
+          "precision": 0.873015873015873,
+          "missing": [
+            [
+              "total",
+              3
+            ],
+            [
+              "result",
+              3
+            ],
+            [
+              "field1",
+              2
+            ],
+            [
+              "field3",
+              1
+            ],
+            [
+              "multiple",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "gesamtergebnis",
+              3
+            ],
+            [
+              "zeilenbeschriftungen",
+              2
+            ],
+            [
+              "spaltenbeschriftungen",
+              1
+            ],
+            [
+              "mehrere",
+              1
+            ],
+            [
+              "elemente",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.8461538461538461,
+          "precision": 0.873015873015873,
+          "missing": [
+            [
+              "total",
+              3
+            ],
+            [
+              "result",
+              3
+            ],
+            [
+              "field1",
+              2
+            ],
+            [
+              "field3",
+              1
+            ],
+            [
+              "multiple",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "gesamtergebnis",
+              3
+            ],
+            [
+              "zeilenbeschriftungen",
+              2
+            ],
+            [
+              "spaltenbeschriftungen",
+              1
+            ],
+            [
+              "mehrere",
+              1
+            ],
+            [
+              "elemente",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-WithDrawing",
+      "purpose": "multiple embedded drawings",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                645.0,
+                792.0
+              ]
+            ],
+            "bytes": 50611,
+            "image_count": 2,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 114633,
+            "image_count": 3,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.466,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 142825,
+            "image_count": 3,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.9,
+          "precision": 1.0,
+          "missing": [
+            [
+              "pict",
+              1
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.9,
+          "precision": 1.0,
+          "missing": [
+            [
+              "pict",
+              1
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 1,
+        "media": 5
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-WithTextBox",
+      "purpose": "drawing text boxes",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 2208,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 8021,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.415,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 13694,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0214777
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 1,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-123233_charts",
+      "purpose": "chart families and source axes",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                870.0,
+                792.0
+              ]
+            ],
+            "bytes": 11525,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                837.0,
+                841.89
+              ],
+              [
+                837.0,
+                841.89
+              ]
+            ],
+            "bytes": 31609,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.466,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 47070,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.16,
+          "precision": 1.0,
+          "missing": [
+            [
+              "series",
+              15
+            ],
+            [
+              "chart",
+              4
+            ],
+            [
+              "1",
+              3
+            ],
+            [
+              "3",
+              3
+            ],
+            [
+              "2",
+              3
+            ],
+            [
+              "4",
+              3
+            ],
+            [
+              "5",
+              3
+            ],
+            [
+              "column",
+              2
+            ],
+            [
+              "revenue",
+              1
+            ],
+            [
+              "pie",
+              1
+            ],
+            [
+              "slice",
+              1
+            ],
+            [
+              "value",
+              1
+            ],
+            [
+              "line",
+              1
+            ],
+            [
+              "category",
+              1
+            ]
+          ],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.03804347826086957,
+          "precision": 0.875,
+          "missing": [
+            [
+              "000",
+              58
+            ],
+            [
+              "00",
+              30
+            ],
+            [
+              "equipment",
+              12
+            ],
+            [
+              "1",
+              11
+            ],
+            [
+              "600",
+              5
+            ],
+            [
+              "400",
+              5
+            ],
+            [
+              "200",
+              5
+            ],
+            [
+              "800",
+              4
+            ],
+            [
+              "camping",
+              4
+            ],
+            [
+              "revenue",
+              4
+            ],
+            [
+              "golf",
+              4
+            ],
+            [
+              "mountaineering",
+              4
+            ],
+            [
+              "outdoor",
+              4
+            ],
+            [
+              "protection",
+              4
+            ],
+            [
+              "personal",
+              4
+            ],
+            [
+              "accessories",
+              4
+            ],
+            [
+              "0",
+              3
+            ],
+            [
+              "2",
+              2
+            ],
+            [
+              "700",
+              1
+            ],
+            [
+              "500",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "18",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.07065217391304347,
+          "precision": 0.26,
+          "missing": [
+            [
+              "000",
+              58
+            ],
+            [
+              "00",
+              30
+            ],
+            [
+              "equipment",
+              12
+            ],
+            [
+              "1",
+              8
+            ],
+            [
+              "600",
+              5
+            ],
+            [
+              "400",
+              5
+            ],
+            [
+              "200",
+              5
+            ],
+            [
+              "800",
+              4
+            ],
+            [
+              "camping",
+              4
+            ],
+            [
+              "golf",
+              4
+            ],
+            [
+              "mountaineering",
+              4
+            ],
+            [
+              "outdoor",
+              4
+            ],
+            [
+              "protection",
+              4
+            ],
+            [
+              "personal",
+              4
+            ],
+            [
+              "accessories",
+              4
+            ],
+            [
+              "revenue",
+              3
+            ],
+            [
+              "0",
+              3
+            ],
+            [
+              "700",
+              1
+            ],
+            [
+              "500",
+              1
+            ],
+            [
+              "300",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "series",
+              15
+            ],
+            [
+              "chart",
+              4
+            ],
+            [
+              "3",
+              3
+            ],
+            [
+              "4",
+              3
+            ],
+            [
+              "5",
+              3
+            ],
+            [
+              "column",
+              2
+            ],
+            [
+              "18",
+              1
+            ],
+            [
+              "2",
+              1
+            ],
+            [
+              "pie",
+              1
+            ],
+            [
+              "slice",
+              1
+            ],
+            [
+              "value",
+              1
+            ],
+            [
+              "line",
+              1
+            ],
+            [
+              "category",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 4,
+        "drawings": 1,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-chart_sheet",
+      "purpose": "dedicated chart sheet",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 15058,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                792.0,
+                612.0
+              ]
+            ],
+            "bytes": 10728,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.466,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 20112,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0288803,
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 1,
+        "drawings": 1,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-issue_1603_gift_budget",
+      "purpose": "gift budget with pictures and print layout",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ],
+              [
+                1483.0,
+                841.89
+              ]
+            ],
+            "bytes": 1531828,
+            "image_count": 1,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.216,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ],
+              [
+                1416.0,
+                841.89
+              ]
+            ],
+            "bytes": 233748,
+            "image_count": 1,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.666,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 3,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                1190.55,
+                841.89
+              ]
+            ],
+            "bytes": 126685,
+            "image_count": 1,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.8787878787878788,
+          "precision": 0.9923954372623575,
+          "missing": [
+            [
+              "budget",
+              3
+            ],
+            [
+              "_x000d_",
+              2
+            ],
+            [
+              "gift",
+              1
+            ],
+            [
+              "spent",
+              1
+            ],
+            [
+              "font",
+              1
+            ],
+            [
+              "color",
+              1
+            ],
+            [
+              "200",
+              1
+            ],
+            [
+              "180",
+              1
+            ],
+            [
+              "160",
+              1
+            ],
+            [
+              "140",
+              1
+            ],
+            [
+              "120",
+              1
+            ],
+            [
+              "100",
+              1
+            ],
+            [
+              "may",
+              1
+            ],
+            [
+              "80",
+              1
+            ],
+            [
+              "60",
+              1
+            ],
+            [
+              "birthday",
+              1
+            ],
+            [
+              "holiday",
+              1
+            ],
+            [
+              "40",
+              1
+            ],
+            [
+              "20",
+              1
+            ],
+            [
+              "0",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "_x005f_x000d_",
+              2
+            ]
+          ],
+          "raster_rmse": [
+            0.0918064,
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.5994694960212201,
+          "precision": 0.8593155893536122,
+          "missing": [
+            [
+              "t",
+              14
+            ],
+            [
+              "i",
+              12
+            ],
+            [
+              "f",
+              7
+            ],
+            [
+              "budget",
+              4
+            ],
+            [
+              "l",
+              4
+            ],
+            [
+              "h",
+              4
+            ],
+            [
+              "ent",
+              3
+            ],
+            [
+              "r",
+              3
+            ],
+            [
+              "oc",
+              3
+            ],
+            [
+              "on",
+              3
+            ],
+            [
+              "n",
+              3
+            ],
+            [
+              "e",
+              3
+            ],
+            [
+              "c",
+              2
+            ],
+            [
+              "he",
+              2
+            ],
+            [
+              "eac",
+              2
+            ],
+            [
+              "er",
+              2
+            ],
+            [
+              "s",
+              2
+            ],
+            [
+              "gi",
+              2
+            ],
+            [
+              "cas",
+              2
+            ],
+            [
+              "or",
+              2
+            ]
+          ],
+          "extra": [
+            [
+              "the",
+              2
+            ],
+            [
+              "in",
+              2
+            ],
+            [
+              "select",
+              2
+            ],
+            [
+              "occasion",
+              2
+            ],
+            [
+              "each",
+              2
+            ],
+            [
+              "to",
+              1
+            ],
+            [
+              "gift",
+              1
+            ],
+            [
+              "enter",
+              1
+            ],
+            [
+              "table",
+              1
+            ],
+            [
+              "family",
+              1
+            ],
+            [
+              "friends",
+              1
+            ],
+            [
+              "budgeted",
+              1
+            ],
+            [
+              "event",
+              1
+            ],
+            [
+              "month",
+              1
+            ],
+            [
+              "within",
+              1
+            ],
+            [
+              "fill",
+              1
+            ],
+            [
+              "much",
+              1
+            ],
+            [
+              "can",
+              1
+            ],
+            [
+              "beginning",
+              1
+            ],
+            [
+              "type",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.6710875331564987,
+          "precision": 0.8518518518518519,
+          "missing": [
+            [
+              "t",
+              14
+            ],
+            [
+              "i",
+              12
+            ],
+            [
+              "f",
+              7
+            ],
+            [
+              "l",
+              4
+            ],
+            [
+              "h",
+              4
+            ],
+            [
+              "_x005f_x000d_",
+              3
+            ],
+            [
+              "ent",
+              3
+            ],
+            [
+              "r",
+              3
+            ],
+            [
+              "oc",
+              3
+            ],
+            [
+              "on",
+              3
+            ],
+            [
+              "n",
+              3
+            ],
+            [
+              "e",
+              3
+            ],
+            [
+              "c",
+              2
+            ],
+            [
+              "he",
+              2
+            ],
+            [
+              "eac",
+              2
+            ],
+            [
+              "er",
+              2
+            ],
+            [
+              "s",
+              2
+            ],
+            [
+              "gi",
+              2
+            ],
+            [
+              "cas",
+              2
+            ],
+            [
+              "or",
+              2
+            ]
+          ],
+          "extra": [
+            [
+              "the",
+              2
+            ],
+            [
+              "gift",
+              2
+            ],
+            [
+              "in",
+              2
+            ],
+            [
+              "select",
+              2
+            ],
+            [
+              "occasion",
+              2
+            ],
+            [
+              "_x000d_",
+              2
+            ],
+            [
+              "each",
+              2
+            ],
+            [
+              "birthday",
+              2
+            ],
+            [
+              "holiday",
+              2
+            ],
+            [
+              "to",
+              1
+            ],
+            [
+              "enter",
+              1
+            ],
+            [
+              "table",
+              1
+            ],
+            [
+              "family",
+              1
+            ],
+            [
+              "friends",
+              1
+            ],
+            [
+              "budgeted",
+              1
+            ],
+            [
+              "event",
+              1
+            ],
+            [
+              "month",
+              1
+            ],
+            [
+              "within",
+              1
+            ],
+            [
+              "fill",
+              1
+            ],
+            [
+              "much",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 1,
+        "drawings": 1,
+        "media": 2
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-issue_1181_fit_to_height",
+      "purpose": "fit-to-height print layout",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.115,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 3,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                984.0,
+                1190.55
+              ],
+              [
+                984.0,
+                1190.55
+              ]
+            ],
+            "bytes": 238200,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.366,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 3,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                939.0,
+                1190.55
+              ],
+              [
+                939.0,
+                1190.55
+              ]
+            ],
+            "bytes": 70746,
+            "image_count": 10,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.566,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                841.89,
+                1190.55
+              ]
+            ],
+            "bytes": 218115,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.9799465240641712,
+          "precision": 0.9760319573901465,
+          "missing": [
+            [
+              "cash",
+              1
+            ],
+            [
+              "flow",
+              1
+            ],
+            [
+              "year",
+              1
+            ],
+            [
+              "jan",
+              1
+            ],
+            [
+              "feb",
+              1
+            ],
+            [
+              "mar",
+              1
+            ],
+            [
+              "apr",
+              1
+            ],
+            [
+              "may",
+              1
+            ],
+            [
+              "jun",
+              1
+            ],
+            [
+              "jul",
+              1
+            ],
+            [
+              "aug",
+              1
+            ],
+            [
+              "sep",
+              1
+            ],
+            [
+              "oct",
+              1
+            ],
+            [
+              "nov",
+              1
+            ],
+            [
+              "dec",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "_x000d_",
+              3
+            ],
+            [
+              "400",
+              2
+            ],
+            [
+              "19",
+              2
+            ],
+            [
+              "1",
+              1
+            ],
+            [
+              "3",
+              1
+            ],
+            [
+              "2",
+              1
+            ],
+            [
+              "0",
+              1
+            ],
+            [
+              "5",
+              1
+            ],
+            [
+              "15",
+              1
+            ],
+            [
+              "25",
+              1
+            ],
+            [
+              "35",
+              1
+            ],
+            [
+              "45",
+              1
+            ],
+            [
+              "150",
+              1
+            ],
+            [
+              "449",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0822752,
+            null,
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.7697516930022573,
+          "precision": 0.9081225033288948,
+          "missing": [
+            [
+              "t",
+              23
+            ],
+            [
+              "i",
+              16
+            ],
+            [
+              "f",
+              9
+            ],
+            [
+              "l",
+              6
+            ],
+            [
+              "r",
+              6
+            ],
+            [
+              "s",
+              5
+            ],
+            [
+              "y",
+              4
+            ],
+            [
+              "col",
+              4
+            ],
+            [
+              "e",
+              3
+            ],
+            [
+              "ex",
+              3
+            ],
+            [
+              "es",
+              3
+            ],
+            [
+              "c",
+              3
+            ],
+            [
+              "ec",
+              3
+            ],
+            [
+              "umn",
+              3
+            ],
+            [
+              "j",
+              3
+            ],
+            [
+              "mont",
+              2
+            ],
+            [
+              "wor",
+              2
+            ],
+            [
+              "o",
+              2
+            ],
+            [
+              "ow",
+              2
+            ],
+            [
+              "sel",
+              2
+            ]
+          ],
+          "extra": [
+            [
+              "select",
+              4
+            ],
+            [
+              "column",
+              3
+            ],
+            [
+              "text",
+              3
+            ],
+            [
+              "worksheet",
+              2
+            ],
+            [
+              "to",
+              2
+            ],
+            [
+              "income",
+              2
+            ],
+            [
+              "expenses",
+              2
+            ],
+            [
+              "in",
+              2
+            ],
+            [
+              "then",
+              2
+            ],
+            [
+              "other",
+              2
+            ],
+            [
+              "400",
+              2
+            ],
+            [
+              "this",
+              1
+            ],
+            [
+              "use",
+              1
+            ],
+            [
+              "monthly",
+              1
+            ],
+            [
+              "college",
+              1
+            ],
+            [
+              "track",
+              1
+            ],
+            [
+              "cash",
+              1
+            ],
+            [
+              "flow",
+              1
+            ],
+            [
+              "for",
+              1
+            ],
+            [
+              "you",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0948475,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.7629796839729119,
+          "precision": 0.9037433155080213,
+          "missing": [
+            [
+              "t",
+              23
+            ],
+            [
+              "i",
+              16
+            ],
+            [
+              "f",
+              9
+            ],
+            [
+              "l",
+              6
+            ],
+            [
+              "r",
+              6
+            ],
+            [
+              "s",
+              5
+            ],
+            [
+              "y",
+              4
+            ],
+            [
+              "col",
+              4
+            ],
+            [
+              "e",
+              3
+            ],
+            [
+              "ex",
+              3
+            ],
+            [
+              "es",
+              3
+            ],
+            [
+              "c",
+              3
+            ],
+            [
+              "ec",
+              3
+            ],
+            [
+              "umn",
+              3
+            ],
+            [
+              "j",
+              3
+            ],
+            [
+              "mont",
+              2
+            ],
+            [
+              "wor",
+              2
+            ],
+            [
+              "o",
+              2
+            ],
+            [
+              "ow",
+              2
+            ],
+            [
+              "sel",
+              2
+            ]
+          ],
+          "extra": [
+            [
+              "select",
+              4
+            ],
+            [
+              "column",
+              3
+            ],
+            [
+              "text",
+              3
+            ],
+            [
+              "worksheet",
+              2
+            ],
+            [
+              "to",
+              2
+            ],
+            [
+              "income",
+              2
+            ],
+            [
+              "expenses",
+              2
+            ],
+            [
+              "cash",
+              2
+            ],
+            [
+              "flow",
+              2
+            ],
+            [
+              "in",
+              2
+            ],
+            [
+              "then",
+              2
+            ],
+            [
+              "other",
+              2
+            ],
+            [
+              "this",
+              1
+            ],
+            [
+              "use",
+              1
+            ],
+            [
+              "monthly",
+              1
+            ],
+            [
+              "college",
+              1
+            ],
+            [
+              "track",
+              1
+            ],
+            [
+              "for",
+              1
+            ],
+            [
+              "you",
+              1
+            ],
+            [
+              "slider",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.099504,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 4,
+        "drawings": 2,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-richtext-namespaced",
+      "purpose": "namespaced rich strings",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                775.0,
+                792.0
+              ]
+            ],
+            "bytes": 12099,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                790.0,
+                792.0
+              ]
+            ],
+            "bytes": 9602,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 16405,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-right-to-left",
+      "purpose": "right-to-left sheet layout",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Preview font warning: rendering 14 unsupported Unicode characters as boxes; missing U+0627, U+0628, U+0629, U+0631, U+0635, U+0639, U+0644, U+0646\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 23091,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 12982,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 19436,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.9090909090909091,
+          "precision": 0.8,
+          "missing": [
+            [
+              "\u0646",
+              1
+            ],
+            [
+              "\u0661\u0662\u0663",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "123",
+              1
+            ],
+            [
+              "\u0635\u0646",
+              1
+            ],
+            [
+              "\u05ea\u05d9",
+              1
+            ],
+            [
+              "\u05e8",
+              1
+            ],
+            [
+              "\u05d1",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0395061,
+            0.0368475
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.88,
+          "precision": 0.88,
+          "missing": [
+            [
+              "\u0646\u0635",
+              1
+            ],
+            [
+              "\u0661\u0662\u0663",
+              1
+            ],
+            [
+              "\u05d9\u05ea",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "123",
+              1
+            ],
+            [
+              "\u0635\u0646",
+              1
+            ],
+            [
+              "\u05ea\u05d9",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.84,
+          "precision": 0.9545454545454546,
+          "missing": [
+            [
+              "\u0646\u0635",
+              1
+            ],
+            [
+              "\u05d1",
+              1
+            ],
+            [
+              "\u05e8",
+              1
+            ],
+            [
+              "\u05d9\u05ea",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "\u0646",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-table-multiple",
+      "purpose": "multiple styled tables",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 3,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 22485,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 3,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 20581,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 3,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 30351,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0557775,
+            0.042401,
+            0.0596978
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-ConditionalFormattingSamples",
+      "purpose": "conditional formatting examples",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 1.217,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 23,
+            "page_sizes_pt": [
+              [
+                821.0,
+                792.0
+              ],
+              [
+                742.0,
+                792.0
+              ],
+              [
+                922.0,
+                792.0
+              ],
+              [
+                805.0,
+                792.0
+              ],
+              [
+                768.0,
+                792.0
+              ],
+              [
+                940.0,
+                792.0
+              ],
+              [
+                940.0,
+                792.0
+              ],
+              [
+                940.0,
+                792.0
+              ],
+              [
+                940.0,
+                792.0
+              ],
+              [
+                940.0,
+                792.0
+              ],
+              [
+                908.0,
+                792.0
+              ],
+              [
+                652.0,
+                792.0
+              ],
+              [
+                675.0,
+                792.0
+              ],
+              [
+                675.0,
+                792.0
+              ],
+              [
+                675.0,
+                792.0
+              ],
+              [
+                935.0,
+                792.0
+              ],
+              [
+                813.0,
+                792.0
+              ],
+              [
+                932.0,
+                792.0
+              ],
+              [
+                663.0,
+                792.0
+              ],
+              [
+                663.0,
+                792.0
+              ],
+              [
+                663.0,
+                792.0
+              ],
+              [
+                807.0,
+                792.0
+              ],
+              [
+                932.0,
+                792.0
+              ]
+            ],
+            "bytes": 11460985,
+            "image_count": 23,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png",
+              "page-4.png",
+              "page-5.png",
+              "page-6.png",
+              "page-7.png",
+              "page-8.png",
+              "page-9.png",
+              "page-10.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 134,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "Using Landlock ABI 9 for preview\n\nthread 'main' (2) panicked at vendor/umya-spreadsheet-2.3.3/src/structs/raw/raw_file.rs:76:63:\ncalled `Result::unwrap()` on an `Err` value: FileNotFound\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+          "status": "error"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 2.069,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 36,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ],
+              [
+                612.0,
+                792.0
+              ]
+            ],
+            "bytes": 1371579,
+            "image_count": 175,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png",
+              "page-4.png",
+              "page-5.png",
+              "page-6.png",
+              "page-7.png",
+              "page-8.png",
+              "page-9.png",
+              "page-10.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_libreoffice": {
+          "recall": 0.9232105628908964,
+          "precision": 0.9432019879304224,
+          "missing": [
+            [
+              "to",
+              22
+            ],
+            [
+              "this",
+              19
+            ],
+            [
+              "rule",
+              19
+            ],
+            [
+              "create",
+              19
+            ],
+            [
+              "hom",
+              18
+            ],
+            [
+              "e",
+              18
+            ],
+            [
+              "how",
+              18
+            ],
+            [
+              "input",
+              9
+            ],
+            [
+              "xlsx",
+              9
+            ],
+            [
+              "the",
+              4
+            ],
+            [
+              "page",
+              3
+            ],
+            [
+              "worksheet",
+              2
+            ],
+            [
+              "click",
+              2
+            ],
+            [
+              "button",
+              2
+            ],
+            [
+              "in",
+              2
+            ],
+            [
+              "sales",
+              2
+            ],
+            [
+              "super",
+              2
+            ],
+            [
+              "06443",
+              2
+            ],
+            [
+              "data",
+              1
+            ],
+            [
+              "examples",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "2",
+              12
+            ],
+            [
+              "3",
+              9
+            ],
+            [
+              "4",
+              9
+            ],
+            [
+              "8",
+              9
+            ],
+            [
+              "1",
+              8
+            ],
+            [
+              "6",
+              8
+            ],
+            [
+              "40",
+              7
+            ],
+            [
+              "5",
+              7
+            ],
+            [
+              "00",
+              3
+            ],
+            [
+              "10",
+              3
+            ],
+            [
+              "43",
+              3
+            ],
+            [
+              "42",
+              3
+            ],
+            [
+              "77883",
+              3
+            ],
+            [
+              "56",
+              2
+            ],
+            [
+              "369",
+              2
+            ],
+            [
+              "0644327",
+              2
+            ],
+            [
+              "charonne",
+              2
+            ],
+            [
+              "9",
+              2
+            ],
+            [
+              "16",
+              2
+            ],
+            [
+              "900",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 18,
+        "media": 16
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-NewStyleConditionalFormattings",
+      "purpose": "extended conditional styles",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.065,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                1353.0,
+                841.89
+              ]
+            ],
+            "bytes": 68316,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 134,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "Using Landlock ABI 9 for preview\n\nthread 'main' (2) panicked at vendor/umya-spreadsheet-2.3.3/src/structs/icon_set.rs:83:31:\nError: Could not find dataBar end element\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+          "status": "error"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 3,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 163167,
+            "image_count": 224,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-conditional_formatting_cell_is",
+      "purpose": "conditional comparisons across sheets",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 14786,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                612.0,
+                792.0
+              ],
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 16082,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 24664,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.0366932,
+            0.0647673
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 0.8181818181818182,
+          "precision": 0.8181818181818182,
+          "missing": [
+            [
+              "template0",
+              1
+            ],
+            [
+              "name",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "template02",
+              1
+            ],
+            [
+              "ref",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.8181818181818182,
+          "precision": 0.8181818181818182,
+          "missing": [
+            [
+              "template0",
+              1
+            ],
+            [
+              "name",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "template02",
+              1
+            ],
+            [
+              "ref",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-02_financial_model_en",
+      "purpose": "authored upstream business example: financial model",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ],
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 71856,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.115,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ],
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 29099,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 52009,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 0.9461077844311377,
+          "precision": 0.9461077844311377,
+          "missing": [
+            [
+              "310",
+              2
+            ],
+            [
+              "808",
+              2
+            ],
+            [
+              "605",
+              2
+            ],
+            [
+              "494",
+              1
+            ],
+            [
+              "047",
+              1
+            ],
+            [
+              "690",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "311",
+              2
+            ],
+            [
+              "809",
+              2
+            ],
+            [
+              "606",
+              2
+            ],
+            [
+              "495",
+              1
+            ],
+            [
+              "048",
+              1
+            ],
+            [
+              "691",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            0.0682389,
+            0.139922
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 0.9461077844311377,
+          "precision": 0.9461077844311377,
+          "missing": [
+            [
+              "311",
+              2
+            ],
+            [
+              "809",
+              2
+            ],
+            [
+              "606",
+              2
+            ],
+            [
+              "495",
+              1
+            ],
+            [
+              "048",
+              1
+            ],
+            [
+              "691",
+              1
+            ]
+          ],
+          "extra": [
+            [
+              "310",
+              2
+            ],
+            [
+              "808",
+              2
+            ],
+            [
+              "605",
+              2
+            ],
+            [
+              "494",
+              1
+            ],
+            [
+              "047",
+              1
+            ],
+            [
+              "690",
+              1
+            ]
+          ],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-03_inventory_en",
+      "purpose": "authored upstream business example: inventory",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.065,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                631.0,
+                841.89
+              ],
+              [
+                631.0,
+                841.89
+              ]
+            ],
+            "bytes": 235411,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.215,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                631.0,
+                841.89
+              ],
+              [
+                631.0,
+                841.89
+              ]
+            ],
+            "bytes": 46056,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.466,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 4,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 269451,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png",
+              "page-3.png",
+              "page-4.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.260684,
+            0.159378
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null,
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-05_project_schedule_en",
+      "purpose": "authored upstream business example: project schedule",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 59406,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.065,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 27586,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 43613,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.133932
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-06_sales_dashboard_en",
+      "purpose": "authored upstream business example: sales dashboard",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 58931,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.065,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 28453,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 61492,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.135512
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-09_expense_report_en",
+      "purpose": "authored upstream business example: expense report",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 53505,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.065,
+          "stderr": "Using Landlock ABI 9 for preview\n",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 27057,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 2,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ],
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 42406,
+            "image_count": 0,
+            "previews": [
+              "page-1.png",
+              "page-2.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_office2pdf": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            0.130987
+          ]
+        },
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        },
+        "office2pdf_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    },
+    {
+      "id": "expanded-10_kpi_tracker_en",
+      "purpose": "authored upstream business example: kpi tracker",
+      "stages": {
+        "candidate": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.033,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                595.28,
+                841.89
+              ]
+            ],
+            "bytes": 48683,
+            "image_count": 0,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        },
+        "office2pdf": {
+          "exit_code": 134,
+          "timeout": false,
+          "seconds": 0.017,
+          "stderr": "Using Landlock ABI 9 for preview\n\nthread 'main' (2) panicked at vendor/umya-spreadsheet-2.3.3/src/structs/icon_set.rs:83:31:\nError: Could not find dataBar end element\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+          "status": "error"
+        },
+        "libreoffice": {
+          "exit_code": 0,
+          "timeout": false,
+          "seconds": 0.416,
+          "stderr": "",
+          "status": "ok",
+          "pdf": {
+            "pages": 1,
+            "page_sizes_pt": [
+              [
+                595.304,
+                841.89
+              ]
+            ],
+            "bytes": 40515,
+            "image_count": 6,
+            "previews": [
+              "page-1.png"
+            ]
+          }
+        }
+      },
+      "comparisons": {
+        "candidate_vs_libreoffice": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "missing": [],
+          "extra": [],
+          "raster_rmse": [
+            null
+          ]
+        }
+      },
+      "input_parts": {
+        "charts": 0,
+        "drawings": 0,
+        "media": 0
+      },
+      "expectation_failures": []
+    }
+  ],
+  "summary": {
+    "candidate": {
+      "ok": 20
+    },
+    "office2pdf": {
+      "ok": 17,
+      "error": 3
+    },
+    "libreoffice": {
+      "ok": 20
+    },
+    "expectation_failures": 0
+  }
+}

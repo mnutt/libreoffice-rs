@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "checkout_source_sha256": "61c06033f049c6c1761fae3cbae4b0da6f87d111d2f14356a1557e0061ecd350",
+  "checkout_source_sha256": "4b5bacdc57b31ce35932703cbe796ecac19ee9f3903c88c60f417431f7dcbda5",
   "manifest_sha256": "4ffd73f152a3c8161b2a2cfeff45c21b3dec7c9be9f5d9ce8fa845bef6d1873c",
-  "runner_sha256": "91dcee520d4a150b02aeb8ea6159db1119fdd89b5003ca8766806738d50114a5",
-  "candidate_sha256": "c357ced547d88e20da25a3ab60a8877eaceeeb39e4fe1b1e514ca09301b05059",
-  "expectations_sha256": "40b57a7251a7a5356f11400e9c1e34aa773218a3a06c8d462ac9ee6450f6d9a1",
+  "runner_sha256": "23f260ca7a01ed00bc75ebe2aa03d3fe12f40b6b393806f498e2aa85bdbf9f9c",
+  "candidate_sha256": "e7af92b4af503741d4af2bcbbd11d91d47ebebc0a92991bdb28f3127cd1ce201",
+  "expectations_sha256": "2da1cfe34b911d47cf8f939747d4e249e29f2725988b952ebc533755deaf1b73",
   "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
   "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
   "fonts": {
@@ -24,7 +24,7 @@
   },
   "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
   "checkout_tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "checkout_revision": "f18b7dbbb867084db9c3d5e84a9fcb912c844f78",
+  "checkout_revision": "91feb89e2cc26671a009d967ef5a159e64df3a24",
   "cases": [
     {
       "id": "authored-font-variants",
@@ -71,7 +71,7 @@
               "page-1.png"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-font-variants/office2pdf"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-font-variants/office2pdf"
         },
         "libreoffice": {
           "exit_code": 0,
@@ -93,7 +93,7 @@
               "page-1.png"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-font-variants/libreoffice"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-font-variants/libreoffice"
         }
       },
       "comparisons": {
@@ -177,7 +177,7 @@
               "page-1.png"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-print-area/office2pdf"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-print-area/office2pdf"
         },
         "libreoffice": {
           "exit_code": 0,
@@ -199,7 +199,7 @@
               "page-1.png"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-print-area/libreoffice"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-print-area/libreoffice"
         }
       },
       "comparisons": {
@@ -245,7 +245,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.017,
+          "seconds": 0.018,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -293,7 +293,7 @@
               "page-2.png"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-manual-break/office2pdf"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-manual-break/office2pdf"
         },
         "libreoffice": {
           "exit_code": 0,
@@ -320,7 +320,7 @@
               "page-2.png"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-manual-break/libreoffice"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-manual-break/libreoffice"
         }
       },
       "comparisons": {
@@ -388,7 +388,9 @@
             "colors": {
               "red": 91,
               "blue": 0,
-              "orange": 25
+              "orange": 25,
+              "green": 0,
+              "rose": 114
             },
             "font_names": [
               "Helvetica",
@@ -426,13 +428,15 @@
             "colors": {
               "red": 0,
               "blue": 0,
-              "orange": 0
+              "orange": 0,
+              "green": 0,
+              "rose": 0
             },
             "font_names": [
               "IJHFVX+LiberationSans"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-text/office2pdf"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-rich-text/office2pdf"
         },
         "libreoffice": {
           "exit_code": 0,
@@ -456,14 +460,16 @@
             "colors": {
               "red": 69,
               "blue": 0,
-              "orange": 12
+              "orange": 12,
+              "green": 0,
+              "rose": 98
             },
             "font_names": [
               "BAAAAA+LiberationSans-Bold",
               "CAAAAA+LiberationSans-Italic"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-text/libreoffice"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-rich-text/libreoffice"
         }
       },
       "comparisons": {
@@ -653,7 +659,9 @@
             "colors": {
               "red": 71,
               "blue": 27,
-              "orange": 20
+              "orange": 20,
+              "green": 0,
+              "rose": 130
             },
             "font_names": [
               "Helvetica",
@@ -692,13 +700,15 @@
             "colors": {
               "red": 0,
               "blue": 0,
-              "orange": 0
+              "orange": 0,
+              "green": 0,
+              "rose": 0
             },
             "font_names": [
               "PIFYGT+LiberationSans"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-shrink/office2pdf"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-rich-shrink/office2pdf"
         },
         "libreoffice": {
           "exit_code": 0,
@@ -722,7 +732,9 @@
             "colors": {
               "red": 387,
               "blue": 0,
-              "orange": 36
+              "orange": 36,
+              "green": 0,
+              "rose": 460
             },
             "font_names": [
               "BAAAAA+LiberationSans",
@@ -730,7 +742,7 @@
               "DAAAAA+LiberationSans-Italic"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-shrink/libreoffice"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-rich-shrink/libreoffice"
         }
       },
       "comparisons": {
@@ -984,7 +996,9 @@
             "colors": {
               "red": 391,
               "blue": 0,
-              "orange": 22
+              "orange": 22,
+              "green": 0,
+              "rose": 462
             },
             "font_names": [
               "Helvetica",
@@ -1023,7 +1037,9 @@
             "colors": {
               "red": 392,
               "blue": 0,
-              "orange": 37
+              "orange": 37,
+              "green": 0,
+              "rose": 473
             },
             "font_names": [
               "QUMWAL+LiberationSans-Bold",
@@ -1031,7 +1047,7 @@
               "UKXZET+LiberationSans"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-shared/office2pdf"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-rich-shared/office2pdf"
         },
         "libreoffice": {
           "exit_code": 0,
@@ -1055,14 +1071,16 @@
             "colors": {
               "red": 366,
               "blue": 0,
-              "orange": 21
+              "orange": 21,
+              "green": 0,
+              "rose": 420
             },
             "font_names": [
               "BAAAAA+LiberationSans",
               "CAAAAA+LiberationSans-Bold"
             ]
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-rich-shared/libreoffice"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-rich-shared/libreoffice"
         }
       },
       "comparisons": {
@@ -1269,7 +1287,9 @@
             "colors": {
               "red": 0,
               "blue": 2765,
-              "orange": 5372
+              "orange": 5372,
+              "green": 0,
+              "rose": 5372
             }
           }
         },
@@ -1295,10 +1315,12 @@
             "colors": {
               "red": 0,
               "blue": 2607,
-              "orange": 5293
+              "orange": 5293,
+              "green": 0,
+              "rose": 5293
             }
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-stacked-chart/office2pdf"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-stacked-chart/office2pdf"
         },
         "libreoffice": {
           "exit_code": 0,
@@ -1322,10 +1344,12 @@
             "colors": {
               "red": 0,
               "blue": 2997,
-              "orange": 5832
+              "orange": 5832,
+              "green": 0,
+              "rose": 5832
             }
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-stacked-chart/libreoffice"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-stacked-chart/libreoffice"
         }
       },
       "comparisons": {
@@ -1400,7 +1424,9 @@
             "colors": {
               "red": 0,
               "blue": 34656,
-              "orange": 0
+              "orange": 0,
+              "green": 0,
+              "rose": 0
             }
           }
         },
@@ -1426,10 +1452,12 @@
             "colors": {
               "red": 17328,
               "blue": 17328,
-              "orange": 0
+              "orange": 0,
+              "green": 0,
+              "rose": 17328
             }
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-cropped-image/office2pdf"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-cropped-image/office2pdf"
         },
         "libreoffice": {
           "exit_code": 0,
@@ -1453,10 +1481,12 @@
             "colors": {
               "red": 0,
               "blue": 34656,
-              "orange": 0
+              "orange": 0,
+              "green": 0,
+              "rose": 0
             }
           },
-          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-authored-v3/authored-cropped-image/libreoffice"
+          "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-cropped-image/libreoffice"
         }
       },
       "comparisons": {

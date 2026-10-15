@@ -1,6 +1,6 @@
 # XLSX preview development corpus
 
-This opt-in corpus compares three independent paths using the same 24 upstream inputs, plus eight authored probes:
+This opt-in corpus compares three independent paths using 24 original upstream inputs, 20 expanded inputs, and eight authored probes:
 
 - **candidate:** this fork's `lo_calc::from_xlsx_bytes` and `to_pdf_preview`;
 - **office2pdf:** Davros's existing packaged converter (currently office2pdf 0.8.1 with Davros patches);
@@ -147,8 +147,9 @@ relative/absolute cell references, priority and `stopIfTrue`, differential font
 and solid-fill styles. Data bars support numeric bounds and named values already
 saved by formula cells in the same sheet; no formulas are recalculated. The
 budget's `showValue=0` is honored (office2pdf displays the hidden value).
-Other expression syntax, color scales, icon sets, percentile bounds and negative
-bar axes remain outside this implementation. Rule processing is bounded.
+Two- and three-color scales support numeric, min/max, percentage and percentile
+thresholds, plus saved scalar reference thresholds. Other expression syntax, icon
+sets, percentile data-bar bounds and negative bar axes remain outside this implementation. Rule processing is bounded.
 
 Cell styling also includes the complete indexed palette, underline, indentation,
 shrink-to-fit, and rotation through 90 degrees in either direction. Bundled source fonts are measured and subset-embedded from the same face. Inline
@@ -205,3 +206,25 @@ DAVROS_PREVIEW_FONTS=/path/to/bundle/fonts cargo test -p lo_core source_fonts
 
 For low-disk development, `CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_DEV_INCREMENTAL=false`
 keeps the workspace debug artifacts much smaller; it does not change release builds.
+
+## Expanded corpus
+
+`expanded.json` adds 20 inputs pinned to the same upstream revision: tables,
+pivot reports, drawings, chart and print-layout regressions, conditional-format
+collections, rich strings, right-to-left sheets, and six upstream-authored business
+examples. These are regression/example workbooks, not independently sampled
+production documents. The existing fixture license notices apply.
+
+```sh
+python3 tests/xlsx_corpus/run.py fetch --manifest tests/xlsx_corpus/expanded.json
+python3 tests/xlsx_corpus/run.py evaluate \
+  --manifest tests/xlsx_corpus/expanded.json \
+  --bundle /path/to/preserved-baseline-bundle \
+  --output tests/xlsx_corpus/runs/expanded --preview-pages 10
+```
+
+`EXPANDED.md` records findings, fixes, and remaining gaps. `expanded-baseline.json`
+and `expanded-results.json` preserve before/after measurements, including failed
+reference conversions. The large conditional-format collection has more than ten
+pages: text and page geometry cover all pages, but raster review is limited to the
+first ten. Use the full PDFs for later pages.

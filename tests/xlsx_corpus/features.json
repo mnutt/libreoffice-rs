@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "checkout_source_sha256": "61c06033f049c6c1761fae3cbae4b0da6f87d111d2f14356a1557e0061ecd350",
+  "checkout_source_sha256": "4b5bacdc57b31ce35932703cbe796ecac19ee9f3903c88c60f417431f7dcbda5",
   "manifest_sha256": "f12d8690c72a53576ac651eb11852fe87c585f8b0b266e8455f299e72f619ea5",
-  "runner_sha256": "91dcee520d4a150b02aeb8ea6159db1119fdd89b5003ca8766806738d50114a5",
-  "candidate_sha256": "c357ced547d88e20da25a3ab60a8877eaceeeb39e4fe1b1e514ca09301b05059",
-  "expectations_sha256": "40b57a7251a7a5356f11400e9c1e34aa773218a3a06c8d462ac9ee6450f6d9a1",
+  "runner_sha256": "23f260ca7a01ed00bc75ebe2aa03d3fe12f40b6b393806f498e2aa85bdbf9f9c",
+  "candidate_sha256": "e7af92b4af503741d4af2bcbbd11d91d47ebebc0a92991bdb28f3127cd1ce201",
+  "expectations_sha256": "2da1cfe34b911d47cf8f939747d4e249e29f2725988b952ebc533755deaf1b73",
   "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
   "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
   "fonts": {
@@ -24,7 +24,7 @@
   },
   "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
   "checkout_tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "checkout_revision": "f18b7dbbb867084db9c3d5e84a9fcb912c844f78",
+  "checkout_revision": "91feb89e2cc26671a009d967ef5a159e64df3a24",
   "cases": [
     {
       "id": "poi-Formatting",
@@ -159,7 +159,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.033,
+          "seconds": 0.037,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2645,7 +2645,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.366,
+          "seconds": 0.416,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2900,7 +2900,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.017,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {

@@ -1,10 +1,11 @@
 # XLSX fidelity milestone
 
-Implementation: `f18b7db` on `davros-fixes`. This is progress toward a replacement,
+Implementation: `54aeb62` on `davros-fixes`. This is progress toward a replacement,
 not a claim of complete Excel fidelity or a production renderer switch.
 
 `features.json` records the 24 upstream fixtures; `authored-results.json` records
-eight deterministic authored probes. Reports include source and binary hashes,
+eight deterministic authored probes. `expanded-results.json` adds 20 upstream
+regression/example workbooks; see [EXPANDED.md](EXPANDED.md). Reports include source and binary hashes,
 font configuration, reference provenance, and feature expectations. PDFs, PNGs,
 and HTML comparisons remain local ignored artifacts under `runs/`. The latest
 [original](runs/rich-shrink-originals/report.html) and
@@ -30,12 +31,17 @@ and HTML comparisons remain local ignored artifacts under `runs/`. The latest
   Source image crops clip the expanded image to its destination frame. The crop
   probe requires visible blue pixels and zero red pixels. External images are not
   fetched.
+- Absent chart caches can be filled from bounded local worksheet references,
+  using saved values even on hidden sheets. Existing caches remain authoritative;
+  external and expression references are not evaluated. Relationship lookup
+  matches ASCII case and rejects ambiguous aliases.
 - Cached line, clustered/stacked bar, and scatter charts retain indexed gaps,
   numeric scatter coordinates, colors, titles, labels, legends, axis bounds,
   selected markers, and source gap width. Stacks accumulate positive and negative
   values separately. Automatic value axes leave headroom at exact tick maxima.
 - Scalar conditional comparisons, relative references, priorities/stop rules,
   differential fonts/fills, and cached numeric/named data bars are supported.
+  Two- and three-color scales support min/max, percentage and percentile bounds.
   Hidden bar values stay hidden. Indexed colors, negative number-section colors,
   indentation, underline, plain-text rotation and shrink-to-fit are retained.
 
@@ -44,8 +50,8 @@ recalculation; missing or stale caches remain a limitation.
 
 ## Comparison results
 
-All 32 inputs convert with the candidate, office2pdf, and real LibreOffice. All
-candidate feature expectations pass. Twenty of the original 24 cases have 100%
+All 52 inputs convert with the candidate and real LibreOffice; office2pdf fails
+on three expanded inputs. All candidate feature expectations pass. Twenty of the original 24 cases have 100%
 word recall against LibreOffice; that is not twenty visual-fidelity passes.
 
 | Case | Candidate recall vs LO | Candidate recall vs office2pdf | Candidate / office2pdf / LO pages |
@@ -102,19 +108,19 @@ size or arbitrary-document throughput.
 - Disjoint print areas, rotated images, rotated rich text, superscript/subscript,
   strike-through, advanced shaping, and table-style overrides need work.
 - Combination/percent-stacked/logarithmic charts, more marker shapes, smoothing,
-  complex conditional formulas, color scales/icon sets, and negative data-bar axes
+  complex conditional formulas, icon sets, and negative data-bar axes
   remain unsupported or partial.
-- The 32 cases are a development sample, not representative coverage of arbitrary
+- The 52 cases are a development sample, not representative coverage of arbitrary
   Excel files. Feature gates complement manual inspection; they do not certify
   equivalent pixels, pagination, or typography.
 
 ## Validation
 
-The affected Calc tests pass (28 unit and ten XLSX integration tests), as do eight
+The affected Calc tests pass (30 unit and twelve XLSX integration tests), as do nine
 corpus-runner tests. The full workspace all-feature suite passed at the preceding
 font/crop/rich-text/chart milestone. The source-font embedding regression was
-also run with the bundled fonts. Every corpus page is rendered, up to ten per
-fixture, and provenance stays attached to each measurement.
+also run with the bundled fonts. All pages are inspected for text and geometry; the first ten are rasterized per
+fixture. Provenance stays attached to each measurement.
 
 The fork changes are published on `davros-fixes`. Davros integration changes remain
 uncommitted, and its optional renderer pin is an earlier fork milestone.
