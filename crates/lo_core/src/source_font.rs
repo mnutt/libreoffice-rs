@@ -100,6 +100,39 @@ fn advance(id: u32, ch: char) -> Option<u16> {
     }
     value
 }
+/// Font ascent plus descent in em units, for slide baseline spacing.
+fn vertical_metrics(id: u32) -> Option<(f32, f32)> {
+    static HEIGHTS: OnceLock<
+        std::sync::Mutex<std::collections::BTreeMap<u32, Option<(f32, f32)>>>,
+    > = OnceLock::new();
+    let mut cache = HEIGHTS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(|p| p.into_inner());
+    if let Some(value) = cache.get(&id) {
+        return *value;
+    }
+    let value = with_face(id, |data, index| {
+        let face = Face::parse(data, index).ok()?;
+        let height =
+            (face.ascender() as f32 - face.descender() as f32) / face.units_per_em().max(1) as f32;
+        (height.is_finite() && height > 0.0).then_some((
+            height.clamp(0.5, 3.0),
+            (-(face.descender() as f32) / face.units_per_em().max(1) as f32).clamp(0.0, 1.0),
+        ))
+    })
+    .flatten();
+    if cache.len() < 4096 {
+        cache.insert(id, value);
+    }
+    value
+}
+pub fn line_height_ratio(id: u32) -> Option<f32> {
+    vertical_metrics(id).map(|m| m.0)
+}
+pub fn descent_ratio(id: u32) -> Option<f32> {
+    vertical_metrics(id).map(|m| m.1)
+}
 pub(crate) fn covers(id: u32, ch: char) -> bool {
     advance(id, ch).is_some()
 }
