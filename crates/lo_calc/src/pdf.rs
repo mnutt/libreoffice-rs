@@ -166,6 +166,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
     if sheet.cells.is_empty()
         && layout.charts.is_empty()
         && layout.images.is_empty()
+        && layout.text_boxes.is_empty()
         && layout.headers.is_empty()
         && layout.footers.is_empty()
     {
@@ -227,8 +228,8 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
     let mut widths = widths;
     let mut heights = heights;
     // Drawing-only areas must participate in pagination too.
-    let drawing_width = layout.images.iter().map(|i| i.frame).chain(layout.charts.iter().map(|c|c.frame)).map(|f| f.origin.x.as_pt()+f.size.width.as_pt()).fold(0.0_f32,f32::max);
-    let drawing_height = layout.images.iter().map(|i| i.frame).chain(layout.charts.iter().map(|c|c.frame)).map(|f| f.origin.y.as_pt()+f.size.height.as_pt()).fold(0.0_f32,f32::max);
+    let drawing_width = layout.images.iter().map(|i| i.frame).chain(layout.charts.iter().map(|c|c.frame)).chain(layout.text_boxes.iter().map(|t|t.frame)).map(|f| f.origin.x.as_pt()+f.size.width.as_pt()).fold(0.0_f32,f32::max);
+    let drawing_height = layout.images.iter().map(|i| i.frame).chain(layout.charts.iter().map(|c|c.frame)).chain(layout.text_boxes.iter().map(|t|t.frame)).map(|f| f.origin.y.as_pt()+f.size.height.as_pt()).fold(0.0_f32,f32::max);
     extend_drawing_grid(&mut widths, drawing_width, layout.default_column_width, available_w);
     extend_drawing_grid(&mut heights, drawing_height, layout.default_row_height, available_h);
     let images: Vec<_> = layout.images.iter().filter_map(|i| register_image(pdf,i).map(|name|(i.frame,name))).collect();
@@ -240,7 +241,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
             let oy: f32 = heights[..rows.start].iter().sum();
             let tw: f32 = widths[columns.clone()].iter().sum();
             let th: f32 = heights[rows.clone()].iter().sum();
-            let image_present = images.iter().map(|(f,_)| f).chain(layout.charts.iter().map(|c| &c.frame)).any(|f| f.origin.x.as_pt() < ox+tw && f.origin.x.as_pt()+f.size.width.as_pt()>ox && f.origin.y.as_pt()<oy+th && f.origin.y.as_pt()+f.size.height.as_pt()>oy);
+            let image_present = images.iter().map(|(f,_)| f).chain(layout.charts.iter().map(|c| &c.frame)).chain(layout.text_boxes.iter().map(|t| &t.frame)).any(|f| f.origin.x.as_pt() < ox+tw && f.origin.x.as_pt()+f.size.width.as_pt()>ox && f.origin.y.as_pt()<oy+th && f.origin.y.as_pt()+f.size.height.as_pt()>oy);
             // Empty page tiles do not need a printed page.
             if !sheet.cells.keys().any(|a| {
                 columns.contains(&(a.col as usize))
@@ -438,6 +439,16 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                     "q {} {} {} {} re W n",
                     left, bottom, available_w, available_h
                 ));
+                for text in &layout.text_boxes {
+                    let f=text.frame;let x=left+heading_w+f.origin.x.as_pt()-ox;
+                    let y=layout.page_height-top_margin-layout.header_height-heading_h-f.origin.y.as_pt()+oy;
+                    let w=f.size.width.as_pt();let h=f.size.height.as_pt();let pad=text.style.padding.as_pt();let size=text.style.font_size_pt.clamp(1.0,409.0);
+                    page.raw(&format!("q {x} {} {w} {h} re W n",y-h));
+                    if let Some((r,g,b))=grid_color(&text.style.background) {page.rect_fill_rgb(x,y-h,w,h,r,g,b);}
+                    let (r,g,b)=grid_color(&text.style.foreground).unwrap_or((0.0,0.0,0.0));
+                    for (i,line) in grid_wrap(&text.text,(w-2.0*pad).max(1.0),size).iter().enumerate() {let baseline=y-pad-size-i as f32*size*1.2;if baseline<y-h {break;}page.text_rgb(x+pad,baseline,size,PdfFont::Helvetica,line,r,g,b);}
+                    page.raw("Q");
+                }
                 for chart in &layout.charts {
                     chart.render(page, layout.page_height, left+heading_w-ox, top_margin+layout.header_height+heading_h-oy);
                 }
@@ -557,7 +568,7 @@ pub fn to_pdf_preview(workbook: &Workbook) -> Vec<u8> {
                     .unwrap_or(layout.default_column_width)
             })
             .sum::<f32>();
-        let width = layout.images.iter().map(|i|i.frame).chain(layout.charts.iter().map(|c|c.frame)).map(|f|f.origin.x.as_pt()+f.size.width.as_pt()).fold(width,f32::max);
+        let width = layout.images.iter().map(|i|i.frame).chain(layout.charts.iter().map(|c|c.frame)).chain(layout.text_boxes.iter().map(|t|t.frame)).map(|f|f.origin.x.as_pt()+f.size.width.as_pt()).fold(width,f32::max);
         let margins = layout.margins.unwrap_or([layout.margin; 4]);
         layout.page_width = layout.page_width.max(
             (width + margins[0] + margins[1] + if layout.print_headings { 24.0 } else { 0.0 })

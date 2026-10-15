@@ -133,6 +133,7 @@ pub struct SheetLayout {
     pub hidden: bool,
     pub charts: Vec<crate::odf_chart::OdfChart>,
     pub images: Vec<crate::ImageElement>,
+    pub text_boxes: Vec<crate::TextBox>,
     /// Fraction, RGB color, and whether to retain text for cached conditional data bars.
     pub data_bars: BTreeMap<CellAddr, (f32, String, bool)>,
     pub page_width: f32,
@@ -157,6 +158,7 @@ impl Default for SheetLayout {
             hidden: false,
             charts: Vec::new(),
             images: Vec::new(),
+            text_boxes: Vec::new(),
             data_bars: BTreeMap::new(),
             page_width: 595.28,
             page_height: 841.89,
