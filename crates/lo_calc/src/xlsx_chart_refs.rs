@@ -16,8 +16,10 @@ pub(crate) struct ChartReferences {
 impl ChartReferences {
     pub(crate) fn new(workbook: &XmlNode, rels: &BTreeMap<String, String>) -> Self {
         let mut targets = BTreeMap::new();
-        if let Some(sheets) = workbook.child("sheets") {
-            for sheet in sheets.children_named("sheet") {
+        if let Some(sheets) = workbook.children_named("sheets")
+            .find(|n| crate::import::spreadsheet_element(n, &[workbook])) {
+            for sheet in sheets.children_named("sheet")
+                .filter(|n| crate::import::spreadsheet_element(n, &[sheets, workbook])) {
                 if let (Some(name), Some(path)) = (
                     sheet.attr("name"),
                     sheet.attr("id").and_then(|id| rels.get(id)),
@@ -220,6 +222,13 @@ fn range(s: &str) -> Option<(String, CellAddr, CellAddr)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn foreign_sheet_cannot_replace_chart_target_with_same_name() {
+        let root = lo_core::parse_xml_document(r#"<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheets><sheet name="Data" id="real"/><sheet xmlns="urn:foreign" name="Data" id="foreign"/></sheets></workbook>"#).unwrap();
+        let rels = BTreeMap::from([("real".into(),"xl/worksheets/sheet1.xml".into()),("foreign".into(),"xl/worksheets/sheet2.xml".into())]);
+        let refs = ChartReferences::new(&root,&rels);
+        assert_eq!(refs.targets.get("data").map(String::as_str),Some("xl/worksheets/sheet1.xml"));
+    }
     #[test]
     fn fills_missing_caches_from_saved_values_and_preserves_gaps_and_existing_caches() {
         let entries = vec![lo_zip::ZipEntry::new("xl/worksheets/data.xml", br#"<worksheet><sheetData><row><c r="A1" t="s"><v>0</v></c><c r="B1"><f>UNSUPPORTED()</f><v>42</v></c><c r="B2"><f>1+1</f></c><c r="B3"><v>7</v></c></row></sheetData></worksheet>"#.to_vec())];

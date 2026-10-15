@@ -11,6 +11,19 @@ use lo_zip::{rels_path_for, resolve_part_target, ZipArchive};
 
 use crate::workbook_from_csv;
 
+pub(crate) fn spreadsheet_element(node: &XmlNode, ancestors: &[&XmlNode]) -> bool {
+    let prefix = node.name.split_once(':').map(|(prefix, _)| prefix);
+    let key = prefix.map(|p| format!("xmlns:{p}")).unwrap_or_else(|| "xmlns".into());
+    let namespace = std::iter::once(node).chain(ancestors.iter().copied())
+        .find_map(|n| n.attributes.get(&key));
+    match namespace.map(String::as_str) {
+        Some("http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+            | "http://purl.oclc.org/ooxml/spreadsheetml/main") => true,
+        None | Some("") => prefix.is_none(), // Retain legacy unqualified documents.
+        _ => false,
+    }
+}
+
 pub fn load_bytes(title: impl Into<String>, bytes: &[u8], format: &str) -> Result<Workbook> {
     let title = title.into();
     match format.to_ascii_lowercase().as_str() {
@@ -79,8 +92,12 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
     let mut workbook = Workbook::new(title);
     workbook.sheets.clear();
 
-    if let Some(sheets_node) = workbook_root.child("sheets") {
-        for (index, sheet_node) in sheets_node.children_named("sheet").enumerate() {
+    if let Some(sheets_node) = workbook_root.children_named("sheets")
+        .find(|n| spreadsheet_element(n, &[&workbook_root])) {
+        // Filter before numbering fallback targets: foreign extension nodes do
+        // not represent worksheets and must not consume a worksheet index.
+        for (index, sheet_node) in sheets_node.children_named("sheet")
+            .filter(|n| spreadsheet_element(n, &[sheets_node, &workbook_root])).enumerate() {
             let name = sheet_node.attr("name").unwrap_or("Sheet").to_string();
             let target = sheet_node
                 .attr("id")
@@ -1193,6 +1210,25 @@ mod tests {
     use crate::to_xlsx;
     use lo_core::{CellAddr, CellValue, Workbook};
 
+    #[test]
+    fn foreign_namespace_sheets_do_not_duplicate_or_displace_worksheets() {
+        use lo_zip::{write_zip_to_vec, ZipEntry};
+        for namespace in ["http://schemas.openxmlformats.org/spreadsheetml/2006/main", "http://purl.oclc.org/ooxml/spreadsheetml/main"] {
+            let workbook = format!(r#"<x:workbook xmlns:x="{namespace}"><sheets xmlns="urn:foreign"><sheet name="Foreign container"/></sheets><x:sheets><x:sheet xmlns:x="urn:foreign" name="Foreign shadow"/><unknown:sheet name="Undeclared prefix"/><sheet xmlns="urn:foreign" name="Foreign default"/><x:sheet name="First"/><x:sheet name="Second"/></x:sheets></x:workbook>"#);
+            let sheet = |value: &str| format!(r#"<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>{value}</t></is></c></row></sheetData></worksheet>"#);
+            let bytes = write_zip_to_vec(&[
+                ZipEntry::new("xl/workbook.xml",workbook.into_bytes()),
+                ZipEntry::new("xl/worksheets/sheet1.xml",sheet("one").into_bytes()),
+                ZipEntry::new("xl/worksheets/sheet2.xml",sheet("two").into_bytes()),
+            ]).unwrap();
+            let loaded = from_xlsx_bytes("namespaces",&bytes).unwrap();
+            assert_eq!(loaded.sheets.len(),2);
+            assert_eq!(loaded.sheets[0].name,"First");
+            assert_eq!(loaded.sheets[1].name,"Second");
+            assert_eq!(loaded.sheets[0].get(CellAddr::new(0,0)).map(|c| &c.value),Some(&CellValue::Text("one".into())));
+            assert_eq!(loaded.sheets[1].get(CellAddr::new(0,0)).map(|c| &c.value),Some(&CellValue::Text("two".into())));
+        }
+    }
     #[test]
     fn column_width_rounding_uses_pixels_before_pdf_points() {
         // The specification's 8-character Calibri example is 61 pixels.
