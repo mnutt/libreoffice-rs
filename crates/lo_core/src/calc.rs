@@ -132,6 +132,7 @@ pub struct SheetLayout {
     pub rows: BTreeMap<u32, f32>,
     pub hidden: bool,
     pub charts: Vec<crate::odf_chart::OdfChart>,
+    pub images: Vec<crate::ImageElement>,
     pub page_width: f32,
     pub page_height: f32,
     pub margin: f32,
@@ -153,6 +154,7 @@ impl Default for SheetLayout {
             rows: BTreeMap::new(),
             hidden: false,
             charts: Vec::new(),
+            images: Vec::new(),
             page_width: 595.28,
             page_height: 841.89,
             // Calc uses 2 cm when the ODF page style omits margins.

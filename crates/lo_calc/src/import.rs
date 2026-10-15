@@ -87,6 +87,7 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
                 parse_xlsx_sheet(&name, &sheet_xml, &shared_strings, &styles, date_1904)?;
             sheet.layout.as_mut().unwrap().hidden =
                 matches!(sheet_node.attr("state"), Some("hidden" | "veryHidden"));
+            crate::xlsx_drawings::import(&zip, &target, &sheet_xml, sheet.layout.as_mut().unwrap())?;
             workbook.sheets.push(sheet);
         }
     }
@@ -133,7 +134,7 @@ pub fn from_ods_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workbook
 
 // ---------------------------------------------------------------------------
 
-fn parse_relationships(zip: &ZipArchive, part: &str) -> Result<BTreeMap<String, String>> {
+pub(crate) fn parse_relationships(zip: &ZipArchive, part: &str) -> Result<BTreeMap<String, String>> {
     let rels_path = rels_path_for(part);
     if !zip.contains(&rels_path) {
         return Ok(BTreeMap::new());
@@ -141,6 +142,7 @@ fn parse_relationships(zip: &ZipArchive, part: &str) -> Result<BTreeMap<String, 
     let root = parse_xml_document(&zip.read_string(&rels_path)?)?;
     let mut map = BTreeMap::new();
     for rel in root.children_named("Relationship") {
+        if rel.attr("TargetMode") == Some("External") { continue; }
         if let (Some(id), Some(target)) = (rel.attr("Id"), rel.attr("Target")) {
             map.insert(id.to_string(), resolve_part_target(part, target));
         }

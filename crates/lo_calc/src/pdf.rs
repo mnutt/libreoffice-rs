@@ -165,6 +165,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
     use lo_core::{style::Alignment, CellAddr};
     if sheet.cells.is_empty()
         && layout.charts.is_empty()
+        && layout.images.is_empty()
         && layout.headers.is_empty()
         && layout.footers.is_empty()
     {
@@ -223,17 +224,30 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                 .clamp(0.0, available_h)
         })
         .collect();
+    let mut widths = widths;
+    let mut heights = heights;
+    // Drawing-only areas must participate in pagination too.
+    let drawing_width = layout.images.iter().map(|i| i.frame.origin.x.as_pt()+i.frame.size.width.as_pt()).fold(0.0_f32,f32::max);
+    let drawing_height = layout.images.iter().map(|i| i.frame.origin.y.as_pt()+i.frame.size.height.as_pt()).fold(0.0_f32,f32::max);
+    extend_drawing_grid(&mut widths, drawing_width, layout.default_column_width, available_w);
+    extend_drawing_grid(&mut heights, drawing_height, layout.default_row_height, available_h);
+    let images: Vec<_> = layout.images.iter().filter_map(|i| register_image(pdf,i).map(|name|(i.frame,name))).collect();
     let column_pages = grid_bands(&widths, available_w);
     let row_pages = grid_bands(&heights, available_h);
     for columns in column_pages {
         for rows in &row_pages {
+            let ox: f32 = widths[..columns.start].iter().sum();
+            let oy: f32 = heights[..rows.start].iter().sum();
+            let tw: f32 = widths[columns.clone()].iter().sum();
+            let th: f32 = heights[rows.clone()].iter().sum();
+            let image_present = images.iter().any(|(f,_)| f.origin.x.as_pt() < ox+tw && f.origin.x.as_pt()+f.size.width.as_pt()>ox && f.origin.y.as_pt()<oy+th && f.origin.y.as_pt()+f.size.height.as_pt()>oy);
             // Empty page tiles do not need a printed page.
             if !sheet.cells.keys().any(|a| {
                 columns.contains(&(a.col as usize))
                     && rows.contains(&(a.row as usize))
                     && widths[a.col as usize] > 0.0
                     && heights[a.row as usize] > 0.0
-            }) && !(columns.start == 0
+            }) && !image_present && !(columns.start == 0
                 && rows.start == 0
                 && (!layout.charts.is_empty()
                     || !layout.headers.is_empty()
@@ -409,6 +423,11 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                 }
                 top -= h;
             }
+            page.raw(&format!("q {} {} {} {} re W n",left+heading_w,bottom+layout.footer_height,available_w,available_h));
+            for (f,name) in &images {
+                page.image(name,left+heading_w+f.origin.x.as_pt()-ox,layout.page_height-top_margin-layout.header_height-heading_h-f.origin.y.as_pt()+oy-f.size.height.as_pt(),f.size.width.as_pt(),f.size.height.as_pt());
+            }
+            page.raw("Q");
             if columns.start == 0 && rows.start == 0 {
                 page.raw(&format!(
                     "q {} {} {} {} re W n",
@@ -533,6 +552,7 @@ pub fn to_pdf_preview(workbook: &Workbook) -> Vec<u8> {
                     .unwrap_or(layout.default_column_width)
             })
             .sum::<f32>();
+        let width = layout.images.iter().map(|i|i.frame.origin.x.as_pt()+i.frame.size.width.as_pt()).fold(width,f32::max);
         let margins = layout.margins.unwrap_or([layout.margin; 4]);
         layout.page_width = layout.page_width.max(
             (width + margins[0] + margins[1] + if layout.print_headings { 24.0 } else { 0.0 })
@@ -606,3 +626,65 @@ fn draw_border(
     }
     page.raw("Q");
 }
+
+fn extend_drawing_grid(values: &mut Vec<f32>, extent: f32, default: f32, available: f32) {
+    let step=default.max(1.0).min(available.max(1.0));
+    let mut total: f32=values.iter().sum();
+    while total < extent && values.len()<100_000 { let n=step.min(extent-total); values.push(n); total+=n; }
+}
+fn register_image(pdf: &mut PdfDocument, image: &lo_core::ImageElement) -> Option<String> {
+    if image.mime_type == "image/jpeg" {
+        let (w,h)=jpeg_dimensions(&image.data)?;
+        return Some(pdf.add_jpeg_image(w,h,image.data.clone()));
+    }
+    // Bound PNG allocation before invoking the decoder.
+    let b=&image.data;
+    if b.get(..8)? != b"\x89PNG\r\n\x1a\n" {return None;}
+    let w=u32::from_be_bytes(b.get(16..20)?.try_into().ok()?);
+    let h=u32::from_be_bytes(b.get(20..24)?.try_into().ok()?);
+    if u64::from(w)*u64::from(h)>16_000_000 {return None;}
+    let i=lo_core::decode_png(b).ok()?;
+    Some(pdf.add_rgba_image(i.width,i.height,i.pixels))
+}
+fn jpeg_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
+    let mut index = 2usize;
+    while index + 4 <= bytes.len() {
+        if bytes[index] != 0xff {
+            index += 1;
+            continue;
+        }
+        let marker = bytes[index + 1];
+        index += 2;
+        if matches!(marker, 0xd8 | 0xd9) || (0xd0..=0xd7).contains(&marker) {
+            continue;
+        }
+        let len = u16::from_be_bytes(bytes.get(index..index + 2)?.try_into().ok()?) as usize;
+        if len < 2 || index + len > bytes.len() {
+            return None;
+        }
+        if matches!(
+            marker,
+            0xc0 | 0xc1
+                | 0xc2
+                | 0xc3
+                | 0xc5
+                | 0xc6
+                | 0xc7
+                | 0xc9
+                | 0xca
+                | 0xcb
+                | 0xcd
+                | 0xce
+                | 0xcf
+        ) {
+            let height =
+                u16::from_be_bytes(bytes.get(index + 3..index + 5)?.try_into().ok()?) as u32;
+            let width =
+                u16::from_be_bytes(bytes.get(index + 5..index + 7)?.try_into().ok()?) as u32;
+            return Some((width, height));
+        }
+        index += len;
+    }
+    None
+}
+
