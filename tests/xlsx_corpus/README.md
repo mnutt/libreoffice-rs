@@ -146,12 +146,16 @@ complete. Unsupported chart families are not approximated as a different type.
 
 Conditional rules support scalar `cellIs` and simple comparison expressions,
 relative/absolute cell references, priority and `stopIfTrue`, differential font
-and solid-fill styles. Data bars support numeric bounds and named values already
-saved by formula cells in the same sheet; no formulas are recalculated. The
+and solid-fill styles. Data bars support numeric, automatic min/max, percentage, percentile and saved
+scalar-reference bounds, and honor minimum/maximum lengths (defaults 10%/90%).
+No formulas are recalculated. The
 budget's `showValue=0` is honored (office2pdf displays the hidden value).
 Two- and three-color scales support numeric, min/max, percentage and percentile
-thresholds, plus saved scalar reference thresholds. Other expression syntax, icon
-sets, percentile data-bar bounds and negative bar axes remain outside this implementation. Rule processing is bounded.
+thresholds, plus saved scalar reference thresholds. Three-arrow (color and gray),
+three-traffic-light and three-flag icon sets render as vectors and honor threshold
+inclusivity, reversal, priority and hidden values. Text reserves room for the icon.
+Other icon families, custom icons, complex expressions and enhanced negative
+data-bar axes remain unsupported. Rule processing is bounded.
 
 Cell styling also includes the complete indexed palette, underline, indentation,
 shrink-to-fit, and rotation through 90 degrees in either direction. Bundled source fonts are measured and subset-embedded from the same face. Inline

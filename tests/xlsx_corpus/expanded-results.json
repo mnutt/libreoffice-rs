@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "checkout_source_sha256": "00cf489cb27cd56f5737b87c3a30c8f9f303cc2edf38118761df7de1b7ba5388",
+  "checkout_source_sha256": "559c3795f6f4dcb934afc477add4d14a7cd12cf8ab86cf7d7fd33bd155a04769",
   "manifest_sha256": "f8c939f2c0c9d51c5e0afca408311cdf383308d3a0728df4f738265b71a4d6fe",
   "runner_sha256": "8b26ea6645c1827530f1b2f751072f74e15a2086fb405a05bec648c69e5c7911",
-  "candidate_sha256": "8e12e2eda68fb1c1b3f1918020bb0ed69416cb0d37ecaeb4e83b7643d0c02b00",
-  "expectations_sha256": "cbfbbc7edb2b3bc896209ee35352fc26a9af288b6355d2276e1c126445f5a0c6",
+  "candidate_sha256": "312927811d8f0c161465f10292f03068105cf02056328173019b8cd2566e6b6b",
+  "expectations_sha256": "02ada663ce1b47285be4a2b96f7a4fdbdd8817d9a1a2a3865f6c42335ee85654",
   "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
   "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
   "fonts": {
@@ -23,8 +23,8 @@
     "NotoSans-Regular.ttf": "478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823"
   },
   "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
-  "checkout_tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "checkout_revision": "a4b396def4618c62547fb33d22688854d42a0902",
+  "checkout_tracked_diff_sha256": "649620f20f21beaf0d63d8c73273584bd0b9ebd3959df39e8c8e57d9ac78a360",
+  "checkout_revision": "52d097ec4f3ca5b2c2c4a848ab28b62a6309bf8b",
   "cases": [
     {
       "id": "expanded-ExcelTables",
@@ -1088,7 +1088,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.035,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -1751,7 +1751,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.118,
+          "seconds": 0.115,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2328,7 +2328,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.034,
+          "seconds": 0.035,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2641,7 +2641,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.033,
+          "seconds": 0.035,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2783,7 +2783,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 1.319,
+          "seconds": 1.32,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2882,7 +2882,7 @@
                 792.0
               ]
             ],
-            "bytes": 11467085,
+            "bytes": 11477346,
             "image_count": 23,
             "previews": [
               "page-1.png",
@@ -3080,8 +3080,8 @@
       },
       "comparisons": {
         "candidate_vs_libreoffice": {
-          "recall": 0.9232105628908964,
-          "precision": 0.9432019879304224,
+          "recall": 0.9214732453092426,
+          "precision": 0.96331274972757,
           "missing": [
             [
               "to",
@@ -3148,6 +3148,10 @@
               2
             ],
             [
+              "7",
+              2
+            ],
+            [
               "super",
               2
             ],
@@ -3158,10 +3162,6 @@
             [
               "data",
               1
-            ],
-            [
-              "examples",
-              1
             ]
           ],
           "extra": [
@@ -3171,38 +3171,26 @@
             ],
             [
               "3",
-              9
-            ],
-            [
-              "4",
-              9
-            ],
-            [
-              "8",
-              9
+              7
             ],
             [
               "1",
-              8
-            ],
-            [
-              "6",
-              8
+              6
             ],
             [
               "40",
-              7
+              6
             ],
             [
-              "5",
-              7
+              "8",
+              4
             ],
             [
               "00",
               3
             ],
             [
-              "10",
+              "4",
               3
             ],
             [
@@ -3210,15 +3198,15 @@
               3
             ],
             [
-              "42",
-              3
-            ],
-            [
               "77883",
               3
             ],
             [
-              "56",
+              "10",
+              2
+            ],
+            [
+              "5",
               2
             ],
             [
@@ -3234,15 +3222,27 @@
               2
             ],
             [
-              "9",
-              2
-            ],
-            [
-              "16",
+              "6",
               2
             ],
             [
               "900",
+              1
+            ],
+            [
+              "30",
+              1
+            ],
+            [
+              "29",
+              1
+            ],
+            [
+              "58",
+              1
+            ],
+            [
+              "69",
               1
             ]
           ],
@@ -3285,7 +3285,7 @@
                 841.89
               ]
             ],
-            "bytes": 70268,
+            "bytes": 83083,
             "image_count": 0,
             "previews": [
               "page-1.png"
@@ -3742,7 +3742,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.065,
+          "seconds": 0.066,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -3757,7 +3757,7 @@
                 841.89
               ]
             ],
-            "bytes": 235411,
+            "bytes": 235418,
             "image_count": 0,
             "previews": [
               "page-1.png",
@@ -3837,8 +3837,8 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.260684,
-            0.159378
+            0.260314,
+            0.159184
           ]
         },
         "candidate_vs_libreoffice": {
@@ -4081,7 +4081,7 @@
           "missing": [],
           "extra": [],
           "raster_rmse": [
-            0.118974
+            0.119016
           ]
         },
         "candidate_vs_libreoffice": {
@@ -4117,7 +4117,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.034,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -4239,10 +4239,20 @@
                 841.89
               ]
             ],
-            "bytes": 48683,
+            "bytes": 49943,
             "image_count": 0,
             "previews": [
               "page-1.png"
+            ],
+            "regions": [
+              {
+                "red": 32,
+                "blue": 0,
+                "orange": 38,
+                "green": 141,
+                "rose": 24,
+                "dark": 0
+              }
             ]
           }
         },
@@ -4272,6 +4282,16 @@
             "image_count": 6,
             "previews": [
               "page-1.png"
+            ],
+            "regions": [
+              {
+                "red": 13,
+                "blue": 0,
+                "orange": 22,
+                "green": 72,
+                "rose": 35,
+                "dark": 0
+              }
             ]
           },
           "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/expanded-initial/expanded-10_kpi_tracker_en/libreoffice"

@@ -102,8 +102,9 @@ so its later pages have not received raster review in this batch.
 1. Refine chart tick bounds, borders, legend spacing and source layout. Extend
    coverage beyond basic pies and linear gradients. Fit-to-height and gift-budget
    examples retain chart/layout differences.
-2. Extend conditional-format coverage: icon sets, automatic data-bar bounds,
-   negative axes, and formula rules beyond simple scalar comparisons.
+2. Extend conditional-format coverage beyond the supported three-arrow, traffic-light
+   and flag sets: other/custom icons, enhanced negative data-bar axes, and formula
+   rules beyond simple scalar comparisons. Automatic bar bounds are now supported.
 3. Investigate gift-budget (59.9% LO recall), conditional cell comparisons (81.8%),
    and pivot-report (84.6%) differences with cell-level and visual checks. Raw
    recall alone does not distinguish layout, clipped text and missing content.
@@ -112,7 +113,28 @@ so its later pages have not received raster review in this batch.
    LibreOffice, so they do not establish style fidelity.
 
 No cases were removed or existing thresholds relaxed to hide defects. The full workspace all-feature test suite passes, including 36 core tests,
-30 Calc unit tests and twelve XLSX integration tests. Ten runner tests pass,
+30 Calc unit tests and fourteen XLSX integration tests. Ten runner tests pass,
 including saved formula/gap handling, package case ambiguity, numeric percentile
 selection, conditional priority, pie proportions, gradient interpolation and region-specific visible-color checks. It does not certify
 arbitrary-XLSX replacement readiness. Davros remains uncommitted.
+
+## Conditional icon and automatic-bar follow-up
+
+The KPI tracker now renders its green/up, yellow/right and red/down arrows. A
+region-specific raster gate requires all three colors in the icon column; the
+previous PDF has zero qualifying pixels there and fails that gate. Automatic
+min/max bars now render in the conditional-format samples, with percentage and
+percentile bounds also supported. Saved bar lengths and first-match priority are
+retained; text and booleans do not contaminate numeric distributions.
+
+Bar lengths follow the [OOXML data-bar definition](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.databar?view=openxml-3.0.1),
+including its default 10%/90% endpoints. This does not implement enhanced x14
+negative axes/colors. Icon shapes are small vector approximations; other families
+and custom sets remain unsupported. No runtime dependencies were added.
+
+All 52 candidate conversions and feature gates pass in `icons-bars-original`,
+`icons-bars-expanded` and `icons-bars-authored`. Original and authored text
+scores are unchanged. The large conditional-format collection changes from
+92.32% to 92.15% LO recall and 94.32% to 96.33% precision after hidden values and
+icon text insets take effect; these extraction scores do not establish visual
+parity. The underlying measurements are retained in the tracked result files.

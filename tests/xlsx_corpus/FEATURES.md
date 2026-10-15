@@ -44,6 +44,9 @@ and HTML comparisons remain local ignored artifacts under `runs/`. The latest
 - Scalar conditional comparisons, relative references, priorities/stop rules,
   differential fonts/fills, and cached numeric/named data bars are supported.
   Two- and three-color scales support min/max, percentage and percentile bounds.
+  Data bars use automatic min/max, percentage/percentile thresholds and saved
+  minimum/maximum lengths. Three-arrow (color/gray), traffic-light and flag icons
+  honor reversal, inclusive/exclusive thresholds, priority and hidden values.
   Hidden bar values stay hidden. Indexed colors, negative number-section colors,
   indentation, underline, plain-text rotation and shrink-to-fit are retained.
 
@@ -110,7 +113,7 @@ size or arbitrary-document throughput.
 - Disjoint print areas, rotated images, rotated rich text, superscript/subscript,
   strike-through, advanced shaping, and table-style overrides need work.
 - Combination/percent-stacked/logarithmic charts, more marker shapes, smoothing,
-  complex conditional formulas, icon sets, and negative data-bar axes
+  complex conditional formulas, other/custom icon sets, and negative data-bar axes
   remain unsupported or partial.
 - The 52 cases are a development sample, not representative coverage of arbitrary
   Excel files. Feature gates complement manual inspection; they do not certify
@@ -118,8 +121,8 @@ size or arbitrary-document throughput.
 
 ## Validation
 
-The affected Calc tests pass (30 unit and twelve XLSX integration tests), as do ten
-corpus-runner tests. The full workspace all-feature suite also passes after the pie/gradient/axis-title
+The affected Calc tests pass (30 unit and fourteen XLSX integration tests), as do ten
+corpus-runner tests. The full workspace all-feature suite also passes after the icon/data-bar
 changes (36 core tests). The source-font embedding regression was
 also run with the bundled fonts. All pages are inspected for text and geometry; the first ten are rasterized per
 fixture. Provenance stays attached to each measurement.

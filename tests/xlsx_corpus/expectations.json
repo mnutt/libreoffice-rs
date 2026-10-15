@@ -180,5 +180,27 @@
       "green": 200,
       "rose": 200
     }
+  },
+  "expanded-10_kpi_tracker_en": {
+    "text": [
+      "107%",
+      "93%",
+      "84%"
+    ],
+    "regions": [
+      {
+        "box": [
+          0.64,
+          0.16,
+          0.68,
+          0.27
+        ],
+        "min_colors": {
+          "green": 50,
+          "orange": 10,
+          "red": 10
+        }
+      }
+    ]
   }
 }

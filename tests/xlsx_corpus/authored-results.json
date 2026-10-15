@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "checkout_source_sha256": "00cf489cb27cd56f5737b87c3a30c8f9f303cc2edf38118761df7de1b7ba5388",
+  "checkout_source_sha256": "559c3795f6f4dcb934afc477add4d14a7cd12cf8ab86cf7d7fd33bd155a04769",
   "manifest_sha256": "4ffd73f152a3c8161b2a2cfeff45c21b3dec7c9be9f5d9ce8fa845bef6d1873c",
   "runner_sha256": "8b26ea6645c1827530f1b2f751072f74e15a2086fb405a05bec648c69e5c7911",
-  "candidate_sha256": "8e12e2eda68fb1c1b3f1918020bb0ed69416cb0d37ecaeb4e83b7643d0c02b00",
-  "expectations_sha256": "cbfbbc7edb2b3bc896209ee35352fc26a9af288b6355d2276e1c126445f5a0c6",
+  "candidate_sha256": "312927811d8f0c161465f10292f03068105cf02056328173019b8cd2566e6b6b",
+  "expectations_sha256": "02ada663ce1b47285be4a2b96f7a4fdbdd8817d9a1a2a3865f6c42335ee85654",
   "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
   "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
   "fonts": {
@@ -23,8 +23,8 @@
     "NotoSans-Regular.ttf": "478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823"
   },
   "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
-  "checkout_tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "checkout_revision": "a4b396def4618c62547fb33d22688854d42a0902",
+  "checkout_tracked_diff_sha256": "649620f20f21beaf0d63d8c73273584bd0b9ebd3959df39e8c8e57d9ac78a360",
+  "checkout_revision": "52d097ec4f3ca5b2c2c4a848ab28b62a6309bf8b",
   "cases": [
     {
       "id": "authored-font-variants",
@@ -1417,7 +1417,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.017,
+          "seconds": 0.038,
           "stderr": "",
           "status": "ok",
           "pdf": {
