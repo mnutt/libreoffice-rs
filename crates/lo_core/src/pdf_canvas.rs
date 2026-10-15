@@ -783,6 +783,13 @@ fn append_unicode_font_objects(
     let descriptor_obj = type0_obj + 2;
     let font_file_obj = type0_obj + 3;
     let to_unicode_obj = type0_obj + 4;
+    let cid_mapping = if font.cid_to_gid.is_some() {
+        format!(" /CIDToGIDMap {} 0 R", type0_obj + 5)
+    } else if font.is_true_type {
+        " /CIDToGIDMap /Identity".into()
+    } else {
+        String::new()
+    };
     let descendant_subtype = if font.is_true_type {
         "CIDFontType2"
     } else {
@@ -811,7 +818,7 @@ fn append_unicode_font_objects(
             font.base_name,
             descriptor_obj,
             font.widths_array(),
-            if font.is_true_type { " /CIDToGIDMap /Identity" } else { "" }
+            cid_mapping
         )
         .into_bytes(),
     );
@@ -846,6 +853,14 @@ fn append_unicode_font_objects(
     cmap_stream.extend_from_slice(&cmap);
     cmap_stream.extend_from_slice(b"endstream");
     objects.push(cmap_stream);
+    if let Some(mapping) = &font.cid_to_gid {
+        let mut stream = format!("<< /Length {} >>\nstream\n", mapping.len() * 2).into_bytes();
+        for gid in mapping {
+            stream.extend_from_slice(&gid.to_be_bytes());
+        }
+        stream.extend_from_slice(b"\nendstream");
+        objects.push(stream);
+    }
     type0_obj
 }
 

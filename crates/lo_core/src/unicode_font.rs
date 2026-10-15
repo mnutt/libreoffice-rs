@@ -15,6 +15,7 @@ pub(crate) struct EmbeddedUnicodeFont {
     pub(crate) bytes: Vec<u8>,
     pub(crate) is_true_type: bool,
     pub(crate) widths: Vec<u16>,
+    pub(crate) cid_to_gid: Option<Vec<u16>>,
     pub(crate) ascent: i16,
     pub(crate) descent: i16,
     pub(crate) bbox: (i16, i16, i16, i16),
@@ -146,9 +147,26 @@ pub(crate) fn build_unicode_fonts(chars: &BTreeSet<char>) -> Result<Vec<Embedded
                 .map(|ch| format!("U+{:04X}", *ch as u32))
                 .collect::<Vec<_>>()
                 .join(", ");
-            return Err(LoError::Unsupported(format!(
-                "no installed font can preserve Unicode PDF text; missing {sample}; install Noto Sans CJK and Noto Symbols or set {FONT_OVERRIDE_ENV}"
-            )));
+            // Use an actual outlined square, not .notdef (which can be blank).
+            // Distinct CIDs preserve each missing character in ToUnicode even
+            // though every CID draws the same glyph.
+            let fallback = candidates.iter().find(|candidate| {
+                database.with_face_data(candidate.id, |data, index| {
+                    has_sfnt_table(data, b"glyf") && Face::parse(data, index)
+                        .ok().is_some_and(|face| face.glyph_index('□').is_some())
+                }).unwrap_or(false)
+            }).ok_or_else(|| LoError::Unsupported(
+                "no TrueType font with a missing-character square is available".into()
+            ))?;
+            let missing = remaining.iter().copied().collect::<Vec<_>>();
+            for chunk in missing.chunks(u16::MAX as usize) {
+                let font = database.with_face_data(fallback.id, |data, index| {
+                    build_tofu_font(data, index, &fallback.post_script_name, chunk)
+                }).ok_or_else(|| LoError::Io("reading tofu PDF font".into()))??;
+                fonts.push(font);
+            }
+            eprintln!("Preview font warning: rendering {} unsupported Unicode characters as boxes; missing {sample}", remaining.len());
+            break;
         };
         let font = database
             .with_face_data(selected.id, |data, index| {
@@ -227,6 +245,7 @@ fn build_from_face(
         bytes: subset,
         is_true_type,
         widths,
+        cid_to_gid: None,
         ascent: scale_metric(face.ascender()),
         descent: scale_metric(face.descender()),
         bbox: (
@@ -238,6 +257,30 @@ fn build_from_face(
         italic_angle: face.italic_angle(),
         char_to_cid,
     })
+}
+
+fn build_tofu_font(
+    data: &[u8],
+    face_index: u32,
+    post_script_name: &str,
+    chars: &[char],
+) -> Result<EmbeddedUnicodeFont> {
+    let mut font = build_from_face(data, face_index, post_script_name, &BTreeSet::from(['□']))?;
+    let square_gid = font.char_to_cid[&'□'];
+    let width = font.widths[square_gid as usize];
+    font.base_name = "LOTOFU+MissingGlyph".into();
+    font.char_to_cid.clear();
+    let mut mapping = vec![0];
+    font.widths = vec![0];
+    for (index, ch) in chars.iter().enumerate() {
+        let cid = u16::try_from(index + 1)
+            .map_err(|_| LoError::Unsupported("too many tofu characters in one font".into()))?;
+        font.char_to_cid.insert(*ch, cid);
+        font.widths.push(width);
+        mapping.push(square_gid);
+    }
+    font.cid_to_gid = Some(mapping);
+    Ok(font)
 }
 
 fn font_preference(face: &fontdb::FaceInfo) -> u8 {
