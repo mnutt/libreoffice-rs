@@ -10,6 +10,7 @@ pub struct OdfChart {
     categories: Vec<String>,
     series: Vec<(String, Vec<Option<f64>>, String)>,
     x_values: Option<Vec<Vec<Option<f64>>>>,
+    x_axis: [Option<f64>; 3],
     connect_points: bool,
     series_lines: Vec<bool>,
     value_labels: Vec<bool>,
@@ -258,6 +259,7 @@ impl OdfChart {
             categories,
             series,
             x_values: None,
+            x_axis: [None; 3],
             connect_points: true,
             series_lines: Vec::new(),
             value_labels: Vec::new(),
@@ -472,6 +474,21 @@ impl OdfChart {
             title,
             categories,
             series,
+            x_axis: {
+                let axis = plot.children_named("valAx").next();
+                ["min", "max", "majorUnit"].map(|key| {
+                    axis.and_then(|a| {
+                        if key == "majorUnit" {
+                            a.child(key)
+                        } else {
+                            a.child("scaling").and_then(|n| n.child(key))
+                        }
+                    })
+                    .and_then(|n| n.attr("val"))
+                    .and_then(|v| v.parse::<f64>().ok())
+                    .filter(|v| v.is_finite() && v.abs() < 1e100)
+                })
+            },
             x_values: if kind == "scatterChart" {
                 Some(xs)
             } else {
@@ -584,7 +601,7 @@ impl OdfChart {
                 );
             }
         }
-        let (xmin, xmax) = if let Some(xs) = &self.x_values {
+        let (xmin, xmax, xstep) = if let Some(xs) = &self.x_values {
             let min = xs
                 .iter()
                 .flatten()
@@ -598,21 +615,22 @@ impl OdfChart {
                 .copied()
                 .fold(f64::NEG_INFINITY, f64::max);
             if min.is_finite() && max.is_finite() {
-                (min, max.max(min + 1e-12))
+                scatter_axis(min, max, self.x_axis)
             } else {
-                (0.0, 1.0)
+                (0.0, 1.0, 0.2)
             }
         } else {
-            (0.0, 1.0)
+            (0.0, 1.0, 0.2)
         };
         if self.x_values.is_some() {
-            for i in 0..=5 {
-                let v = xmin + (xmax - xmin) * i as f64 / 5.0;
+            for i in 0..=((xmax - xmin) / xstep).round().min(32.0) as usize {
+                let v = xmin + xstep * i as f64;
                 let label = format!("{v:.2}")
                     .trim_end_matches('0')
                     .trim_end_matches('.')
                     .to_string();
-                let cx = left + pw * i as f32 / 5.0;
+                let cx = left + pw * ((v - xmin) / (xmax - xmin)) as f32;
+                page.line_rgb(cx, bottom, cx, top, 0.8, 0.8, 0.8);
                 page.text(
                     cx - 5.0,
                     bottom - self.font_size - 3.0,
@@ -749,6 +767,17 @@ fn plot_axis_font(chart: &XmlNode, styles: &OdfStyles) -> Option<f32> {
 mod tests {
     use super::*;
     #[test]
+    fn scatter_axis_has_headroom_and_honors_explicit_bounds() {
+        let (low, high, step) = scatter_axis(0.0, 1.0, [None; 3]);
+        assert_eq!(low, 0.0);
+        assert!((high - 1.2).abs() < 1e-8);
+        assert!((step - 0.2).abs() < 1e-8);
+        assert_eq!(
+            scatter_axis(0.0, 1.0, [Some(-2.0), Some(2.0), Some(1.0)]),
+            (-2.0, 2.0, 1.0)
+        );
+    }
+    #[test]
     fn chart_points_use_workbook_theme_and_luminance() {
         let theme=crate::parse_xml_document(r#"<theme><themeElements><clrScheme><accent1><srgbClr val="80C020"/></accent1></clrScheme></themeElements></theme>"#).unwrap();
         let n=crate::parse_xml_document(r#"<spPr><solidFill><schemeClr val="accent1"><lumMod val="40000"/><lumOff val="60000"/></schemeClr></solidFill></spPr>"#).unwrap();
@@ -832,4 +861,27 @@ fn chart_paint(node: Option<&XmlNode>, theme: Option<&XmlNode>) -> Option<String
             .round()) as u8
     };
     Some(format!("#{:02X}{:02X}{:02X}", c(16), c(8), c(0)))
+}
+
+fn scatter_axis(min: f64, max: f64, explicit: [Option<f64>; 3]) -> (f64, f64, f64) {
+    let span = (max - min).max(1e-12);
+    let power = 10f64.powf((span / 5.0).log10().floor());
+    let raw = span / 5.0 / power;
+    let step = explicit[2].filter(|v| *v > 0.0).unwrap_or(
+        power
+            * if raw <= 1.0 {
+                1.0
+            } else if raw <= 2.0 {
+                2.0
+            } else if raw <= 5.0 {
+                5.0
+            } else {
+                10.0
+            },
+    );
+    let low = explicit[0].unwrap_or((min.min(0.0) / step).floor() * step);
+    let high = explicit[1]
+        .unwrap_or(((max.max(0.0) + span * 0.05) / step).ceil() * step)
+        .max(low + step);
+    (low, high, step)
 }
