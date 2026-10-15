@@ -227,3 +227,40 @@ fn negative_number_sections_override_font_color_using_cached_values() {
     );
     assert_eq!(lo_core::xlsx_format::number_color(1.0, r#""[Red]"0"#), None);
 }
+
+#[test]
+fn relationship_parts_match_ascii_case_and_reject_ambiguous_aliases() {
+    let entries = vec![
+        ZipEntry::new("xl/workbook.xml", br#"<workbook><sheets><sheet name="Data" id="r1"/></sheets></workbook>"#.to_vec()),
+        ZipEntry::new("xl/_rels/WORKBOOK.xml.rels", br#"<Relationships><Relationship Id="r1" Target="worksheets/sheet1.xml"/></Relationships>"#.to_vec()),
+        ZipEntry::new("xl/worksheets/Sheet1.xml", br#"<worksheet><sheetData><row><c r="A1"><v>123</v></c></row></sheetData></worksheet>"#.to_vec()),
+    ];
+    let bytes = lo_zip::write_zip_to_vec(&entries).unwrap();
+    let book = lo_calc::from_xlsx_bytes("", &bytes).unwrap();
+    assert_eq!(book.sheets[0].display_values[&CellAddr::new(0, 0)], "123");
+    let mut ambiguous = entries;
+    ambiguous.push(ZipEntry::new("xl/worksheets/sheet1.xml", b"<worksheet/>".to_vec()));
+    assert!(lo_calc::from_xlsx_bytes("", &lo_zip::write_zip_to_vec(&ambiguous).unwrap()).is_err());
+}
+
+#[test]
+fn color_scales_use_numeric_percentiles_and_respect_rule_priority() {
+    let sheet = r#"<worksheet><sheetData><row r="1"><c r="A1"><v>0</v></c></row><row r="2"><c r="A2"><f>UNSUPPORTED()</f><v>10</v></c></row><row r="3"><c r="A3"><v>100</v></c></row><row r="4"><c r="A4" t="inlineStr"><is><t>9999</t></is></c></row><row r="5"><c r="A5" t="b"><v>1</v></c></row><row r="6"><c r="A6"><f>1+1</f></c></row></sheetData><conditionalFormatting sqref="A1:A6"><cfRule type="colorScale" priority="2"><colorScale><cfvo type="min"/><cfvo type="percentile" val="50"/><cfvo type="max"/><color rgb="FFFF0000"/><color rgb="FFFFFF00"/><color rgb="FF00FF00"/></colorScale></cfRule></conditionalFormatting></worksheet>"#;
+    let bytes = workbook(sheet, STYLES, "");
+    let book = lo_calc::from_xlsx_bytes("", &bytes).unwrap();
+    let bg = |r| book.sheets[0].get(CellAddr::new(r,0)).unwrap().style.as_ref().unwrap().background.as_str();
+    assert_eq!(bg(0), "#FF0000");
+    assert_eq!(bg(1), "#FFFF00"); // Median is 10, not the range midpoint 50.
+    assert_eq!(bg(2), "#00FF00");
+    for r in 3..6 { assert_eq!(bg(r), "#EEDDCC"); }
+    let styles = STYLES.replace("</styleSheet>", r#"<dxfs><dxf><fill><patternFill><fgColor rgb="FF123456"/></patternFill></fill></dxf></dxfs></styleSheet>"#);
+    for stop in ["0", "1"] {
+        let higher = format!(r#"<cfRule type="cellIs" priority="1" dxfId="0" operator="equal" stopIfTrue="{stop}"><formula>10</formula></cfRule>"#);
+        let sheet = sheet.replace("<cfRule type=\"colorScale\"", &(higher + "<cfRule type=\"colorScale\""));
+        let book = lo_calc::from_xlsx_bytes("", &workbook(&sheet, &styles, "")).unwrap();
+        assert_eq!(book.sheets[0].get(CellAddr::new(1,0)).unwrap().style.as_ref().unwrap().background, "#123456");
+    }
+    let two = sheet.replace(r#"<cfvo type="percentile" val="50"/>"#, "").replace(r#"<color rgb="FFFFFF00"/>"#, "");
+    let book = lo_calc::from_xlsx_bytes("", &workbook(&two, STYLES, "")).unwrap();
+    assert_eq!(book.sheets[0].get(CellAddr::new(1,0)).unwrap().style.as_ref().unwrap().background, "#E61A00");
+}

@@ -75,6 +75,8 @@ pub(crate) fn import(
     part: &str,
     root: &XmlNode,
     layout: &mut SheetLayout,
+    chart_refs: &mut crate::xlsx_chart_refs::ChartReferences,
+    shared_strings: &[String],
 ) -> Result<()> {
     let theme = if zip.contains("xl/theme/theme1.xml") {
         Some(lo_core::parse_xml_document(
@@ -151,7 +153,8 @@ pub(crate) fn import(
                 .and_then(|n| n.child("chart"))
             {
                 if let Some(path) = chart.attr("id").and_then(|id| rels.get(id)) {
-                    let xml = lo_core::parse_xml_document(&zip.read_string(path)?)?;
+                    let mut xml = lo_core::parse_xml_document(&zip.read_string(path)?)?;
+                    chart_refs.fill(&mut xml, zip, shared_strings)?;
                     if let Some(chart) = lo_core::odf_chart::OdfChart::from_ooxml_with_theme(
                         &xml,
                         frame,

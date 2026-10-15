@@ -75,6 +75,7 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
     let date_1904 = workbook_root
         .child("workbookPr")
         .is_some_and(|n| crate::xlsx_styles::truth(n.attr("date1904")));
+    let mut chart_refs = crate::xlsx_chart_refs::ChartReferences::new(&workbook_root, &rels);
     let mut workbook = Workbook::new(title);
     workbook.sheets.clear();
 
@@ -107,6 +108,8 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
                 &target,
                 &sheet_xml,
                 sheet.layout.as_mut().unwrap(),
+                &mut chart_refs,
+                &shared_strings,
             )?;
             if let Some(names) = workbook_root.child("definedNames") {
                 for name in names.children_named("definedName") {
@@ -222,14 +225,25 @@ pub fn from_ods_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workbook
 
 // ---------------------------------------------------------------------------
 
+// OPC part-name equivalence is ASCII case-insensitive, unlike ZIP lookup.
+// Reject ambiguous aliases instead of depending on archive entry order.
+fn package_part(zip: &ZipArchive, path: &str) -> Result<Option<String>> {
+    let entries = zip.entries();
+    let mut matching = entries.iter().filter(|name| name.eq_ignore_ascii_case(path));
+    let first = matching.next().map(|name| name.to_string());
+    if matching.next().is_some() {
+        return Err(LoError::InvalidInput("Ambiguous XLSX package part names".into()));
+    }
+    Ok(first)
+}
+
 pub(crate) fn parse_relationships(
     zip: &ZipArchive,
     part: &str,
 ) -> Result<BTreeMap<String, String>> {
-    let rels_path = rels_path_for(part);
-    if !zip.contains(&rels_path) {
+    let Some(rels_path) = package_part(zip, &rels_path_for(part))? else {
         return Ok(BTreeMap::new());
-    }
+    };
     let root = parse_xml_document(&zip.read_string(&rels_path)?)?;
     let mut map = BTreeMap::new();
     for rel in root.children_named("Relationship") {
@@ -237,7 +251,8 @@ pub(crate) fn parse_relationships(
             continue;
         }
         if let (Some(id), Some(target)) = (rel.attr("Id"), rel.attr("Target")) {
-            map.insert(id.to_string(), resolve_part_target(part, target));
+            let resolved = resolve_part_target(part, target);
+            map.insert(id.to_string(), package_part(zip, &resolved)?.unwrap_or(resolved));
         }
     }
     Ok(map)
@@ -682,7 +697,7 @@ fn xlsx_header_footer(
     regions.into_iter().collect()
 }
 
-fn parse_xlsx_value(cell: &XmlNode, shared_strings: &[String]) -> CellValue {
+pub(crate) fn parse_xlsx_value(cell: &XmlNode, shared_strings: &[String]) -> CellValue {
     let cell_type = cell.attr("t").unwrap_or("");
     let value_text = cell
         .child("v")
@@ -710,7 +725,7 @@ fn parse_xlsx_value(cell: &XmlNode, shared_strings: &[String]) -> CellValue {
 }
 
 /// Parse a cell reference like "A1" -> (row, col) (1-based).
-fn parse_cell_ref(reference: &str) -> Option<(u32, u32)> {
+pub(crate) fn parse_cell_ref(reference: &str) -> Option<(u32, u32)> {
     let reference = reference.strip_prefix('$').unwrap_or(reference);
     let mut col = 0u32;
     let mut index = 0;
