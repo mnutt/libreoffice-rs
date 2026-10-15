@@ -39,8 +39,8 @@ disabled and resource limits. Fresh timestamped run directories contain logs,
 results and PDFs. A full cycle writes the self-contained report and fails on
 individual per-page pixel regressions, text regressions, changed page geometry,
 lost visual comparability, or feature failures. The thresholds are recorded in
-the output; they are review triggers, not proof of parity. Focused runs execute
-tests and feature checks but require a full cycle for the paired regression gate.
+the output; they are review triggers, not proof of parity. Focused runs apply the same gate to the selected fixtures and write their
+visual audit and regression findings alongside the PDFs.
 
 `--preview-pages 0` renders every page. All-page audits retain the existing
 0.1-point PDF rounding allowance and require identical raster dimensions.

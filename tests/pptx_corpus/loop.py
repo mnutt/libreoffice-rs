@@ -61,8 +61,29 @@ def main():
     with ThreadPoolExecutor(max_workers=4) as pool:
         list(pool.map(shard,range(4)))
     if args.ids:
-        print('Focused run complete; inspect per-shard PDFs/results before a full cycle.',flush=True)
-        return
+        # Apply the same paired gate to focused runs; a successful conversion
+        # alone must not be mistaken for a fidelity pass.
+        from regression_gate import assess
+        from visual_audit import compare
+        selected = set(args.ids)
+        before, after, work = [], [], []
+        for i in range(4):
+            baseline = json.loads((HERE/f'runs/{args.baseline}-{i}/results.json').read_text())
+            before.extend(c for c in baseline['cases'] if c['id'] in selected)
+            result = root/f'candidate-{i}/results.json'
+            if result.exists():
+                cases = json.loads(result.read_text())['cases']
+                after.extend(cases)
+                work.extend((c,result.parent) for c in cases)
+        old_audit = json.loads((HERE/args.baseline_audit).read_text())
+        old_audit['cases'] = [c for c in old_audit['cases'] if c['id'] in selected]
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            audit = {'cases': list(pool.map(lambda item: compare(*item),work))}
+        (root/'visual-audit.json').write_text(json.dumps(audit,indent=2)+'\n')
+        gate = assess({'cases': before},{'cases': after},old_audit,audit)
+        (root/'regressions.json').write_text(json.dumps(gate,indent=2)+'\n')
+        print(f"Focused comparison: {gate['paired_pages']} paired pages, {len(gate['failures'])} regressions. Evidence: {root}",flush=True)
+        raise SystemExit(bool(gate['failures']))
     command([sys.executable,str(HERE/'visual_audit.py'),str(root/'candidate'),'--output',str(root/'visual-audit.json')],'audit.log')
     command([sys.executable,str(HERE/'summarize.py'),'--baseline',str(HERE/'runs'/args.baseline),
              '--candidate',str(root/'candidate'),'--output',str(root/'comparison.json')],'summary.log')

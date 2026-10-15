@@ -282,6 +282,14 @@ def report(results, output):
     (output / 'report.html').write_text(document_html)
 
 
+def reuse_artifact(source, target):
+    """Share immutable reference artifacts on one filesystem; copy elsewhere."""
+    try:
+        os.link(source, target)
+    except OSError:
+        shutil.copyfile(source, target)
+
+
 def evaluate(args, manifest):
     bundle, candidate, output = args.bundle.resolve(), args.candidate.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -338,13 +346,22 @@ def evaluate(args, manifest):
             work = output / fixture['id'] / name
             work.mkdir(parents=True)
             pdf = work / 'output.pdf'
+            reused_pdf = None
             if references is not None and name != 'candidate':
                 stage = dict(references[fixture['id']]['stages'][name])
                 previous = args.references.resolve()/fixture['id']/name
                 stage['reused_from'] = str(previous)
                 for filename in ['output.pdf', 'stdout.log', 'stderr.log']:
                     if (previous/filename).exists():
-                        shutil.copyfile(previous/filename,work/filename)
+                        reuse_artifact(previous/filename,work/filename)
+                metadata = stage.get('pdf', {})
+                previews = metadata.get('previews', [])
+                wanted = metadata.get('pages', 0) if args.preview_pages == 0 else min(args.preview_pages, metadata.get('pages', 0))
+                if metadata and (previous/'output.txt').is_file() and len(previews) >= wanted and all((previous/p).is_file() for p in previews[:wanted]):
+                    reused_pdf = dict(metadata, previews=previews[:wanted])
+                    reuse_artifact(previous/'output.txt', work/'output.txt')
+                    for filename in reused_pdf['previews']:
+                        reuse_artifact(previous/filename, work/filename)
             else:
                 stage = run(sandbox(source, work, bundle, binary), work, args.timeout)
                 if name == 'libreoffice' and (work/'input.pdf').exists():
@@ -352,7 +369,7 @@ def evaluate(args, manifest):
                 stage['status'] = 'timeout' if stage['timeout'] else 'error' if stage['exit_code'] else 'ok'
             if stage['status'] == 'ok':
                 try:
-                    stage['pdf'] = inspect_pdf(pdf, args.preview_pages)
+                    stage['pdf'] = reused_pdf if reused_pdf is not None else inspect_pdf(pdf, args.preview_pages)
                     expected = expectations.get(fixture['id'], {})
                     if expected.get('min_colors') or expected.get('max_colors'):
                         stage['pdf']['colors'] = raster_color_counts(pdf)
