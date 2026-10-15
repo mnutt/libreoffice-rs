@@ -5,6 +5,7 @@ use crate::{PdfFont, PdfPage, Rect, XmlNode};
 #[derive(Clone, Debug, PartialEq)]
 pub struct OdfChart {
     pub frame: Rect,
+    ooxml_layout: Option<OoxmlLayout>,
     plot: [f32; 4],
     title: String,
     categories: Vec<String>,
@@ -28,6 +29,29 @@ pub struct OdfChart {
     axis_min: Option<f64>,
     axis_max: Option<f64>,
     axis_step: Option<f64>,
+}
+#[derive(Clone, Debug, PartialEq)]
+struct OoxmlLayout {
+    legend_side: String,
+    value_grid: bool,
+    category_grid: bool,
+    gap_ratio: f32,
+    title_bold: bool,
+}
+fn text_properties(node: &XmlNode) -> Option<&XmlNode> {
+    if matches!(node.local_name(), "defRPr" | "rPr") {
+        return Some(node);
+    }
+    node.children.iter().find_map(|n| text_properties(n))
+}
+fn text_size(node: Option<&XmlNode>, fallback: f32) -> f32 {
+    node.and_then(text_properties)
+        .and_then(|n| n.attr("sz"))
+        .and_then(|s| s.parse::<f32>().ok())
+        .filter(|v| v.is_finite())
+        .map(|v| v / 100.0)
+        .unwrap_or(fallback)
+        .clamp(1.0, 72.0)
 }
 fn rows<'a>(node: &'a XmlNode, out: &mut Vec<&'a XmlNode>) {
     for child in &node.children {
@@ -244,6 +268,7 @@ impl OdfChart {
         };
         Some(Self {
             frame,
+            ooxml_layout: None,
             plot,
             font_size,
             title_size: title_size.clamp(1.0, 512.0),
@@ -479,8 +504,36 @@ impl OdfChart {
             Some("l") => [0.01, 0.4],
             _ => [0.82, 0.4],
         };
+        let category_axis = if kind == "scatterChart" {
+            plot.children_named("valAx").next()
+        } else {
+            plot.child("catAx")
+        };
         Some(Self {
             frame,
+            ooxml_layout: Some(OoxmlLayout {
+                legend_side: chart
+                    .child("legend")
+                    .and_then(|n| n.child("legendPos"))
+                    .and_then(|n| n.attr("val"))
+                    .unwrap_or("r")
+                    .into(),
+                value_grid: axis.is_some_and(|n| n.child("majorGridlines").is_some()),
+                category_grid: category_axis.is_some_and(|n| n.child("majorGridlines").is_some()),
+                gap_ratio: data
+                    .child("gapWidth")
+                    .and_then(|n| n.attr("val"))
+                    .and_then(|v| v.parse::<f32>().ok())
+                    .filter(|v| v.is_finite())
+                    .unwrap_or(150.0)
+                    .clamp(0.0, 500.0)
+                    / 100.0,
+                title_bold: chart
+                    .child("title")
+                    .and_then(text_properties)
+                    .and_then(|n| n.attr("b"))
+                    == Some("1"),
+            }),
             series_lines,
             markers,
             value_labels,
@@ -520,8 +573,8 @@ impl OdfChart {
             horizontal: data.child("barDir").and_then(|n| n.attr("val")) == Some("bar"),
             line: kind != "barChart",
             legend: chart.child("legend").is_some(),
-            font_size: 10.0,
-            title_size: 14.0,
+            font_size: text_size(axis.and_then(|n| n.child("txPr")), 10.0),
+            title_size: text_size(chart.child("title"), 14.0),
             title_position: [0.3, 0.02],
             legend_position,
             axis_min: axis_number("min"),
@@ -538,20 +591,118 @@ impl OdfChart {
         let y = self.frame.origin.y.as_pt() + dy;
         let w = self.frame.size.width.as_pt();
         let h = self.frame.size.height.as_pt();
-        let left = x + self.plot[0] * w;
-        let top = page_height - y - self.plot[1] * h;
-        let pw = self.plot[2] * w;
-        let ph = self.plot[3] * h;
+        if !w.is_finite() || !h.is_finite() || w <= 0.0 || h <= 0.0 {
+            return;
+        }
+        let mut plot = self.plot;
+        let mut legend_position = self.legend_position;
+        let mut legend_offsets = Vec::new();
+        let mut title_x = x + self.title_position[0] * w;
+        let mut title_y = page_height - y - self.title_position[1] * h - self.title_size;
+        if let Some(layout) = &self.ooxml_layout {
+            let measure =
+                |s: &str| crate::font_metrics::measure_helvetica(s, self.font_size, false);
+            let max_label = self
+                .series
+                .iter()
+                .flat_map(|s| s.1.iter().flatten())
+                .map(|v| crate::xlsx_format::number(*v, &self.axis_format, false))
+                .map(|s| measure(&s))
+                .fold(20.0_f32, f32::max);
+            let category_width = self
+                .categories
+                .iter()
+                .map(|s| measure(s))
+                .fold(0.0_f32, f32::max);
+            let legend_width = self
+                .series
+                .iter()
+                .map(|s| measure(&s.0) + self.font_size * 2.0)
+                .fold(0.0_f32, f32::max);
+            let horizontal_legend = matches!(layout.legend_side.as_str(), "b" | "t");
+            let mut legend_height = self.font_size * 1.4;
+            if horizontal_legend {
+                let widths: Vec<_> = self
+                    .series
+                    .iter()
+                    .map(|s| measure(&s.0) + self.font_size * 2.0)
+                    .collect();
+                legend_offsets = legend_rows(&widths, (w - 16.0).max(1.0), self.font_size * 1.4);
+                legend_height += legend_offsets.last().map_or(0.0, |p| p[1]);
+            }
+            let mut left_pad = (if self.horizontal {
+                category_width
+            } else {
+                max_label
+            }) + 10.0;
+            let mut right_pad = 10.0;
+            let mut top_pad = if self.title.is_empty() {
+                12.0
+            } else {
+                self.title_size + 20.0
+            };
+            let mut bottom_pad = self.font_size * 2.0 + 10.0;
+            if self.legend {
+                match layout.legend_side.as_str() {
+                    "b" => bottom_pad += legend_height + 8.0,
+                    "t" => top_pad += legend_height + 8.0,
+                    "l" => left_pad += legend_width + 10.0,
+                    _ => right_pad += legend_width + 10.0,
+                }
+            }
+            left_pad = left_pad.min(w * 0.35);
+            right_pad = right_pad.min(w * 0.35);
+            top_pad = top_pad.min(h * 0.3);
+            bottom_pad = bottom_pad.min(h * 0.3);
+            plot = [
+                left_pad / w,
+                top_pad / h,
+                (w - left_pad - right_pad) / w,
+                (h - top_pad - bottom_pad) / h,
+            ];
+            legend_position = match layout.legend_side.as_str() {
+                "b" => [8.0 / w, 1.0 - (legend_height + 8.0) / h],
+                "t" => [
+                    8.0 / w,
+                    if self.title.is_empty() {
+                        4.0 / h
+                    } else {
+                        (self.title_size + 10.0) / h
+                    },
+                ],
+                "l" => [4.0 / w, 0.45],
+                _ => [(w - right_pad + 10.0) / w, 0.45],
+            };
+            title_x = x
+                + (w - crate::font_metrics::measure_helvetica(
+                    &self.title,
+                    self.title_size,
+                    layout.title_bold,
+                )) / 2.0;
+            title_y = page_height - y - 8.0 - self.title_size;
+        }
+        let left = x + plot[0] * w;
+        let top = page_height - y - plot[1] * h;
+        let pw = plot[2] * w;
+        let ph = plot[3] * h;
         let bottom = top - ph;
         page.rect_fill_rgb(x, page_height - y - h, w, h, 1.0, 1.0, 1.0);
         if !self.title.is_empty() {
             page.text(
-                x + self.title_position[0] * w,
-                page_height - y - self.title_position[1] * h - self.title_size,
+                title_x,
+                title_y,
                 self.title_size,
-                PdfFont::HelveticaBold,
+                if self.ooxml_layout.as_ref().is_none_or(|l| l.title_bold) {
+                    PdfFont::HelveticaBold
+                } else {
+                    PdfFont::Helvetica
+                },
                 &self.title,
             );
+        }
+        if self.ooxml_layout.is_some() {
+            page.line_rgb(left, bottom, left + pw, bottom, 0.55, 0.55, 0.55);
+            page.line_rgb(left, bottom, left, top, 0.55, 0.55, 0.55);
         }
         let values: Vec<_> = self
             .series
@@ -601,7 +752,9 @@ impl OdfChart {
             };
             if self.horizontal {
                 let tx = left + pw * f;
-                page.line_rgb(tx, bottom, tx, top, 0.65, 0.65, 0.65);
+                if self.ooxml_layout.as_ref().is_none_or(|l| l.value_grid) {
+                    page.line_rgb(tx, bottom, tx, top, 0.65, 0.65, 0.65);
+                }
                 page.text(
                     tx - self.font_size * 0.25,
                     bottom - self.font_size - 3.0,
@@ -611,7 +764,9 @@ impl OdfChart {
                 );
             } else {
                 let ty = bottom + ph * f;
-                page.line_rgb(left, ty, left + pw, ty, 0.8, 0.8, 0.8);
+                if self.ooxml_layout.as_ref().is_none_or(|l| l.value_grid) {
+                    page.line_rgb(left, ty, left + pw, ty, 0.8, 0.8, 0.8);
+                }
                 page.text(
                     left - 8.0
                         - crate::font_metrics::measure_helvetica(&label, self.font_size, false),
@@ -651,7 +806,9 @@ impl OdfChart {
                     .trim_end_matches('.')
                     .to_string();
                 let cx = left + pw * ((v - xmin) / (xmax - xmin)) as f32;
-                page.line_rgb(cx, bottom, cx, top, 0.8, 0.8, 0.8);
+                if self.ooxml_layout.as_ref().is_none_or(|l| l.category_grid) {
+                    page.line_rgb(cx, bottom, cx, top, 0.8, 0.8, 0.8);
+                }
                 page.text(
                     cx - 5.0,
                     bottom - self.font_size - 3.0,
@@ -684,6 +841,11 @@ impl OdfChart {
                 );
             }
         }
+        let bar_fraction = self
+            .ooxml_layout
+            .as_ref()
+            .map(|l| self.series.len() as f32 / (self.series.len() as f32 + l.gap_ratio))
+            .unwrap_or(0.6);
         for (si, (name, data, paint)) in self.series.iter().enumerate() {
             let (r, g, b) = color(paint);
             let mut previous = None;
@@ -740,15 +902,16 @@ impl OdfChart {
                     }
                 } else if self.horizontal {
                     let band = ph / count as f32;
-                    let bh = band * 0.6 / self.series.len() as f32;
-                    let cy = bottom + band * (i as f32 + 0.2) + si as f32 * bh;
+                    let bh = band * bar_fraction / self.series.len() as f32;
+                    let cy =
+                        bottom + band * (i as f32 + (1.0 - bar_fraction) / 2.0) + si as f32 * bh;
                     let start = left + pw * fraction(0.0);
                     let end = left + pw * fraction(*value);
                     page.rect_fill_rgb(start.min(end), cy, (end - start).abs(), bh, r, g, b);
                 } else {
                     let band = pw / count as f32;
-                    let bw = band * 0.6 / self.series.len() as f32;
-                    let cx = left + band * (i as f32 + 0.2) + si as f32 * bw;
+                    let bw = band * bar_fraction / self.series.len() as f32;
+                    let cx = left + band * (i as f32 + (1.0 - bar_fraction) / 2.0) + si as f32 * bw;
                     let start = bottom + ph * fraction(0.0);
                     let end = bottom + ph * fraction(*value);
                     page.rect_fill_rgb(cx, start.min(end), bw, (end - start).abs(), r, g, b);
@@ -779,13 +942,42 @@ impl OdfChart {
                 }
             }
             if self.legend {
-                let lx = x + self.legend_position[0] * w;
-                let ly = page_height
-                    - y
-                    - self.legend_position[1] * h
-                    - self.font_size
-                    - si as f32 * self.font_size * 1.4;
-                page.rect_fill_rgb(lx, ly, self.font_size * 0.6, self.font_size * 0.6, r, g, b);
+                let offset = legend_offsets
+                    .get(si)
+                    .copied()
+                    .unwrap_or([0.0, si as f32 * self.font_size * 1.4]);
+                let lx = x + legend_position[0] * w + offset[0];
+                let ly = page_height - y - legend_position[1] * h - self.font_size - offset[1];
+                let swatch = self.font_size * 0.6;
+                if self.ooxml_layout.is_some() && self.line {
+                    let marker = self.markers.get(si);
+                    let paint = marker.map(|m| color(&m.2)).unwrap_or((r, g, b));
+                    if self.connect_points && self.series_lines.get(si).copied().unwrap_or(true) {
+                        page.line_rgb(
+                            lx,
+                            ly + swatch / 2.0,
+                            lx + swatch,
+                            ly + swatch / 2.0,
+                            r,
+                            g,
+                            b,
+                        );
+                    }
+                    match marker.map(|m| m.0.as_str()).unwrap_or("square") {
+                        "none" => {}
+                        "circle" => page.ellipse_fill_stroke_rgb(
+                            lx + swatch / 2.0,
+                            ly + swatch / 2.0,
+                            swatch / 2.0,
+                            swatch / 2.0,
+                            paint,
+                            paint,
+                        ),
+                        _ => page.rect_fill_rgb(lx, ly, swatch, swatch, paint.0, paint.1, paint.2),
+                    }
+                } else {
+                    page.rect_fill_rgb(lx, ly, swatch, swatch, r, g, b);
+                }
                 page.text(
                     lx + self.font_size * 0.8,
                     ly,
@@ -796,6 +988,30 @@ impl OdfChart {
             }
         }
     }
+}
+
+// Pack horizontal legends into centered rows using the same advances as rendering.
+fn legend_rows(widths: &[f32], available: f32, row_height: f32) -> Vec<[f32; 2]> {
+    let mut positions: Vec<[f32; 2]> = Vec::with_capacity(widths.len());
+    let mut start = 0;
+    let mut used = 0.0;
+    let mut y = 0.0;
+    for &width in widths {
+        if used > 0.0 && used + width > available {
+            for p in &mut positions[start..] {
+                p[0] += (available - used).max(0.0) / 2.0;
+            }
+            start = positions.len();
+            used = 0.0;
+            y += row_height;
+        }
+        positions.push([used, y]);
+        used += width;
+    }
+    for p in &mut positions[start..] {
+        p[0] += (available - used).max(0.0) / 2.0;
+    }
+    positions
 }
 
 fn plot_axis_font(chart: &XmlNode, styles: &OdfStyles) -> Option<f32> {
@@ -809,6 +1025,23 @@ fn plot_axis_font(chart: &XmlNode, styles: &OdfStyles) -> Option<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn horizontal_legends_wrap_and_center_each_row() {
+        assert_eq!(
+            legend_rows(&[30.0, 40.0, 50.0], 100.0, 14.0),
+            vec![[15.0, 0.0], [45.0, 0.0], [25.0, 14.0]]
+        );
+    }
+    #[test]
+    fn ooxml_layout_retains_font_grid_and_bar_spacing() {
+        let root=crate::parse_xml_document(r#"<chartSpace><chart><plotArea><barChart><gapWidth val="37"/><ser><val><numLit><pt idx="0"><v>10</v></pt></numLit></val></ser></barChart><valAx><txPr><p><pPr><defRPr sz="900"/></pPr></p></txPr></valAx></plotArea><legend><legendPos val="b"/></legend></chart></chartSpace>"#).unwrap();
+        let c = OdfChart::from_ooxml(&root, Rect::default()).unwrap();
+        let layout = c.ooxml_layout.unwrap();
+        assert_eq!(c.font_size, 9.0);
+        assert!(!layout.value_grid);
+        assert_eq!(layout.legend_side, "b");
+        assert!((layout.gap_ratio - 0.37).abs() < 0.001);
+    }
     #[test]
     fn scatter_axis_has_headroom_and_honors_explicit_bounds() {
         let (low, high, step) = scatter_axis(0.0, 1.0, [None; 3]);
@@ -835,8 +1068,8 @@ mod tests {
         assert_eq!(c.series[0].1, vec![Some(5.0), None, None]);
         assert_eq!(c.title, "Series");
         assert!(!c.series_lines[0]);
-        assert_eq!(c.markers[0].0,"circle");
-        assert_eq!(c.markers[0].1,5.0);
+        assert_eq!(c.markers[0].0, "circle");
+        assert_eq!(c.markers[0].1, 5.0);
         let root = crate::parse_xml_document(&xml.replace("scatterChart", "pieChart")).unwrap();
         assert!(OdfChart::from_ooxml(&root, Rect::default()).is_none());
     }
