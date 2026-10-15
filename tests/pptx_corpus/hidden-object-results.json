@@ -1,0 +1,1677 @@
+{
+  "cases": [
+    {
+      "id": "lo-forum-mso-de-138303-53314b",
+      "before": {
+        "id": "lo-forum-mso-de-138303-53314b",
+        "purpose": "upstream presentation regression: forum-mso-de-138303",
+        "stages": {
+          "candidate": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.033,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 1910,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ],
+              "colors": {
+                "red": 0,
+                "blue": 0,
+                "orange": 0,
+                "green": 0,
+                "rose": 0,
+                "dark": 0,
+                "light_green": 0
+              }
+            }
+          },
+          "office2pdf": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.033,
+            "stderr": "Using Landlock ABI 9 for preview\n",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 14293,
+              "image_count": 1,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-2/lo-forum-mso-de-138303-53314b/office2pdf"
+          },
+          "libreoffice": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.416,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.009,
+                  540.0
+                ]
+              ],
+              "bytes": 23069,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-2/lo-forum-mso-de-138303-53314b/libreoffice"
+          }
+        },
+        "comparisons": {
+          "candidate_vs_office2pdf": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.118478
+            ]
+          },
+          "candidate_vs_libreoffice": {
+            "recall": 0.0,
+            "precision": null,
+            "missing": [
+              [
+                "series1",
+                7
+              ],
+              [
+                "kategorie",
+                6
+              ],
+              [
+                "chart",
+                1
+              ],
+              [
+                "title",
+                1
+              ],
+              [
+                "3",
+                1
+              ],
+              [
+                "0tan22a566022",
+                1
+              ],
+              [
+                "1",
+                1
+              ],
+              [
+                "0tan12a566012",
+                1
+              ],
+              [
+                "5",
+                1
+              ],
+              [
+                "0tan4a56604",
+                1
+              ],
+              [
+                "6",
+                1
+              ],
+              [
+                "2",
+                1
+              ],
+              [
+                "0tan2a56602",
+                1
+              ],
+              [
+                "0tan1a56601",
+                1
+              ],
+              [
+                "4",
+                1
+              ],
+              [
+                "0tan23a566023",
+                1
+              ]
+            ],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          },
+          "office2pdf_vs_libreoffice": {
+            "recall": 0.0,
+            "precision": null,
+            "missing": [
+              [
+                "series1",
+                7
+              ],
+              [
+                "kategorie",
+                6
+              ],
+              [
+                "chart",
+                1
+              ],
+              [
+                "title",
+                1
+              ],
+              [
+                "3",
+                1
+              ],
+              [
+                "0tan22a566022",
+                1
+              ],
+              [
+                "1",
+                1
+              ],
+              [
+                "0tan12a566012",
+                1
+              ],
+              [
+                "5",
+                1
+              ],
+              [
+                "0tan4a56604",
+                1
+              ],
+              [
+                "6",
+                1
+              ],
+              [
+                "2",
+                1
+              ],
+              [
+                "0tan2a56602",
+                1
+              ],
+              [
+                "0tan1a56601",
+                1
+              ],
+              [
+                "4",
+                1
+              ],
+              [
+                "0tan23a566023",
+                1
+              ]
+            ],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          }
+        },
+        "input_parts": {
+          "charts": 0,
+          "drawings": 0,
+          "media": 2
+        },
+        "expectation_failures": []
+      },
+      "after": {
+        "id": "lo-forum-mso-de-138303-53314b",
+        "purpose": "upstream presentation regression: forum-mso-de-138303",
+        "stages": {
+          "candidate": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.017,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 1910,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ],
+              "colors": {
+                "red": 0,
+                "blue": 0,
+                "orange": 0,
+                "green": 0,
+                "rose": 0,
+                "dark": 0,
+                "light_green": 0
+              }
+            }
+          },
+          "office2pdf": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.033,
+            "stderr": "Using Landlock ABI 9 for preview\n",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 14293,
+              "image_count": 1,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-2/lo-forum-mso-de-138303-53314b/office2pdf"
+          },
+          "libreoffice": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.416,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.009,
+                  540.0
+                ]
+              ],
+              "bytes": 23069,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-2/lo-forum-mso-de-138303-53314b/libreoffice"
+          }
+        },
+        "comparisons": {
+          "candidate_vs_office2pdf": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.118478
+            ]
+          },
+          "candidate_vs_libreoffice": {
+            "recall": 0.0,
+            "precision": null,
+            "missing": [
+              [
+                "series1",
+                7
+              ],
+              [
+                "kategorie",
+                6
+              ],
+              [
+                "chart",
+                1
+              ],
+              [
+                "title",
+                1
+              ],
+              [
+                "3",
+                1
+              ],
+              [
+                "0tan22a566022",
+                1
+              ],
+              [
+                "1",
+                1
+              ],
+              [
+                "0tan12a566012",
+                1
+              ],
+              [
+                "5",
+                1
+              ],
+              [
+                "0tan4a56604",
+                1
+              ],
+              [
+                "6",
+                1
+              ],
+              [
+                "2",
+                1
+              ],
+              [
+                "0tan2a56602",
+                1
+              ],
+              [
+                "0tan1a56601",
+                1
+              ],
+              [
+                "4",
+                1
+              ],
+              [
+                "0tan23a566023",
+                1
+              ]
+            ],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          },
+          "office2pdf_vs_libreoffice": {
+            "recall": 0.0,
+            "precision": null,
+            "missing": [
+              [
+                "series1",
+                7
+              ],
+              [
+                "kategorie",
+                6
+              ],
+              [
+                "chart",
+                1
+              ],
+              [
+                "title",
+                1
+              ],
+              [
+                "3",
+                1
+              ],
+              [
+                "0tan22a566022",
+                1
+              ],
+              [
+                "1",
+                1
+              ],
+              [
+                "0tan12a566012",
+                1
+              ],
+              [
+                "5",
+                1
+              ],
+              [
+                "0tan4a56604",
+                1
+              ],
+              [
+                "6",
+                1
+              ],
+              [
+                "2",
+                1
+              ],
+              [
+                "0tan2a56602",
+                1
+              ],
+              [
+                "0tan1a56601",
+                1
+              ],
+              [
+                "4",
+                1
+              ],
+              [
+                "0tan23a566023",
+                1
+              ]
+            ],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          }
+        },
+        "input_parts": {
+          "charts": 0,
+          "drawings": 0,
+          "media": 2
+        },
+        "expectation_failures": []
+      },
+      "before_expectation_failures": [],
+      "after_expectation_failures": []
+    },
+    {
+      "id": "lo-tdf103477-880715",
+      "before": {
+        "id": "lo-tdf103477-880715",
+        "purpose": "upstream presentation regression: tdf103477",
+        "stages": {
+          "candidate": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.033,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  720.0,
+                  540.0
+                ]
+              ],
+              "bytes": 25814,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ],
+              "colors": {
+                "red": 19280,
+                "blue": 0,
+                "orange": 0,
+                "green": 2,
+                "rose": 19332,
+                "dark": 200,
+                "light_green": 0
+              }
+            }
+          },
+          "office2pdf": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.065,
+            "stderr": "Using Landlock ABI 9 for preview\n",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  720.0,
+                  540.0
+                ]
+              ],
+              "bytes": 17321,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-2/lo-tdf103477-880715/office2pdf"
+          },
+          "libreoffice": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.616,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  720.0,
+                  540.0
+                ]
+              ],
+              "bytes": 28137,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-2/lo-tdf103477-880715/libreoffice"
+          }
+        },
+        "comparisons": {
+          "candidate_vs_office2pdf": {
+            "recall": 1.0,
+            "precision": 1.0,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.0745135
+            ]
+          },
+          "candidate_vs_libreoffice": {
+            "recall": 1.0,
+            "precision": 1.0,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.0420067
+            ]
+          },
+          "office2pdf_vs_libreoffice": {
+            "recall": 1.0,
+            "precision": 1.0,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.0710499
+            ]
+          }
+        },
+        "input_parts": {
+          "charts": 0,
+          "drawings": 0,
+          "media": 3
+        },
+        "expectation_failures": []
+      },
+      "after": {
+        "id": "lo-tdf103477-880715",
+        "purpose": "upstream presentation regression: tdf103477",
+        "stages": {
+          "candidate": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.033,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  720.0,
+                  540.0
+                ]
+              ],
+              "bytes": 25814,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ],
+              "colors": {
+                "red": 19280,
+                "blue": 0,
+                "orange": 0,
+                "green": 2,
+                "rose": 19332,
+                "dark": 200,
+                "light_green": 0
+              }
+            }
+          },
+          "office2pdf": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.065,
+            "stderr": "Using Landlock ABI 9 for preview\n",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  720.0,
+                  540.0
+                ]
+              ],
+              "bytes": 17321,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-2/lo-tdf103477-880715/office2pdf"
+          },
+          "libreoffice": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.616,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  720.0,
+                  540.0
+                ]
+              ],
+              "bytes": 28137,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-2/lo-tdf103477-880715/libreoffice"
+          }
+        },
+        "comparisons": {
+          "candidate_vs_office2pdf": {
+            "recall": 1.0,
+            "precision": 1.0,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.0745135
+            ]
+          },
+          "candidate_vs_libreoffice": {
+            "recall": 1.0,
+            "precision": 1.0,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.0420067
+            ]
+          },
+          "office2pdf_vs_libreoffice": {
+            "recall": 1.0,
+            "precision": 1.0,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.0710499
+            ]
+          }
+        },
+        "input_parts": {
+          "charts": 0,
+          "drawings": 0,
+          "media": 3
+        },
+        "expectation_failures": []
+      },
+      "before_expectation_failures": [],
+      "after_expectation_failures": []
+    },
+    {
+      "id": "lo-hidden_group_shape-8d805f",
+      "before": {
+        "id": "lo-hidden_group_shape-8d805f",
+        "purpose": "upstream presentation regression: hidden_group_shape",
+        "stages": {
+          "candidate": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.018,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 2006,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ],
+              "colors": {
+                "red": 9801,
+                "blue": 0,
+                "orange": 0,
+                "green": 0,
+                "rose": 9801,
+                "dark": 0,
+                "light_green": 0
+              }
+            }
+          },
+          "office2pdf": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.017,
+            "stderr": "Using Landlock ABI 9 for preview\n",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 2283,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-3/lo-hidden_group_shape-8d805f/office2pdf"
+          },
+          "libreoffice": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.416,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.009,
+                  540.0
+                ]
+              ],
+              "bytes": 6651,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-3/lo-hidden_group_shape-8d805f/libreoffice"
+          }
+        },
+        "comparisons": {
+          "candidate_vs_office2pdf": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.0
+            ]
+          },
+          "candidate_vs_libreoffice": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          },
+          "office2pdf_vs_libreoffice": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          }
+        },
+        "input_parts": {
+          "charts": 0,
+          "drawings": 0,
+          "media": 0
+        },
+        "expectation_failures": []
+      },
+      "after": {
+        "id": "lo-hidden_group_shape-8d805f",
+        "purpose": "upstream presentation regression: hidden_group_shape",
+        "stages": {
+          "candidate": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.017,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 1910,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ],
+              "colors": {
+                "red": 0,
+                "blue": 0,
+                "orange": 0,
+                "green": 0,
+                "rose": 0,
+                "dark": 0,
+                "light_green": 0
+              }
+            }
+          },
+          "office2pdf": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.017,
+            "stderr": "Using Landlock ABI 9 for preview\n",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 2283,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-3/lo-hidden_group_shape-8d805f/office2pdf"
+          },
+          "libreoffice": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.416,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.009,
+                  540.0
+                ]
+              ],
+              "bytes": 6651,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-3/lo-hidden_group_shape-8d805f/libreoffice"
+          }
+        },
+        "comparisons": {
+          "candidate_vs_office2pdf": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.178949
+            ]
+          },
+          "candidate_vs_libreoffice": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          },
+          "office2pdf_vs_libreoffice": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          }
+        },
+        "input_parts": {
+          "charts": 0,
+          "drawings": 0,
+          "media": 0
+        },
+        "expectation_failures": []
+      },
+      "before_expectation_failures": [
+        "unexpected visible red pixels"
+      ],
+      "after_expectation_failures": []
+    },
+    {
+      "id": "lo-tdf169496_hidden_graphic-de6043",
+      "before": {
+        "id": "lo-tdf169496_hidden_graphic-de6043",
+        "purpose": "upstream presentation regression: tdf169496_hidden_graphic",
+        "stages": {
+          "candidate": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.035,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 150312,
+              "image_count": 2,
+              "previews": [
+                "page-1.png"
+              ],
+              "colors": {
+                "red": 0,
+                "blue": 0,
+                "orange": 0,
+                "green": 0,
+                "rose": 0,
+                "dark": 646,
+                "light_green": 0
+              }
+            }
+          },
+          "office2pdf": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.017,
+            "stderr": "Using Landlock ABI 9 for preview\n",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 2998,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-3/lo-tdf169496_hidden_graphic-de6043/office2pdf"
+          },
+          "libreoffice": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.516,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.009,
+                  540.0
+                ]
+              ],
+              "bytes": 7138,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-3/lo-tdf169496_hidden_graphic-de6043/libreoffice"
+          }
+        },
+        "comparisons": {
+          "candidate_vs_office2pdf": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.0127693
+            ]
+          },
+          "candidate_vs_libreoffice": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          },
+          "office2pdf_vs_libreoffice": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          }
+        },
+        "input_parts": {
+          "charts": 0,
+          "drawings": 0,
+          "media": 2
+        },
+        "expectation_failures": []
+      },
+      "after": {
+        "id": "lo-tdf169496_hidden_graphic-de6043",
+        "purpose": "upstream presentation regression: tdf169496_hidden_graphic",
+        "stages": {
+          "candidate": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.033,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 150055,
+              "image_count": 1,
+              "previews": [
+                "page-1.png"
+              ],
+              "colors": {
+                "red": 0,
+                "blue": 0,
+                "orange": 0,
+                "green": 0,
+                "rose": 0,
+                "dark": 321,
+                "light_green": 0
+              }
+            }
+          },
+          "office2pdf": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.017,
+            "stderr": "Using Landlock ABI 9 for preview\n",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 2998,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-3/lo-tdf169496_hidden_graphic-de6043/office2pdf"
+          },
+          "libreoffice": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.516,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.009,
+                  540.0
+                ]
+              ],
+              "bytes": 7138,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-3/lo-tdf169496_hidden_graphic-de6043/libreoffice"
+          }
+        },
+        "comparisons": {
+          "candidate_vs_office2pdf": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              0.0417041
+            ]
+          },
+          "candidate_vs_libreoffice": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          },
+          "office2pdf_vs_libreoffice": {
+            "recall": null,
+            "precision": null,
+            "missing": [],
+            "extra": [],
+            "raster_rmse": [
+              null
+            ]
+          }
+        },
+        "input_parts": {
+          "charts": 0,
+          "drawings": 0,
+          "media": 2
+        },
+        "expectation_failures": []
+      },
+      "before_expectation_failures": [],
+      "after_expectation_failures": []
+    },
+    {
+      "id": "lo-tdf147586-b41a26",
+      "before": {
+        "id": "lo-tdf147586-b41a26",
+        "purpose": "upstream presentation regression: tdf147586",
+        "stages": {
+          "candidate": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.035,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 13434,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ],
+              "colors": {
+                "red": 0,
+                "blue": 0,
+                "orange": 0,
+                "green": 0,
+                "rose": 0,
+                "dark": 43,
+                "light_green": 0
+              }
+            }
+          },
+          "office2pdf": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.034,
+            "stderr": "Using Landlock ABI 9 for preview\n",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 10172,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-0/lo-tdf147586-b41a26/office2pdf"
+          },
+          "libreoffice": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.466,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.009,
+                  540.0
+                ]
+              ],
+              "bytes": 15165,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-0/lo-tdf147586-b41a26/libreoffice"
+          }
+        },
+        "comparisons": {
+          "candidate_vs_office2pdf": {
+            "recall": 1.0,
+            "precision": 0.6428571428571429,
+            "missing": [],
+            "extra": [
+              [
+                "10",
+                1
+              ],
+              [
+                "20",
+                1
+              ],
+              [
+                "30",
+                1
+              ],
+              [
+                "40",
+                1
+              ],
+              [
+                "50",
+                1
+              ],
+              [
+                "60",
+                1
+              ],
+              [
+                "70",
+                1
+              ],
+              [
+                "80",
+                1
+              ],
+              [
+                "90",
+                1
+              ],
+              [
+                "110",
+                1
+              ]
+            ],
+            "raster_rmse": [
+              0.0611914
+            ]
+          },
+          "candidate_vs_libreoffice": {
+            "recall": 0.16666666666666666,
+            "precision": 0.03571428571428571,
+            "missing": [
+              [
+                "t",
+                2
+              ],
+              [
+                "i",
+                1
+              ],
+              [
+                "em",
+                1
+              ],
+              [
+                "wo",
+                1
+              ]
+            ],
+            "extra": [
+              [
+                "xxx",
+                13
+              ],
+              [
+                "item",
+                1
+              ],
+              [
+                "two",
+                1
+              ],
+              [
+                "0",
+                1
+              ],
+              [
+                "10",
+                1
+              ],
+              [
+                "20",
+                1
+              ],
+              [
+                "30",
+                1
+              ],
+              [
+                "40",
+                1
+              ],
+              [
+                "50",
+                1
+              ],
+              [
+                "60",
+                1
+              ],
+              [
+                "70",
+                1
+              ],
+              [
+                "80",
+                1
+              ],
+              [
+                "90",
+                1
+              ],
+              [
+                "100",
+                1
+              ],
+              [
+                "110",
+                1
+              ]
+            ],
+            "raster_rmse": [
+              null
+            ]
+          },
+          "office2pdf_vs_libreoffice": {
+            "recall": 0.16666666666666666,
+            "precision": 0.05555555555555555,
+            "missing": [
+              [
+                "t",
+                2
+              ],
+              [
+                "i",
+                1
+              ],
+              [
+                "em",
+                1
+              ],
+              [
+                "wo",
+                1
+              ]
+            ],
+            "extra": [
+              [
+                "xxx",
+                13
+              ],
+              [
+                "item",
+                1
+              ],
+              [
+                "two",
+                1
+              ],
+              [
+                "0",
+                1
+              ],
+              [
+                "100",
+                1
+              ]
+            ],
+            "raster_rmse": [
+              null
+            ]
+          }
+        },
+        "input_parts": {
+          "charts": 1,
+          "drawings": 0,
+          "media": 0
+        },
+        "expectation_failures": []
+      },
+      "after": {
+        "id": "lo-tdf147586-b41a26",
+        "purpose": "upstream presentation regression: tdf147586",
+        "stages": {
+          "candidate": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.033,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 11159,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ],
+              "colors": {
+                "red": 0,
+                "blue": 0,
+                "orange": 0,
+                "green": 0,
+                "rose": 0,
+                "dark": 0,
+                "light_green": 0
+              }
+            }
+          },
+          "office2pdf": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.034,
+            "stderr": "Using Landlock ABI 9 for preview\n",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.0,
+                  540.0
+                ]
+              ],
+              "bytes": 10172,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-0/lo-tdf147586-b41a26/office2pdf"
+          },
+          "libreoffice": {
+            "exit_code": 0,
+            "timeout": false,
+            "seconds": 0.466,
+            "stderr": "",
+            "status": "ok",
+            "pdf": {
+              "pages": 1,
+              "page_sizes_pt": [
+                [
+                  960.009,
+                  540.0
+                ]
+              ],
+              "bytes": 15165,
+              "image_count": 0,
+              "previews": [
+                "page-1.png"
+              ]
+            },
+            "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/pptx_corpus/runs/initial-0/lo-tdf147586-b41a26/libreoffice"
+          }
+        },
+        "comparisons": {
+          "candidate_vs_office2pdf": {
+            "recall": 0.16666666666666666,
+            "precision": 1.0,
+            "missing": [
+              [
+                "xxx",
+                13
+              ],
+              [
+                "0",
+                1
+              ],
+              [
+                "100",
+                1
+              ]
+            ],
+            "extra": [],
+            "raster_rmse": [
+              0.0426208
+            ]
+          },
+          "candidate_vs_libreoffice": {
+            "recall": 0.16666666666666666,
+            "precision": 0.3333333333333333,
+            "missing": [
+              [
+                "t",
+                2
+              ],
+              [
+                "i",
+                1
+              ],
+              [
+                "em",
+                1
+              ],
+              [
+                "wo",
+                1
+              ]
+            ],
+            "extra": [
+              [
+                "item",
+                1
+              ],
+              [
+                "two",
+                1
+              ]
+            ],
+            "raster_rmse": [
+              null
+            ]
+          },
+          "office2pdf_vs_libreoffice": {
+            "recall": 0.16666666666666666,
+            "precision": 0.05555555555555555,
+            "missing": [
+              [
+                "t",
+                2
+              ],
+              [
+                "i",
+                1
+              ],
+              [
+                "em",
+                1
+              ],
+              [
+                "wo",
+                1
+              ]
+            ],
+            "extra": [
+              [
+                "xxx",
+                13
+              ],
+              [
+                "item",
+                1
+              ],
+              [
+                "two",
+                1
+              ],
+              [
+                "0",
+                1
+              ],
+              [
+                "100",
+                1
+              ]
+            ],
+            "raster_rmse": [
+              null
+            ]
+          }
+        },
+        "input_parts": {
+          "charts": 1,
+          "drawings": 0,
+          "media": 0
+        },
+        "expectation_failures": []
+      },
+      "before_expectation_failures": [
+        "unexpected text: xxx"
+      ],
+      "after_expectation_failures": []
+    }
+  ]
+}

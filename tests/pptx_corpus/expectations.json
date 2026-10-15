@@ -127,5 +127,21 @@
       "blue": 50000
     },
     "reason": "Render the cached SmartArt drawing, including its background and labeled blue shapes."
+  },
+  "lo-tdf147586-b41a26": {
+    "absent_text": [
+      "xxx"
+    ],
+    "reason": "Hidden chart labels must not appear in slide output."
+  },
+  "lo-hidden_group_shape-8d805f": {
+    "max_colors": {
+      "red": 0,
+      "blue": 0,
+      "green": 0,
+      "orange": 0,
+      "dark": 0
+    },
+    "reason": "All children of the explicitly hidden group must remain invisible."
   }
 }

@@ -499,6 +499,15 @@ impl Context<'_> {
             if inherited && placeholder(n).is_some() {
                 continue;
             }
+            // Visibility belongs to this object's nonvisual properties. Do not
+            // search descendants: a hidden child must not hide its visible parent.
+            if n.children
+                .iter()
+                .filter_map(|pr| pr.child("cNvPr"))
+                .any(|pr| pr.attr("hidden").is_some_and(|v| matches!(v, "1" | "true")))
+            {
+                continue;
+            }
             let element_start = slide.elements.len();
             let chart_start = slide.odf_charts.len();
             match n.local_name() {
@@ -1671,5 +1680,44 @@ mod tests {
         let corner = apply(100.0, 200.0);
         assert!((corner.0 - 250.0).abs() < 0.001 && (corner.1 - 350.0).abs() < 0.001);
         assert!(Transform::identity().post().is_none());
+    }
+    #[test]
+    fn hidden_groups_are_skipped_but_hidden_children_do_not_hide_parent() {
+        let zip = ZipArchive::new(&package(&[("a", "b")])).unwrap();
+        let theme = Theme::new(None, None);
+        let mut budget = 100;
+        let mut ctx = Context {
+            zip: &zip,
+            theme: &theme,
+            theme_root: None,
+            master: None,
+            layout: None,
+            default_text: None,
+            table_styles: None,
+            background: None,
+            slide_number: 1,
+            budget: &mut budget,
+            diagram_depth: 0,
+        };
+        let tree = parse_xml_document(r#"<spTree>
+          <grpSp><nvGrpSpPr><cNvPr hidden="1"/></nvGrpSpPr><sp><txBody><bodyPr/><p><r><t>Hidden group</t></r></p></txBody></sp></grpSp>
+          <grpSp><nvGrpSpPr><cNvPr/></nvGrpSpPr>
+            <sp><nvSpPr><cNvPr hidden="true"/></nvSpPr><txBody><bodyPr/><p><r><t>Hidden child</t></r></p></txBody></sp>
+            <sp><txBody><bodyPr/><p><r><t>Visible child</t></r></p></txBody></sp>
+          </grpSp></spTree>"#).unwrap();
+        let mut slide = Slide::default();
+        ctx.walk(
+            &tree,
+            &Relations::default(),
+            &mut slide,
+            Transform::identity(),
+            false,
+        )
+        .unwrap();
+        assert_eq!(slide.elements.len(), 1);
+        let SlideElement::TextBox(t) = &slide.elements[0] else {
+            panic!()
+        };
+        assert_eq!(t.text, "Visible child");
     }
 }
