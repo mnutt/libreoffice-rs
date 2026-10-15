@@ -448,7 +448,7 @@ pub fn odf_image(frame: &lo_core::XmlNode, zip: &ZipArchive) -> Option<lo_core::
             .attr("height")
             .and_then(odf_length)
             .filter(|v| *v > 0.0)?;
-        return Some(lo_core::ImageElement {
+        return Some(lo_core::ImageElement {tile: None, clip_paths: Vec::new(),
                 transform: None,
                 crop: [0.0; 4], rotation: 0.0, flip_horizontal: false, flip_vertical: false,
             opacity: 255,

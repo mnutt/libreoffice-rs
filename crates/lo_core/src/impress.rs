@@ -26,7 +26,20 @@ pub enum ShapeKind {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct ImageTile {
+    pub width: f32,
+    pub height: f32,
+    pub offset_x: f32,
+    pub offset_y: f32,
+    pub flip_x: bool,
+    pub flip_y: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct ImageElement {
+    pub tile: Option<ImageTile>,
+    /// Optional normalized shape outline used to clip the image in PDF export.
+    pub clip_paths: Vec<crate::VectorPath>,
     /// Optional affine transform in top-left slide coordinates.
     pub transform: Option<[f32;6]>,
     /// Source crop fractions: left, top, right, bottom.

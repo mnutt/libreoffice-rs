@@ -492,7 +492,7 @@ pub(crate) fn artwork(node: &XmlNode, styles: &OdfStyles) -> Option<ImageElement
         write!(svg,r#"<path d="{}" fill="{}" fill-rule="evenodd" stroke="{}" stroke-width="{stroke_width}" stroke-linejoin="round"/>"#,part.path,if part.no_fill{"none"}else{fill},if part.no_stroke{"none"}else{stroke}).ok()?;
     }
     svg.push_str("</g></svg></svg>");
-    Some(ImageElement {
+    Some(ImageElement {tile: None, clip_paths: Vec::new(),
                 transform: None,                crop: [0.0; 4], rotation: 0.0, flip_horizontal: false, flip_vertical: false,
         name: "ODF geometry".into(),
         mime_type: "image/svg+xml".into(),

@@ -130,9 +130,26 @@ pub fn to_pdf(presentation: &Presentation) -> Vec<u8> {
                         let (a,b,c,d)=(cos*sx,sin*sx,-sin*sy,cos*sy);let (cx,cy)=(x+w/2.0,y+h/2.0);
                         page.raw(&format!("{a} {b} {c} {d} {} {} cm",cx-a*cx-c*cy,cy-b*cx-d*cy));
                         page.raw(&format!("{x} {y} {w} {h} re W n"));
+                        if !image.clip_paths.is_empty() {
+                            for path in &image.clip_paths { path.append_pdf_path(page, [x,y+h,w,h]); }
+                            page.raw("W n");
+                        }
+
                         let [left,top,right,bottom]=image.crop;
                         let iw=w/(1.0-left-right).max(0.001);let ih=h/(1.0-top-bottom).max(0.001);
-                        page.image(resource,x-left*iw,y-bottom*ih,iw,ih);
+                        if let Some(tile) = image.tile.as_ref().filter(|t| t.width.is_finite() && t.width>0.0 && t.height.is_finite() && t.height>0.0 && t.offset_x.is_finite() && t.offset_y.is_finite()) {
+                            let columns=((w/tile.width).ceil() as usize).saturating_add(2);
+                            let rows=((h/tile.height).ceil() as usize).saturating_add(2);
+                            if columns.saturating_mul(rows)<=10000 {
+                                for row in 0..rows {for col in 0..columns {
+                                    let tx=x+tile.offset_x+(col as f32-1.0)*tile.width;
+                                    let ty=y+h-tile.offset_y-row as f32*tile.height;
+                                    let sx=if tile.flip_x && col%2==0 {-1.0}else{1.0};
+                                    let sy=if tile.flip_y && row%2==0 {-1.0}else{1.0};
+                                    page.image(resource,tx+if sx<0.0{tile.width}else{0.0},ty+if sy<0.0{tile.height}else{0.0},sx*tile.width,sy*tile.height);
+                                }}
+                            } else {page.image(resource,x-left*iw,y-bottom*ih,iw,ih);}
+                        } else {page.image(resource,x-left*iw,y-bottom*ih,iw,ih);}
                         page.raw("Q");
                         page.end_tag();
                     } else {
@@ -403,7 +420,7 @@ fn raster_svg(image: &lo_core::ImageElement) -> Option<lo_core::RasterImage> {
     })
 }
 
-fn jpeg_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
+pub(crate) fn jpeg_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
     let mut index = 2usize;
     while index + 4 <= bytes.len() {
         if bytes[index] != 0xff {
@@ -450,7 +467,7 @@ mod svg_tests {
     use super::*;
     #[test]
     fn svg_raster_keeps_straight_alpha_and_rejects_external_images() {
-        let image = lo_core::ImageElement {
+        let image = lo_core::ImageElement {tile: None, clip_paths: Vec::new(),
                 transform: None,
                 crop: [0.0; 4], rotation: 0.0, flip_horizontal: false, flip_vertical: false,
             name: "test.svg".into(), mime_type: "image/svg+xml".into(), opacity: 255,
@@ -471,7 +488,7 @@ mod shared_image_tests {
     #[test]
     fn repeated_master_images_share_one_pdf_resource() {
         let data=lo_core::RasterImage::new(10,10,lo_core::Rgba::WHITE).encode_png();
-        let image=lo_core::ImageElement{transform:None,name:"master.png".into(),mime_type:"image/png".into(),data,frame:lo_core::Rect::default(),alt:String::new(),opacity:255,crop:[0.0;4],rotation:0.0,flip_horizontal:false,flip_vertical:false};
+        let image=lo_core::ImageElement{tile: None, clip_paths: Vec::new(),transform:None,name:"master.png".into(),mime_type:"image/png".into(),data,frame:lo_core::Rect::default(),alt:String::new(),opacity:255,crop:[0.0;4],rotation:0.0,flip_horizontal:false,flip_vertical:false};
         let mut deck=Presentation::new("Shared image");
         let mut slide=lo_core::Slide::default();slide.elements.push(SlideElement::Image(image));deck.slides.push(slide.clone());
         let count=|bytes:Vec<u8>|String::from_utf8_lossy(&bytes).matches("/Subtype /Image").count();

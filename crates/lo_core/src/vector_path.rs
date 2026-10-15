@@ -61,14 +61,6 @@ impl VectorPath {
         fill: Option<(f32, f32, f32)>,
         stroke: Option<(f32, f32, f32)>,
     ) {
-        let [x, top, w, h] = frame;
-        let point = |a: i32, b: i32| {
-            format!(
-                "{} {}",
-                x + w * a as f32 / 100000.0,
-                top - h * b as f32 / 100000.0
-            )
-        };
         let fill = fill.filter(|_| self.fill);
         let stroke = stroke.filter(|_| self.stroke);
         page.raw("q");
@@ -78,6 +70,25 @@ impl VectorPath {
         if let Some((r, g, b)) = stroke {
             page.raw(&format!("{r} {g} {b} RG"));
         }
+        self.append_pdf_path(page, frame);
+        page.raw(match (fill.is_some(), stroke.is_some()) {
+            (true, true) => "B",
+            (true, false) => "f",
+            (false, true) => "S",
+            _ => "n",
+        });
+        page.raw("Q");
+    }
+    /// Append an unpainted path, for painting or clipping in the caller's graphics state.
+    pub fn append_pdf_path(&self, page: &mut PdfPage, frame: [f32; 4]) {
+        let [x, top, w, h] = frame;
+        let point = |a: i32, b: i32| {
+            format!(
+                "{} {}",
+                x + w * a as f32 / 100000.0,
+                top - h * b as f32 / 100000.0
+            )
+        };
         for command in &self.commands {
             match command {
                 PathCommand::Move(a, b) => page.raw(&format!("{} m", point(*a, *b))),
@@ -91,13 +102,6 @@ impl VectorPath {
                 PathCommand::Close => page.raw("h"),
             }
         }
-        page.raw(match (fill.is_some(), stroke.is_some()) {
-            (true, true) => "B",
-            (true, false) => "f",
-            (false, true) => "S",
-            _ => "n",
-        });
-        page.raw("Q");
     }
     pub fn render_raster(
         &self,

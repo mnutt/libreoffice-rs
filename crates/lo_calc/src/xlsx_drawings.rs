@@ -200,7 +200,7 @@ pub(crate) fn import(
                     layout.image_crops.insert(layout.images.len(), values);
                 }
             }
-            layout.images.push(ImageElement {
+            layout.images.push(ImageElement {tile: None, clip_paths: Vec::new(),
                 transform: None,                crop: [0.0; 4], rotation: 0.0, flip_horizontal: false, flip_vertical: false,
                 frame,
                 data,

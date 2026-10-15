@@ -56,6 +56,24 @@ fn num(n: Option<&XmlNode>, key: &str, default: f32) -> f32 {
 fn pt(n: Option<&XmlNode>, key: &str, default: f32) -> f32 {
     num(n, key, default * 12700.0) / 12700.0
 }
+fn png_density(data: &[u8]) -> Option<(f32, f32)> {
+    if !data.starts_with(b"\x89PNG\r\n\x1a\n") {
+        return None;
+    }
+    let mut offset = 8usize;
+    while let Some(header) = data.get(offset..offset.checked_add(8)?) {
+        let len = u32::from_be_bytes(header[..4].try_into().ok()?) as usize;
+        let end = offset.checked_add(12)?.checked_add(len)?;
+        let chunk = data.get(offset + 8..end - 4)?;
+        if &header[4..] == b"pHYs" && chunk.len() == 9 && chunk[8] == 1 {
+            let x = u32::from_be_bytes(chunk[..4].try_into().ok()?) as f32 * 0.0254;
+            let y = u32::from_be_bytes(chunk[4..8].try_into().ok()?) as f32 * 0.0254;
+            return (x > 0.0 && y > 0.0).then_some((x, y));
+        }
+        offset = end;
+    }
+    None
+}
 fn line_dashes(line: Option<&XmlNode>) -> Vec<u32> {
     let width = pt(line, "w", 0.75).clamp(0.01, 100.0);
     let pattern: Vec<f32> = if let Some(custom) = line.and_then(|n| n.child("custDash")) {
@@ -455,12 +473,27 @@ pub(crate) fn load(title: String, bytes: &[u8]) -> Result<Presentation> {
                 .into_iter()
                 .flatten()
                 .find_map(|n| n.child("cSld").and_then(|n| n.child("bg")));
+            // Inherited backgrounds retain the color map of their defining part.
+            let has_background =
+                |n: &XmlNode| n.child("cSld").and_then(|n| n.child("bg")).is_some();
+            let background_map = if has_background(&slide_root) {
+                color_map
+            } else if layout_root.is_some_and(has_background) {
+                layout_root
+                    .and_then(|n| n.child("clrMapOvr"))
+                    .and_then(|n| n.child("overrideClrMapping"))
+                    .or_else(|| master_root.and_then(|n| n.child("clrMap")))
+            } else {
+                master_root.and_then(|n| n.child("clrMap"))
+            };
+            let background_theme = Theme::new(theme_root, background_map);
             let mut budget = 100_000usize;
             let mut ctx = Context {
                 zip: &zip,
                 slide_number: i + 1,
                 table_styles: table_styles.as_ref(),
                 background,
+                background_theme: Some(&background_theme),
                 theme: &theme,
                 theme_root,
                 master: master_root,
@@ -470,6 +503,7 @@ pub(crate) fn load(title: String, bytes: &[u8]) -> Result<Presentation> {
                 diagram_depth: 0,
             };
             if let Some(bg) = background {
+                ctx.theme = &background_theme;
                 let frame = rect(
                     0.0,
                     0.0,
@@ -499,6 +533,7 @@ pub(crate) fn load(title: String, bytes: &[u8]) -> Result<Presentation> {
                     }
                 }
             }
+            ctx.theme = &theme;
             if slide_root.attr("showMasterSp") != Some("0")
                 && layout_root.and_then(|n| n.attr("showMasterSp")) != Some("0")
             {
@@ -527,6 +562,7 @@ struct Context<'a> {
     slide_number: usize,
     table_styles: Option<&'a XmlNode>,
     background: Option<&'a XmlNode>,
+    background_theme: Option<&'a Theme>,
     theme: &'a Theme,
     theme_root: Option<&'a XmlNode>,
     master: Option<&'a XmlNode>,
@@ -594,6 +630,11 @@ impl Context<'_> {
                     }
                     if let Some(m) = master {
                         chain.push(m);
+                    }
+                    if let Some(fill) = n.child("spPr").and_then(|pr| pr.child("blipFill")) {
+                        let mut picture = n.as_ref().clone();
+                        picture.children.push(fill.clone().into());
+                        self.picture(&picture, rels, slide, t)?;
                     }
                     self.shape(&chain, slide, t);
                 }
@@ -754,7 +795,10 @@ impl Context<'_> {
         Some(fill)
     }
     fn paint_fill(&self, fill: &XmlNode, slide: &mut Slide, f: Rect) {
-        if let Some(color) = self.theme.color(fill) {
+        self.paint_fill_with_theme(fill, slide, f, self.theme);
+    }
+    fn paint_fill_with_theme(&self, fill: &XmlNode, slide: &mut Slide, f: Rect, theme: &Theme) {
+        if let Some(color) = theme.color(fill) {
             slide.elements.push(SlideElement::Shape(Shape {
                 frame: f,
                 kind: ShapeKind::Rectangle,
@@ -771,7 +815,7 @@ impl Context<'_> {
                 .into_iter()
                 .flat_map(|n| n.children_named("gs"))
                 .filter_map(|n| {
-                    self.theme
+                    theme
                         .color(n)
                         .and_then(|c| crate::pdf::parse_color(&c))
                         .map(|c| ((num(Some(n), "pos", 0.0) / 100000.0).clamp(0.0, 1.0), c))
@@ -812,6 +856,8 @@ impl Context<'_> {
             slide
                 .elements
                 .push(SlideElement::Image(lo_core::ImageElement {
+                    tile: None,
+                    clip_paths: Vec::new(),
                     transform: None,
                     name: "background-gradient.png".into(),
                     mime_type: "image/png".into(),
@@ -857,7 +903,7 @@ impl Context<'_> {
         let fill = props
             .iter()
             .find_map(|n| {
-                if n.child("noFill").is_some() {
+                if n.child("noFill").is_some() || n.child("blipFill").is_some() {
                     Some("none".into())
                 } else {
                     n.child("solidFill").and_then(|n| self.theme.color(n))
@@ -899,7 +945,12 @@ impl Context<'_> {
                 .map(|n| n.as_ref())
                 .or(referenced.as_ref());
             if let Some(fill) = background_fill {
-                self.paint_fill(fill, slide, f);
+                self.paint_fill_with_theme(
+                    fill,
+                    slide,
+                    f,
+                    self.background_theme.unwrap_or(self.theme),
+                );
             } else if self.background.is_none() {
                 // The implicit slide background is opaque white. A background-filled
                 // shape must cover earlier elements even when no bg node is stored.
@@ -934,7 +985,7 @@ impl Context<'_> {
             .or(theme_line.as_ref());
         let stroke = line
             .and_then(|n| {
-                if n.child("noFill").is_some() {
+                if n.child("noFill").is_some() || n.child("blipFill").is_some() {
                     Some("none".into())
                 } else {
                     n.child("solidFill").and_then(|n| self.theme.color(n))
@@ -1015,8 +1066,8 @@ impl Context<'_> {
             _ => return Ok(()),
         };
         let crop_node = fill.and_then(|n| n.child("srcRect"));
-        let mut crop =
-            ["l", "t", "r", "b"].map(|key| (num(crop_node, key, 0.0) / 100000.0).clamp(0.0, 0.999));
+        let mut crop = ["l", "t", "r", "b"]
+            .map(|key| (num(crop_node, key, 0.0) / 100000.0).clamp(-1000.0, 0.999));
         if crop[0] + crop[2] >= 1.0 || crop[1] + crop[3] >= 1.0 {
             crop = [0.0; 4];
         }
@@ -1029,10 +1080,82 @@ impl Context<'_> {
             .and_then(|n| n.attr("flipV"))
             .is_some_and(|v| matches!(v, "1" | "true"));
         let f = frame(&[n], t);
+        let tiled = fill.is_some_and(|fill| {
+            fill.child("tile").is_some()
+                || (n.local_name() == "sp" && fill.child("stretch").is_none())
+        });
+        let tile = if tiled {
+            let dimensions = if mime == "image/png" && data.len() >= 24 {
+                Some((
+                    u32::from_be_bytes(data[16..20].try_into().unwrap()),
+                    u32::from_be_bytes(data[20..24].try_into().unwrap()),
+                ))
+            } else if mime == "image/jpeg" {
+                crate::pdf::jpeg_dimensions(&data)
+            } else {
+                None
+            };
+            dimensions.and_then(|(w, h)| {
+                let props = fill.and_then(|n| n.child("tile"));
+                let density = png_density(&data).unwrap_or((96.0, 96.0));
+                let explicit_dpi = num(fill, "dpi", 0.0);
+                let (dpi_x, dpi_y) = if explicit_dpi > 0.0 {
+                    (explicit_dpi, explicit_dpi)
+                } else {
+                    density
+                };
+                let width = w as f32 * 72.0 / dpi_x.max(1.0)
+                    * (num(props, "sx", 100000.0) / 100000.0).clamp(0.001, 1000.0);
+                let height = h as f32 * 72.0 / dpi_y.max(1.0)
+                    * (num(props, "sy", 100000.0) / 100000.0).clamp(0.001, 1000.0);
+                if width <= 0.0 || height <= 0.0 {
+                    return None;
+                }
+                let align = props.and_then(|n| n.attr("algn")).unwrap_or("tl");
+                let x = match align {
+                    "tr" | "r" | "br" => f.size.width.as_pt() - width,
+                    "t" | "ctr" | "b" => (f.size.width.as_pt() - width) / 2.0,
+                    _ => 0.0,
+                };
+                let y = match align {
+                    "bl" | "b" | "br" => f.size.height.as_pt() - height,
+                    "l" | "ctr" | "r" => (f.size.height.as_pt() - height) / 2.0,
+                    _ => 0.0,
+                };
+                let flip = props.and_then(|n| n.attr("flip")).unwrap_or("none");
+                Some(lo_core::ImageTile {
+                    width,
+                    height,
+                    offset_x: (x + pt(props, "tx", 0.0)).rem_euclid(width),
+                    offset_y: (y + pt(props, "ty", 0.0)).rem_euclid(height),
+                    flip_x: matches!(flip, "x" | "xy"),
+                    flip_y: matches!(flip, "y" | "xy"),
+                })
+            })
+        } else {
+            None
+        };
+        let clip_paths = n
+            .child("spPr")
+            .and_then(|pr| pr.child("custGeom").or_else(|| pr.child("prstGeom")))
+            .filter(|g| g.attr("prst") != Some("rect"))
+            .and_then(|g| {
+                crate::pptx_geometry::geometry(g, f.size.width.as_pt(), f.size.height.as_pt())
+            })
+            .and_then(|kind| {
+                if let ShapeKind::Custom(paths) = kind {
+                    Some(paths)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_default();
         let name = n.child("nvPicPr").and_then(|n| n.child("cNvPr"));
         slide
             .elements
             .push(SlideElement::Image(lo_core::ImageElement {
+                clip_paths,
+                tile,
                 transform: None,
                 crop,
                 rotation,
@@ -1043,7 +1166,11 @@ impl Context<'_> {
                 data,
                 frame: f,
                 alt: name.and_then(|n| n.attr("descr")).unwrap_or("").into(),
-                opacity: 255,
+                opacity: ((num(blip.and_then(|n| n.child("alphaModFix")), "amt", 100000.0)
+                    / 100000.0)
+                    .clamp(0.0, 1.0)
+                    * 255.0)
+                    .round() as u8,
             }));
         Ok(())
     }
@@ -1648,6 +1775,7 @@ mod tests {
             default_text: None,
             table_styles: Some(&styles),
             background: None,
+            background_theme: None,
             slide_number: 1,
             budget: &mut budget,
             diagram_depth: 0,
@@ -1685,6 +1813,7 @@ mod tests {
             default_text: None,
             table_styles: None,
             background: None,
+            background_theme: None,
             slide_number: 1,
             budget: &mut budget,
             diagram_depth: 0,
@@ -1713,6 +1842,7 @@ mod tests {
             default_text: None,
             table_styles: None,
             background: None,
+            background_theme: None,
             slide_number: 1,
             budget: &mut budget,
             diagram_depth: 0,
@@ -1752,6 +1882,7 @@ mod tests {
             default_text: None,
             table_styles: None,
             background: None,
+            background_theme: None,
             slide_number: 1,
             budget: &mut budget,
             diagram_depth: 0,
@@ -1796,5 +1927,112 @@ mod tests {
         assert_eq!(theme.colors["tx1"], "FFFFFF");
         assert_eq!(theme.colors["accent1"], "C0504D");
         assert_eq!(theme.colors["accent2"], "4F81BD");
+    }
+    #[test]
+    fn bitmap_shape_preserves_clip_padding_and_opacity() {
+        let zip = ZipArchive::new(&package(&[("image.png", "bytes")])).unwrap();
+        let theme = Theme::new(None, None);
+        let mut budget = 100;
+        let mut ctx = Context {
+            zip: &zip,
+            theme: &theme,
+            theme_root: None,
+            master: None,
+            layout: None,
+            default_text: None,
+            table_styles: None,
+            background: None,
+            background_theme: None,
+            slide_number: 1,
+            budget: &mut budget,
+            diagram_depth: 0,
+        };
+        let tree=parse_xml_document(r#"<spTree><sp><spPr><xfrm><off x="0" y="0"/><ext cx="1270000" cy="1270000"/></xfrm><prstGeom prst="ellipse"/><blipFill><blip embed="image"><alphaModFix amt="50000"/></blip><srcRect l="-10000"/></blipFill></spPr></sp></spTree>"#).unwrap();
+        let mut rels = Relations::default();
+        rels.paths.insert("image".into(), "image.png".into());
+        let mut slide = Slide::default();
+        ctx.walk(&tree, &rels, &mut slide, Transform::identity(), false)
+            .unwrap();
+        let SlideElement::Image(image) = &slide.elements[0] else {
+            panic!()
+        };
+        assert_eq!(image.clip_paths.len(), 1);
+        assert_eq!(image.opacity, 128);
+        assert!((image.crop[0] + 0.1).abs() < 0.0001);
+        assert_eq!(image.frame.size.width.as_pt(), 100.0);
+        assert!(slide
+            .elements
+            .iter()
+            .all(|e| !matches!(e,SlideElement::Shape(s) if s.style.fill != "none")));
+    }
+    #[test]
+    fn png_tile_density_uses_physical_units_and_rejects_truncation() {
+        let mut data = b"\x89PNG\r\n\x1a\n".to_vec();
+        data.extend(9u32.to_be_bytes());
+        data.extend(b"pHYs");
+        data.extend(3543u32.to_be_bytes());
+        data.extend(3543u32.to_be_bytes());
+        data.push(1);
+        data.extend([0; 4]);
+        let (x, y) = png_density(&data).unwrap();
+        assert!((x - 90.0).abs() < 0.02);
+        assert_eq!(x, y);
+        assert!(png_density(&data[..20]).is_none());
+        data[24] = 0;
+        assert!(png_density(&data).is_none());
+    }
+    #[test]
+    fn inherited_background_keeps_master_map_while_slide_shapes_use_override() {
+        let bytes = package(&[
+            (
+                "ppt/presentation.xml",
+                r#"<presentation><sldIdLst><sldId id="1" r:id="s"/></sldIdLst></presentation>"#,
+            ),
+            (
+                "ppt/_rels/presentation.xml.rels",
+                r#"<Relationships><Relationship Id="s" Target="slides/s.xml"/></Relationships>"#,
+            ),
+            (
+                "ppt/slides/s.xml",
+                r#"<sld><cSld><spTree><sp><spPr><solidFill><schemeClr val="bg1"/></solidFill></spPr></sp></spTree></cSld><clrMapOvr><overrideClrMapping bg1="dk1"/></clrMapOvr></sld>"#,
+            ),
+            (
+                "ppt/slides/_rels/s.xml.rels",
+                r#"<Relationships><Relationship Id="l" Type="x/slideLayout" Target="../slideLayouts/l.xml"/></Relationships>"#,
+            ),
+            (
+                "ppt/slideLayouts/l.xml",
+                r#"<sldLayout><cSld><spTree/></cSld></sldLayout>"#,
+            ),
+            (
+                "ppt/slideLayouts/_rels/l.xml.rels",
+                r#"<Relationships><Relationship Id="m" Type="x/slideMaster" Target="../slideMasters/m.xml"/></Relationships>"#,
+            ),
+            (
+                "ppt/slideMasters/m.xml",
+                r#"<sldMaster><cSld><bg><bgRef idx="1001"><schemeClr val="bg1"/></bgRef></bg><spTree/></cSld><clrMap bg1="lt1"/></sldMaster>"#,
+            ),
+            (
+                "ppt/slideMasters/_rels/m.xml.rels",
+                r#"<Relationships><Relationship Id="t" Type="x/theme" Target="../theme/t.xml"/></Relationships>"#,
+            ),
+            (
+                "ppt/theme/t.xml",
+                r#"<theme><themeElements><fmtScheme><bgFillStyleLst><solidFill><schemeClr val="phClr"/></solidFill></bgFillStyleLst></fmtScheme></themeElements></theme>"#,
+            ),
+        ]);
+        let deck = load("test".into(), &bytes).unwrap();
+        let colors: Vec<_> = deck.slides[0]
+            .elements
+            .iter()
+            .filter_map(|e| {
+                if let SlideElement::Shape(s) = e {
+                    Some(s.style.fill.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        assert_eq!(colors, vec!["#FFFFFF", "#000000"]);
     }
 }
