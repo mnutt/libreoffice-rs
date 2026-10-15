@@ -87,6 +87,7 @@ pub fn to_pdf(presentation: &Presentation) -> Vec<u8> {
                     let stroke = parse_color(&shape.style.stroke).unwrap_or((0.0, 0.0, 0.0));
                     let stroke_width = shape.style.stroke_width_mpt.map(|v|v as f32/1000.0).unwrap_or_else(||(shape.style.stroke_width_mm as f32 * 72.0 / 25.4).max(0.75));
                     page.line_width(stroke_width);
+                    page.raw(&format!("{} J", shape.style.stroke_cap.min(2)));
                     if !shape.style.stroke_dash_mpt.is_empty() {
                         let pattern = shape.style.stroke_dash_mpt.iter().map(|v| ( *v as f32 / 1000.0).to_string()).collect::<Vec<_>>().join(" ");
                         page.raw(&format!("[{pattern}] 0 d"));
@@ -112,6 +113,9 @@ pub fn to_pdf(presentation: &Presentation) -> Vec<u8> {
                         ShapeKind::Line => {
                             page.line_rgb(x, slide_h - y_top, x + w, slide_h - y_top - h, stroke.0, stroke.1, stroke.2);
                         }
+                    }
+                    if let Some(hatch) = &shape.style.hatch {
+                        render_hatch(page, &shape.kind, [x,slide_h-y_top,w,h], hatch);
                     }
                     page.line_width(1.0);
                     page.raw("Q");
@@ -179,6 +183,42 @@ pub fn to_pdf(presentation: &Presentation) -> Vec<u8> {
     }
 
     pdf.finish()
+}
+
+fn render_hatch(page: &mut lo_core::PdfPage, kind: &ShapeKind, frame: [f32;4], hatch: &lo_core::style::HatchFill) {
+    let [x,top,w,h] = frame;
+    if !frame.iter().all(|v|v.is_finite() && v.abs()<=1e7) || w<=0.0 || h<=0.0 { return; }
+    let Some((r,g,b)) = parse_color(&hatch.color) else {return};
+    let distance = (hatch.distance_mpt as f32/1000.0).max(0.1);
+    page.raw("q");
+    if let ShapeKind::Custom(paths) = kind {
+        for path in paths.iter().filter(|p|p.fill) {path.append_pdf_path(page,frame);}
+        page.raw("W n");
+    } else {page.raw(&format!("{x} {} {w} {h} re W n",top-h));}
+    page.line_width(0.1);
+    page.raw("[] 0 d 0 J");
+    let (cx,cy) = (x+w/2.0,top-h/2.0);
+    let mut budget = 10000usize;
+    for index in 0..hatch.line_count.min(3) {
+        let offset = match index {0=>0.0,1=>90.0,_=>45.0};
+        let angle = (hatch.angle_degrees as f32+offset).to_radians();
+        let (dy,dx) = angle.sin_cos();
+        let (nx,ny) = (-dy,dx);
+        let center = cx*nx+cy*ny;
+        // Reference hatching starts at the shape bounds, not the page origin.
+        let phase = (x-0.1)*nx+(top+0.1)*ny;
+        let radius = (nx.abs()*w+ny.abs()*h)/2.0;
+        let start = ((center-radius-phase)/distance).floor();
+        let count = ((2.0*radius/distance).ceil() as usize).saturating_add(3).min(budget);
+        let length = w.hypot(h);
+        for i in 0..count {
+            let shift = (start+i as f32)*distance+phase-center;
+            let (px,py) = (cx+nx*shift,cy+ny*shift);
+            page.line_rgb(px-dx*length,py-dy*length,px+dx*length,py+dy*length,r,g,b);
+        }
+        budget -= count;
+    }
+    page.raw("Q");
 }
 
 fn render_text_box(page: &mut lo_core::PdfPage, slide_h: f32, text_box: &lo_core::TextBox) {

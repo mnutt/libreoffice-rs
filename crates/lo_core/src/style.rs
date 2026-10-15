@@ -83,13 +83,24 @@ pub struct CellStyle {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
+pub struct HatchFill {
+    pub color: String,
+    pub distance_mpt: u32,
+    pub angle_degrees: i16,
+    pub line_count: u8,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ShapeStyle {
+    pub hatch: Option<HatchFill>,
     /// Optional affine transform in top-left slide coordinates.
     pub transform: Option<[f32;6]>,
     /// Optional exact line width, in thousandths of a point.
     pub stroke_width_mpt: Option<u32>,
     /// Dash lengths in thousandths of a point; empty means a solid stroke.
     pub stroke_dash_mpt: Vec<u32>,
+    /// PDF line cap: 0 flat (default), 1 round, 2 square.
+    pub stroke_cap: u8,
     pub rotation_millidegrees: i32,
     pub fill: String,
     pub stroke: String,

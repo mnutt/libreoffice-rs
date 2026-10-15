@@ -87,6 +87,8 @@ impl DrawBuilder {
                     stroke_width_mm: 1,
                     stroke_width_mpt: None,
                     stroke_dash_mpt: Vec::new(),
+                    stroke_cap: 0,
+                    hatch: None,
                 },
                 kind: ShapeKind::Rectangle,
             }));
@@ -118,6 +120,8 @@ impl DrawBuilder {
                     stroke_width_mm: 1,
                     stroke_width_mpt: None,
                     stroke_dash_mpt: Vec::new(),
+                    stroke_cap: 0,
+                    hatch: None,
                 },
                 kind: ShapeKind::Ellipse,
             }));
@@ -142,6 +146,8 @@ impl DrawBuilder {
                     stroke_width_mm: 1,
                     stroke_width_mpt: None,
                     stroke_dash_mpt: Vec::new(),
+                    stroke_cap: 0,
+                    hatch: None,
                 },
                 kind: ShapeKind::Line,
             }));

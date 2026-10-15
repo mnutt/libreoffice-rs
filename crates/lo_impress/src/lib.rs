@@ -1,5 +1,6 @@
 mod pptx_import;
 mod pptx_text;
+mod pptx_pattern;
 mod chart;
 #[cfg(feature = "svg")]
 mod odf_shapes;
@@ -116,6 +117,8 @@ impl ImpressBuilder {
                         stroke_width_mm: 1,
                     stroke_width_mpt: None,
                     stroke_dash_mpt: Vec::new(),
+                    stroke_cap: 0,
+                    hatch: None,
                     },
                     kind: ShapeKind::Rectangle,
                 }),
@@ -134,6 +137,8 @@ impl ImpressBuilder {
                         stroke_width_mm: 1,
                     stroke_width_mpt: None,
                     stroke_dash_mpt: Vec::new(),
+                    stroke_cap: 0,
+                    hatch: None,
                     },
                     kind: ShapeKind::Rectangle,
                 }),
@@ -152,6 +157,8 @@ impl ImpressBuilder {
                         stroke_width_mm: 1,
                     stroke_width_mpt: None,
                     stroke_dash_mpt: Vec::new(),
+                    stroke_cap: 0,
+                    hatch: None,
                     },
                     kind: ShapeKind::Line,
                 }),

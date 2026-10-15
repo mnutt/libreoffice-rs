@@ -298,8 +298,151 @@ pub(crate) fn geometry(n: &XmlNode, width: f32, height: f32) -> Option<ShapeKind
                 stroke: true,
             }])
         }
-        _ => return None,
+        _ => return preset_geometry(n, w, h),
     })
+}
+fn preset_definitions() -> Option<&'static XmlNode> {
+    static PRESETS: std::sync::OnceLock<Option<XmlNode>> = std::sync::OnceLock::new();
+    PRESETS
+        .get_or_init(|| {
+            let archive =
+                lo_zip::ZipArchive::new(include_bytes!("../data/preset-shapes.zip")).ok()?;
+            lo_core::parse_xml_document(&archive.read_string("presets.xml").ok()?).ok()
+        })
+        .as_ref()
+}
+fn preset_geometry(n: &XmlNode, w: f64, h: f64) -> Option<ShapeKind> {
+    let definition = preset_definitions()?.child(n.attr("prst")?)?;
+    let mut definition = definition.clone();
+    // User adjustment values override preset defaults before derived guides run.
+    if let Some(overrides) = n.child("avLst") {
+        if let Some(index) = definition
+            .children
+            .iter()
+            .position(|n| n.local_name() == "avLst")
+        {
+            let mut adjustments = definition.children[index].as_ref().clone();
+            adjustments
+                .children
+                .extend(overrides.children.iter().take(2048).cloned());
+            definition.children[index] = adjustments.into();
+        }
+    }
+    let vars = variables(&definition, w, h);
+    custom(&definition, &vars, w, h)
+}
+/// Arrow decorations follow the actual open path tangent, including bent and
+/// cubic connectors. Work in physical points so a thin frame cannot squash them.
+pub(crate) fn line_ends(
+    kind: &ShapeKind,
+    line: &XmlNode,
+    width: f32,
+    height: f32,
+    stroke: f32,
+) -> Vec<VectorPath> {
+    let ShapeKind::Custom(paths) = kind else {
+        return vec![];
+    };
+    let mut ends = vec![];
+    let (w, h) = (width.max(1.0), height.max(1.0));
+    for path in paths
+        .iter()
+        .filter(|p| p.stroke && !p.commands.iter().any(|c| matches!(c, C::Close)))
+    {
+        let mut first = None;
+        let mut last = None;
+        let mut previous = None;
+        for command in &path.commands {
+            let (next, near_start, near_end) = match command {
+                C::Move(x, y) => {
+                    previous = Some((*x, *y));
+                    continue;
+                }
+                C::Line(x, y) => ((*x, *y), (*x, *y), previous.unwrap_or((*x, *y))),
+                C::Cubic(p) => (p[2], p[0], p[1]),
+                C::Close => continue,
+            };
+            if let Some(start) = previous {
+                if first.is_none() {
+                    first = Some((
+                        start,
+                        if near_start == start {
+                            next
+                        } else {
+                            near_start
+                        },
+                    ));
+                }
+                last = Some((next, if near_end == next { start } else { near_end }));
+            }
+            previous = Some(next);
+        }
+        for (name, endpoint) in [("headEnd", first), ("tailEnd", last)] {
+            let Some(end) = line.child(name) else {
+                continue;
+            };
+            let Some((tip, inside)) = endpoint else {
+                continue;
+            };
+            let kind = end.attr("type").unwrap_or("none");
+            if !matches!(kind, "triangle" | "stealth" | "arrow" | "diamond" | "oval") {
+                continue;
+            }
+            let factor = |key| match end.attr(key).unwrap_or("med") {
+                "sm" => 2.0,
+                "lg" => 5.0,
+                _ => 3.0,
+            };
+            let length = stroke.max(0.75) * factor("len");
+            let half = stroke.max(0.75) * factor("w") / 2.0;
+            let (tx, ty) = (tip.0 as f32 / U as f32 * w, tip.1 as f32 / U as f32 * h);
+            let (dx, dy) = (
+                (tip.0 as f32 - inside.0 as f32) / U as f32 * w,
+                (tip.1 as f32 - inside.1 as f32) / U as f32 * h,
+            );
+            let norm = dx.hypot(dy);
+            if norm < 0.0001 {
+                continue;
+            }
+            let (dx, dy) = (dx / norm, dy / norm);
+            let point = |along: f32, across: f32| {
+                (
+                    ((tx + along * dx - across * dy) / w * U as f32) as i32,
+                    ((ty + along * dy + across * dx) / h * U as f32) as i32,
+                )
+            };
+            let points = match kind {
+                "diamond" => vec![
+                    point(length / 2.0, 0.0),
+                    point(0.0, half),
+                    point(-length / 2.0, 0.0),
+                    point(0.0, -half),
+                ],
+                "oval" => (0..24)
+                    .map(|i| {
+                        let a = i as f32 * std::f32::consts::TAU / 24.0;
+                        point(a.cos() * length / 2.0, a.sin() * half)
+                    })
+                    .collect(),
+                "stealth" => vec![
+                    point(0.0, 0.0),
+                    point(-length, half),
+                    point(-length * 0.65, 0.0),
+                    point(-length, -half),
+                ],
+                _ => vec![point(-length, half), point(0.0, 0.0), point(-length, -half)],
+            };
+            let mut path = VectorPath::polygon(&points);
+            if kind == "arrow" {
+                path.fill = false;
+                path.commands.pop();
+            } else {
+                path.stroke = false;
+            }
+            ends.push(path);
+        }
+    }
+    ends
 }
 fn custom(n: &XmlNode, vars: &BTreeMap<String, f64>, w: f64, h: f64) -> Option<ShapeKind> {
     let mut paths = vec![];
@@ -449,6 +592,64 @@ pub(crate) fn flip(kind: &mut ShapeKind, horizontal: bool, vertical: bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn bundled_presets_cover_all_definitions_with_bounded_paths() {
+        let root = preset_definitions().expect("valid bundled preset ZIP/XML");
+        assert_eq!(root.children.len(), 187);
+        for definition in &root.children {
+            for (w, h) in [(100.0, 50.0), (1.0, 1000.0), (1000.0, 1.0)] {
+                let node = lo_core::parse_xml_document(&format!(
+                    "<prstGeom prst=\"{}\"/>",
+                    definition.local_name()
+                ))
+                .unwrap();
+                let shape = preset_geometry(&node, w * 12700.0, h * 12700.0)
+                    .unwrap_or_else(|| panic!("missing preset {}", definition.local_name()));
+                let ShapeKind::Custom(paths) = shape else {
+                    panic!()
+                };
+                assert!(!paths.is_empty());
+                assert!(paths.len() <= 256);
+                assert!(paths.iter().map(|p| p.commands.len()).sum::<usize>() <= 40000);
+            }
+        }
+    }
+    #[test]
+    fn arrowheads_use_endpoint_tangents_and_survive_flat_frames() {
+        let line = lo_core::parse_xml_document(
+            r#"<ln><headEnd type="triangle"/><tailEnd type="arrow"/></ln>"#,
+        )
+        .unwrap();
+        let path = ShapeKind::Custom(vec![VectorPath {
+            commands: vec![C::Move(0, 0), C::Line(U, 0), C::Line(U, U)],
+            fill: false,
+            stroke: true,
+        }]);
+        let ends = line_ends(&path, &line, 100.0, 100.0, 2.0);
+        assert_eq!(ends.len(), 2);
+        assert!(ends[0].fill);
+        assert!(!ends[1].fill);
+        // Head points left; tail points down, not diagonally across the frame.
+        assert!(ends[0].commands.iter().any(|c| matches!(c, C::Line(0, 0))));
+        assert!(ends[1].commands.iter().any(|c| matches!(c, C::Line(U, U))));
+        let flat = ShapeKind::Custom(vec![VectorPath {
+            commands: vec![C::Move(0, 0), C::Line(U, 0)],
+            fill: false,
+            stroke: true,
+        }]);
+        let ends = line_ends(&flat, &line, 100.0, 0.0, 2.0);
+        assert_eq!(ends.len(), 2);
+        assert!(ends[0].commands.iter().any(|c| match c {
+            C::Move(_, y) | C::Line(_, y) => *y != 0,
+            _ => false,
+        }));
+        let point = ShapeKind::Custom(vec![VectorPath {
+            commands: vec![C::Move(0, 0), C::Line(0, 0)],
+            fill: false,
+            stroke: true,
+        }]);
+        assert!(line_ends(&point, &line, 0.0, 0.0, 100.0).is_empty());
+    }
     #[test]
     fn custom_guides_and_quadratic_curves_preserve_endpoints() {
         let n=lo_core::parse_xml_document(r#"<custGeom><avLst><gd name="adj" fmla="val 25000"/></avLst><gdLst><gd name="center" fmla="*/ w 1 2"/></gdLst><pathLst><path w="100000" h="100000" fill="none"><moveTo><pt x="0" y="0"/></moveTo><quadBezTo><pt x="50000" y="100000"/><pt x="100000" y="0"/></quadBezTo></path></pathLst></custGeom>"#).unwrap();
