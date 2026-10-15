@@ -86,6 +86,7 @@ impl DrawBuilder {
                     stroke: "#222222".to_string(),
                     stroke_width_mm: 1,
                     stroke_width_mpt: None,
+                    stroke_dash_mpt: Vec::new(),
                 },
                 kind: ShapeKind::Rectangle,
             }));
@@ -116,6 +117,7 @@ impl DrawBuilder {
                     stroke: "#222222".to_string(),
                     stroke_width_mm: 1,
                     stroke_width_mpt: None,
+                    stroke_dash_mpt: Vec::new(),
                 },
                 kind: ShapeKind::Ellipse,
             }));
@@ -139,6 +141,7 @@ impl DrawBuilder {
                     stroke: "#333333".to_string(),
                     stroke_width_mm: 1,
                     stroke_width_mpt: None,
+                    stroke_dash_mpt: Vec::new(),
                 },
                 kind: ShapeKind::Line,
             }));

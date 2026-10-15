@@ -143,5 +143,21 @@
       "dark": 0
     },
     "reason": "All children of the explicitly hidden group must remain invisible."
+  },
+  "poi-text-highlight-375ecd": {
+    "min_colors": {
+      "red": 1000,
+      "blue": 1000
+    },
+    "reason": "Both preset-color and theme-color text highlights must paint behind their runs."
+  },
+  "lo-presetDashDot-9b7969": {
+    "min_colors": {
+      "blue": 8000
+    },
+    "max_colors": {
+      "blue": 11000
+    },
+    "reason": "Dashed lines preserve visible strokes and gaps instead of rendering solid or disappearing."
   }
 }

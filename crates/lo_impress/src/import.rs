@@ -640,6 +640,7 @@ fn parse_odp_table(table: &XmlNode, frame: Rect, styles: &OdfStyles, slide: &mut
                         style: ShapeStyle {
                     transform: None,
                             stroke_width_mpt: None,
+                    stroke_dash_mpt: Vec::new(),
                             rotation_millidegrees: 0,
                             fill: fill.to_string(),
                             stroke: "#ffffff".to_string(),

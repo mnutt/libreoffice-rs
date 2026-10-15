@@ -87,6 +87,11 @@ pub fn to_pdf(presentation: &Presentation) -> Vec<u8> {
                     let stroke = parse_color(&shape.style.stroke).unwrap_or((0.0, 0.0, 0.0));
                     let stroke_width = shape.style.stroke_width_mpt.map(|v|v as f32/1000.0).unwrap_or_else(||(shape.style.stroke_width_mm as f32 * 72.0 / 25.4).max(0.75));
                     page.line_width(stroke_width);
+                    if !shape.style.stroke_dash_mpt.is_empty() {
+                        let pattern = shape.style.stroke_dash_mpt.iter().map(|v| ( *v as f32 / 1000.0).to_string()).collect::<Vec<_>>().join(" ");
+                        page.raw(&format!("[{pattern}] 0 d"));
+                    }
+
                     match shape.kind {
                         ShapeKind::Custom(ref paths) => {
                             for path in paths {path.render_pdf(page,[x,slide_h-y_top,w,h],parse_color(&shape.style.fill),parse_color(&shape.style.stroke));}

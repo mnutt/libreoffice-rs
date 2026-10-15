@@ -763,6 +763,7 @@ fn execute_impress_command(
                         stroke: "#1f4e79".to_string(),
                         stroke_width_mm: 1,
                     stroke_width_mpt: None,
+                    stroke_dash_mpt: Vec::new(),
                     },
                     kind,
                 }));
@@ -820,6 +821,7 @@ fn execute_draw_command(
                         stroke: "#1f4e79".to_string(),
                         stroke_width_mm: 1,
                     stroke_width_mpt: None,
+                    stroke_dash_mpt: Vec::new(),
                     },
                     kind,
                 }));

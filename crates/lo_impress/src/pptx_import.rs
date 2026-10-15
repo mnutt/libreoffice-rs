@@ -56,6 +56,42 @@ fn num(n: Option<&XmlNode>, key: &str, default: f32) -> f32 {
 fn pt(n: Option<&XmlNode>, key: &str, default: f32) -> f32 {
     num(n, key, default * 12700.0) / 12700.0
 }
+fn line_dashes(line: Option<&XmlNode>) -> Vec<u32> {
+    let width = pt(line, "w", 0.75).clamp(0.01, 100.0);
+    let pattern: Vec<f32> = if let Some(custom) = line.and_then(|n| n.child("custDash")) {
+        custom
+            .children_named("ds")
+            .take(64)
+            .flat_map(|n| {
+                [
+                    num(Some(n), "d", 100000.0) / 100000.0,
+                    num(Some(n), "sp", 100000.0) / 100000.0,
+                ]
+            })
+            .collect()
+    } else {
+        match line
+            .and_then(|n| n.child("prstDash"))
+            .and_then(|n| n.attr("val"))
+        {
+            Some("dot") => vec![1.0, 3.0],
+            Some("sysDot") => vec![1.0, 1.0],
+            Some("dash") => vec![4.0, 3.0],
+            Some("sysDash") => vec![3.0, 1.0],
+            Some("lgDash") => vec![8.0, 3.0],
+            Some("dashDot") => vec![4.0, 3.0, 1.0, 3.0],
+            Some("lgDashDot") => vec![8.0, 3.0, 1.0, 3.0],
+            Some("lgDashDotDot") => vec![8.0, 3.0, 1.0, 3.0, 1.0, 3.0],
+            Some("sysDashDot") => vec![3.0, 1.0, 1.0, 1.0],
+            Some("sysDashDotDot") => vec![3.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+            _ => Vec::new(),
+        }
+    };
+    pattern
+        .iter()
+        .map(|v| (v.clamp(0.001, 1000.0) * width * 1000.0).max(1.0) as u32)
+        .collect()
+}
 fn rect(x: f32, y: f32, w: f32, h: f32) -> Rect {
     Rect::new(
         Length::pt(x),
@@ -919,6 +955,7 @@ impl Context<'_> {
                     rotation_millidegrees: (-angle * 1000.0) as i32,
                     stroke_width_mm: 0,
                     stroke_width_mpt: Some((pt(line, "w", 0.75).clamp(0.0, 100.0) * 1000.0) as u32),
+                    stroke_dash_mpt: line_dashes(line),
                 },
             }));
         }
@@ -1264,6 +1301,9 @@ impl Context<'_> {
         }
         if let Some(v) = n.child("solidFill").and_then(|n| self.theme.color(n)) {
             s.foreground = v;
+        }
+        if let Some(v) = n.child("highlight").and_then(|n| self.theme.color(n)) {
+            s.background = v;
         }
     }
     fn table(&self, table: &XmlNode, slide: &mut Slide, f: Rect) {
@@ -1719,5 +1759,13 @@ mod tests {
             panic!()
         };
         assert_eq!(t.text, "Visible child");
+    }
+    #[test]
+    fn dash_lengths_follow_line_width_and_bound_custom_patterns() {
+        let line = parse_xml_document(r#"<ln w="25400"><prstDash val="dashDot"/></ln>"#).unwrap();
+        assert_eq!(line_dashes(Some(&line)), vec![8000, 6000, 2000, 6000]);
+        let line = parse_xml_document(r#"<ln w="12700"><custDash><ds d="200000" sp="50000"/><ds d="-10" sp="NaN"/></custDash></ln>"#).unwrap();
+        assert_eq!(line_dashes(Some(&line)), vec![2000, 500, 1, 1000]);
+        assert!(line_dashes(None).is_empty());
     }
 }

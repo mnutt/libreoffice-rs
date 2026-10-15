@@ -7,6 +7,7 @@ struct Fragment {
     size: f32,
     color: (f32, f32, f32),
     underline: bool,
+    background: Option<(f32, f32, f32)>,
     width: f32,
 }
 #[derive(Default)]
@@ -49,6 +50,7 @@ fn layout(runs: &[CellTextRun], width: f32) -> Vec<Line> {
                             && last.size == p.size
                             && last.color == p.color
                             && last.underline == p.underline
+                            && last.background == p.background
                     }) {
                         last.text.push(ch);
                         last.width += cw;
@@ -80,6 +82,7 @@ fn layout(runs: &[CellTextRun], width: f32) -> Vec<Line> {
             size,
             color,
             underline: r.style.underline,
+            background: crate::pdf::parse_color(&r.style.background),
         };
         let mut text = String::new();
         for ch in r.text.chars() {
@@ -152,6 +155,9 @@ pub(crate) fn render(
             _ => 0.0,
         };
         for p in line.parts {
+            if let Some((r, g, b)) = p.background {
+                page.rect_fill_rgb(cursor, y - p.size * 0.2, p.width, p.size * 1.2, r, g, b);
+            }
             page.text_rgb(
                 cursor, y, p.size, p.font, &p.text, p.color.0, p.color.1, p.color.2,
             );
@@ -222,5 +228,21 @@ mod tests {
                 .collect::<String>(),
             "abcdefghijklmnopqrstuvwxyz"
         );
+    }
+    #[test]
+    fn wrapping_keeps_different_highlight_runs_separate() {
+        let run = |text: &str, color: &str| CellTextRun {
+            text: text.into(),
+            style: lo_core::style::CellStyle {
+                background: color.into(),
+                font_size_mpt: Some(12000),
+                ..Default::default()
+            },
+        };
+        let lines = layout(&[run("AA", "#00FF00"), run("BB", "#FF0000")], 25.0);
+        let parts: Vec<_> = lines.iter().flat_map(|l| &l.parts).collect();
+        assert!(parts.iter().any(|p| p.background == Some((0.0, 1.0, 0.0))));
+        assert!(parts.iter().any(|p| p.background == Some((1.0, 0.0, 0.0))));
+        assert!(!parts.iter().any(|p| p.text.contains("AB")));
     }
 }

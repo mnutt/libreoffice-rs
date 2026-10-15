@@ -88,6 +88,8 @@ pub struct ShapeStyle {
     pub transform: Option<[f32;6]>,
     /// Optional exact line width, in thousandths of a point.
     pub stroke_width_mpt: Option<u32>,
+    /// Dash lengths in thousandths of a point; empty means a solid stroke.
+    pub stroke_dash_mpt: Vec<u32>,
     pub rotation_millidegrees: i32,
     pub fill: String,
     pub stroke: String,

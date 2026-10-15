@@ -95,11 +95,27 @@ metrics), a SmartArt slide whose newly visible text improves recall but increase
 pixel error, and a rotated-shape fixture. Word-level recall also penalizes some
 changed line breaks; do not interpret it as a count of missing rendered glyphs.
 
+## Follow-up fixes
+
+Explicitly hidden shapes, pictures, charts and groups are now skipped. A hidden
+child does not suppress visible siblings. All five affected corpus decks were
+checked; negative controls catch the previously visible group and chart labels
+(`hidden-object-results.json`).
+
+PDF export now paints text highlights, resolves preset dash patterns (including
+the distinct dot/system-dot spacing), and scales bounded custom dash patterns by
+stroke width. All 32 decks containing highlight or non-solid dash properties pass
+the focused comparison and feature checks (`line-text-style-results.json`). New
+color-count gates detect missing highlights and solid lines replacing dashes.
+These styles remain approximations: line caps, joins and arrowheads need more
+work, as do exact glyph highlight ascent/descent bounds. The raw comparisons
+retain the small pixel regression on the line-properties fixture.
+
 ## Remaining work, in priority order
 
 1. SmartArt layout for files without usable cached drawing shapes. Those diagrams
    still require a layout engine; cached drawing fallbacks are now supported.
-2. Remaining preset geometry, connector routing, line dashes/arrowheads, gradient
+2. Remaining preset geometry, connector routing, line caps/arrowheads, gradient
    clipping, and exact group scaling of fonts. Common presets and custom paths,
    plus group rotation/flips, are now supported.
 3. Text columns, hanging bullets, automatic fit calculation, East Asian vertical text,
