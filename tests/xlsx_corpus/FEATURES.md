@@ -1,15 +1,15 @@
 # XLSX fidelity milestone
 
-Implementation: `a4b396d` on `davros-fixes`. This is progress toward a replacement,
+Implementation: `dbb53af` (including `c456ceb`) on `davros-fixes`. This is progress toward a replacement,
 not a claim of complete Excel fidelity or a production renderer switch.
 
 `features.json` records the 24 upstream fixtures; `authored-results.json` records
-eight deterministic authored probes. `expanded-results.json` adds 20 upstream
+ten deterministic authored probes. `expanded-results.json` adds 20 upstream
 regression/example workbooks; see [EXPANDED.md](EXPANDED.md). Reports include source and binary hashes,
 font configuration, reference provenance, and feature expectations. PDFs, PNGs,
 and HTML comparisons remain local ignored artifacts under `runs/`. The latest
-[original](runs/rich-shrink-originals/report.html) and
-[authored](runs/rich-shrink-final/report.html) reports show all three engines.
+[original](runs/nearby-original-final/report.html) and
+[authored](runs/nearby-authored-final/report.html) reports show all three engines.
 `baseline.json` preserves the original grid-only measurements.
 
 ## Supported and tested improvements
@@ -33,7 +33,9 @@ and HTML comparisons remain local ignored artifacts under `runs/`. The latest
   fetched.
 - Absent chart caches can be filled from bounded local worksheet references,
   using saved values even on hidden sheets. Existing caches remain authoritative;
-  external and expression references are not evaluated. Relationship lookup
+  Only referenced cells are retained; worksheet scanning has a separate bounded
+  budget so large sheets do not consume the chart-value budget. External and
+  expression references are not evaluated. Relationship lookup
   matches ASCII case and rejects ambiguous aliases.
 - Cached line, clustered/stacked bar, scatter, and basic 2-D pie charts retain indexed gaps,
   numeric scatter coordinates, colors, titles, labels, legends, axis bounds,
@@ -42,10 +44,10 @@ and HTML comparisons remain local ignored artifacts under `runs/`. The latest
   gradients preserve their stops through bounded vector subdivision. Stacks accumulate positive and negative
   values separately. Automatic value axes leave headroom at exact tick maxima.
 - Scalar conditional comparisons, relative references, priorities/stop rules,
-  differential fonts/fills, and cached numeric/named data bars are supported.
+  differential fonts/fills/borders/number formats, and cached numeric/named data bars are supported.
   Two- and three-color scales support min/max, percentage and percentile bounds.
   Data bars use automatic min/max, percentage/percentile thresholds and saved
-  minimum/maximum lengths. Three-arrow (color/gray), traffic-light and flag icons
+  minimum/maximum lengths, including constant ranges. Three-arrow (color/gray), traffic-light and flag icons
   honor reversal, inclusive/exclusive thresholds, priority and hidden values.
   Hidden bar values stay hidden. Indexed colors, negative number-section colors,
   indentation, underline, plain-text rotation and shrink-to-fit are retained.
@@ -55,7 +57,7 @@ recalculation; missing or stale caches remain a limitation.
 
 ## Comparison results
 
-All 52 inputs convert with the candidate and real LibreOffice; office2pdf fails
+All 54 inputs convert with the candidate and real LibreOffice; office2pdf fails
 on three expanded inputs. All candidate feature expectations pass. Twenty of the original 24 cases have 100%
 word recall against LibreOffice; that is not twenty visual-fidelity passes.
 
@@ -115,14 +117,14 @@ size or arbitrary-document throughput.
 - Combination/percent-stacked/logarithmic charts, more marker shapes, smoothing,
   complex conditional formulas, other/custom icon sets, and negative data-bar axes
   remain unsupported or partial.
-- The 52 cases are a development sample, not representative coverage of arbitrary
+- The 54 cases are a development sample, not representative coverage of arbitrary
   Excel files. Feature gates complement manual inspection; they do not certify
   equivalent pixels, pagination, or typography.
 
 ## Validation
 
-The affected Calc tests pass (30 unit and fourteen XLSX integration tests), as do ten
-corpus-runner tests. The full workspace all-feature suite also passes after the icon/data-bar
+The affected Calc tests pass (33 unit and eighteen XLSX integration tests), as do ten
+corpus-runner tests. The full workspace all-feature suite also passes after the conditional-style and chart-reference
 changes (36 core tests). The source-font embedding regression was
 also run with the bundled fonts. All pages are inspected for text and geometry; the first ten are rasterized per
 fixture. Provenance stays attached to each measurement.

@@ -24,6 +24,8 @@ def generate():
             'xl/styles.xml': styles(),
             'xl/worksheets/sheet1.xml': f'<worksheet xmlns="{NS}" xmlns:r="{REL}"><sheetFormatPr baseColWidth="8" defaultRowHeight="15"/><cols><col min="1" max="1" width="24" customWidth="1"/><col min="2" max="2" width="24" customWidth="1"/></cols><sheetData>{body}</sheetData><pageMargins left="0.5" right="0.5" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="1"/>{extra}</worksheet>',
         }
+        if name == 'authored-conditional-styles':
+            parts['xl/styles.xml'] = parts['xl/styles.xml'].replace('</styleSheet>', '<dxfs count="3"><dxf><font><sz val="18"/></font><border><left style="thick"><color rgb="FFFF0000"/></left><right style="thick"><color rgb="FFFF0000"/></right><top style="thick"><color rgb="FFFF0000"/></top><bottom style="thick"><color rgb="FFFF0000"/></bottom></border><numFmt numFmtId="10" formatCode="0.00%"/></dxf><dxf><numFmt numFmtId="170" formatCode="yyyy-mm-dd"/></dxf><dxf><numFmt numFmtId="171" formatCode="&quot;$&quot;0.00"/></dxf></dxfs></styleSheet>')
         if name == 'authored-rich-shrink':
             parts['xl/styles.xml'] = parts['xl/styles.xml'].replace('wrapText="1"', 'shrinkToFit="1"')
         if name == 'authored-rich-shared':
@@ -60,6 +62,12 @@ def cell(address, text, style=0):
     return f'<c r="{address}" s="{style}" t="inlineStr"><is><t xml:space="preserve">{escape(text)}</t></is></c>'
 
 def cases():
+    rows = ''.join(f'<row r="{r}" ht="35" customHeight="1"><c r="A{r}"><v>{v}</v></c>{cell("B"+str(r), label)}</row>' for r,v,label in [(1,0.125,'Conditional percent and border'),(2,45292,'Conditional date'),(3,12.5,'Conditional currency')])
+    rules = ''.join(f'<conditionalFormatting sqref="A{r}"><cfRule type="cellIs" priority="{r}" dxfId="{r-1}" operator="greaterThan"><formula>0</formula></cfRule></conditionalFormatting>' for r in range(1,4))
+    yield 'authored-conditional-styles', 'conditional percent/date/currency formats and red borders', rows, rules, ''
+    rows = ''.join(f'<row r="{r}" ht="25" customHeight="1"><c r="A{r}"><v>{v}</v></c>{cell("B"+str(r), label)}</row>' for r,v,label in [(1,7,'Single positive'),(2,7,'Repeated positive'),(3,7,'Repeated positive'),(4,0,'Single zero'),(5,-7,'Single negative'),(6,7,'Custom lengths')])
+    rules = ''.join(f'<conditionalFormatting sqref="{ref}"><cfRule type="dataBar" priority="{i}"><dataBar {attrs}><cfvo type="min"/><cfvo type="max"/><color rgb="FF4472C4"/></dataBar></cfRule></conditionalFormatting>' for i,(ref,attrs) in enumerate([('A1',''),('A2:A3',''),('A4',''),('A5',''),('A6','minLength="20" maxLength="80"')],1))
+    yield 'authored-constant-bars', 'constant and single-cell automatic bars, including zero and negative', rows, rules, ''
     rows = ''.join(f'<row r="{i+1}">{cell("A"+str(i+1), "Wide WWW narrow iii café € nonbreaking\u00a0space", i)}{cell("B"+str(i+1), "Variant "+str(i), i)}</row>' for i in range(5))
     yield 'authored-font-variants', 'real font variants, Unicode widths and automatic wrapping', rows, '', ''
     rows = ''.join(f'<row r="{r}">{cell("A"+str(r), "INCLUDED" if 2 <= r <= 4 else "OUTSIDE")}</row>' for r in range(1,7))

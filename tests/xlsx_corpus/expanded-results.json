@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "checkout_source_sha256": "559c3795f6f4dcb934afc477add4d14a7cd12cf8ab86cf7d7fd33bd155a04769",
+  "checkout_source_sha256": "82d32d0160f95ff35b146bbc5a2e816ec9ada8248fb34b2ed2683bd411a3b96c",
   "manifest_sha256": "f8c939f2c0c9d51c5e0afca408311cdf383308d3a0728df4f738265b71a4d6fe",
   "runner_sha256": "8b26ea6645c1827530f1b2f751072f74e15a2086fb405a05bec648c69e5c7911",
-  "candidate_sha256": "312927811d8f0c161465f10292f03068105cf02056328173019b8cd2566e6b6b",
-  "expectations_sha256": "02ada663ce1b47285be4a2b96f7a4fdbdd8817d9a1a2a3865f6c42335ee85654",
+  "candidate_sha256": "67ec65201da2339802b4025aab3b1e7a28316c7023ef466a08beedf17c8d6527",
+  "expectations_sha256": "59043cbae6c05b6f4d4cf1835d5853a4225c297d0d23843b44398694d0513c0c",
   "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
   "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
   "fonts": {
@@ -23,8 +23,8 @@
     "NotoSans-Regular.ttf": "478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823"
   },
   "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
-  "checkout_tracked_diff_sha256": "649620f20f21beaf0d63d8c73273584bd0b9ebd3959df39e8c8e57d9ac78a360",
-  "checkout_revision": "52d097ec4f3ca5b2c2c4a848ab28b62a6309bf8b",
+  "checkout_tracked_diff_sha256": "842a282049325e356fd601d40b916e85adf2cfc70894b0a543b210798e5b7d74",
+  "checkout_revision": "d78ff147c5298544578874b898527b1ef933f3bf",
   "cases": [
     {
       "id": "expanded-ExcelTables",
@@ -33,7 +33,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.033,
+          "seconds": 0.069,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -1088,7 +1088,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.033,
+          "seconds": 0.036,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -1212,7 +1212,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.468,
+          "seconds": 0.47,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -1751,7 +1751,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.115,
+          "seconds": 0.172,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2328,7 +2328,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.035,
+          "seconds": 0.041,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2439,7 +2439,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.033,
+          "seconds": 0.037,
           "stderr": "Preview font warning: rendering 14 unsupported Unicode characters as boxes; missing U+0627, U+0628, U+0629, U+0631, U+0635, U+0639, U+0644, U+0646\n",
           "status": "ok",
           "pdf": {
@@ -2641,7 +2641,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.035,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2783,7 +2783,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 1.32,
+          "seconds": 1.37,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2882,7 +2882,7 @@
                 792.0
               ]
             ],
-            "bytes": 11477346,
+            "bytes": 11477190,
             "image_count": 23,
             "previews": [
               "page-1.png",
@@ -3081,7 +3081,7 @@
       "comparisons": {
         "candidate_vs_libreoffice": {
           "recall": 0.9214732453092426,
-          "precision": 0.96331274972757,
+          "precision": 0.9678832116788321,
           "missing": [
             [
               "to",
@@ -3178,32 +3178,16 @@
               6
             ],
             [
-              "40",
-              6
-            ],
-            [
               "8",
               4
-            ],
-            [
-              "00",
-              3
             ],
             [
               "4",
               3
             ],
             [
-              "43",
-              3
-            ],
-            [
               "77883",
               3
-            ],
-            [
-              "10",
-              2
             ],
             [
               "5",
@@ -3234,6 +3218,10 @@
               1
             ],
             [
+              "43",
+              1
+            ],
+            [
               "29",
               1
             ],
@@ -3243,6 +3231,18 @@
             ],
             [
               "69",
+              1
+            ],
+            [
+              "72",
+              1
+            ],
+            [
+              "56",
+              1
+            ],
+            [
+              "65",
               1
             ]
           ],
@@ -3742,7 +3742,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.066,
+          "seconds": 0.065,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -3982,7 +3982,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.033,
+          "seconds": 0.034,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -4228,7 +4228,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.033,
+          "seconds": 0.037,
           "stderr": "",
           "status": "ok",
           "pdf": {

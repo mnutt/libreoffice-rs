@@ -1,6 +1,6 @@
 # XLSX preview development corpus
 
-This opt-in corpus compares three independent paths using 24 original upstream inputs, 20 expanded inputs, and eight authored probes:
+This opt-in corpus compares three independent paths using 24 original upstream inputs, 20 expanded inputs, and ten authored probes:
 
 - **candidate:** this fork's `lo_calc::from_xlsx_bytes` and `to_pdf_preview`;
 - **office2pdf:** Davros's existing packaged converter (currently office2pdf 0.8.1 with Davros patches);
@@ -133,6 +133,10 @@ It imports embedded PNG/JPEG pictures and source crops, drawing text, cached bar
 and drawing-only chart sheets. Drawing bounds participate in pagination; preview
 width includes drawings, avoiding the cropped picture in the office2pdf reference.
 No new runtime dependency was added.
+For charts without caches, local references retain only requested values and known
+blanks. Per-workbook limits allow 100,000 requested/output positions and 2,000,000
+scanned cells; interrupted scans do not publish partial caches. Worksheet XML is
+still parsed as a whole, so this is not streaming XML import.
 
 Charts use cached indexed points (including gaps), numeric scatter coordinates,
 series/point colors from the workbook theme, clustered and stacked bars (including
@@ -146,8 +150,13 @@ complete. Unsupported chart families are not approximated as a different type.
 
 Conditional rules support scalar `cellIs` and simple comparison expressions,
 relative/absolute cell references, priority and `stopIfTrue`, differential font
-and solid-fill styles. Data bars support numeric, automatic min/max, percentage, percentile and saved
+(including size), borders, number formats and solid-fill styles. Data bars support numeric, automatic min/max, percentage, percentile and saved
 scalar-reference bounds, and honor minimum/maximum lengths (defaults 10%/90%).
+Constant automatic ranges retain their minimum bar length. Conditional number
+formats use saved numeric values and the workbook date system. Automatic rows
+are remeasured after conditional styling; explicit and hidden row heights remain
+authoritative. Checked references and overflow-safe interpolation cover malformed
+addresses and extreme finite thresholds.
 No formulas are recalculated. The
 budget's `showValue=0` is honored (office2pdf displays the hidden value).
 Two- and three-color scales support numeric, min/max, percentage and percentile
@@ -167,8 +176,8 @@ overrides still need broader coverage.
 
 ## Authored probes and release measurements
 
-`generated.json` pins eight deterministic probes from `generate.py`: font variants,
-print areas, manual breaks, inline/shared and shrink-to-fit rich text, stacked bars, and image crops.
+`generated.json` pins ten deterministic probes from `generate.py`: font variants,
+print areas, manual breaks, inline/shared and shrink-to-fit rich text, stacked bars, image crops, constant-range data bars, and conditional number formats/borders.
 They are authored in this repository and carry its MIT license. The generator hash
 and ZIP hashes are pinned; the ZIP timestamps are fixed. Generate and compare them:
 

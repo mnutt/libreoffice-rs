@@ -1,6 +1,6 @@
 # Expanded XLSX corpus: findings and fixes
 
-Twenty additional upstream workbooks bring the total to 52 (24 original, eight
+Twenty additional upstream workbooks bring the total to 54 (24 original, ten
 local authored probes, twenty expanded). Selection and checksums are in
 `expanded.json`, pinned to office2pdf revision
 `2e0ae824ac1b7f49a20e8fedcd019a87941d80c0`. Fourteen are upstream regression/example
@@ -10,7 +10,7 @@ checked-in upstream license notices apply.
 
 Renderer fixes: `54aeb62` and `a4b396d`; corpus expansion: `91feb89`.
 The [before report](runs/expanded-initial/report.html) and
-[after report](runs/chart-fidelity-expanded/report.html) contain PDFs and previews.
+[after report](runs/nearby-expanded-final/report.html) contain PDFs and previews.
 `expanded-baseline.json` and `expanded-results.json` preserve the measurements.
 
 ## Defects fixed
@@ -58,7 +58,7 @@ meet the bright-green heatmap classifier.
 
 ## Conversion and comparison results
 
-Candidate and LibreOffice convert all 52 inputs. Office2pdf converts 49 and fails
+Candidate and LibreOffice convert all 54 inputs. Office2pdf converts 51 and fails
 on three expanded files. All candidate feature expectations pass. The original
 32 cases retain identical text-comparison and raster-RMSE results.
 
@@ -113,7 +113,7 @@ so its later pages have not received raster review in this batch.
    LibreOffice, so they do not establish style fidelity.
 
 No cases were removed or existing thresholds relaxed to hide defects. The full workspace all-feature test suite passes, including 36 core tests,
-30 Calc unit tests and fourteen XLSX integration tests. Ten runner tests pass,
+33 Calc unit tests and eighteen XLSX integration tests. Ten runner tests pass,
 including saved formula/gap handling, package case ambiguity, numeric percentile
 selection, conditional priority, pie proportions, gradient interpolation and region-specific visible-color checks. It does not certify
 arbitrary-XLSX replacement readiness. Davros remains uncommitted.
@@ -138,3 +138,30 @@ scores are unchanged. The large conditional-format collection changes from
 92.32% to 92.15% LO recall and 94.32% to 96.33% precision after hidden values and
 icon text insets take effect; these extraction scores do not establish visual
 parity. The underlying measurements are retained in the tracked result files.
+
+## Adjacent edge cases and differential styles
+
+`c456ceb` fixes checked conditional references, finite-endpoint interpolation,
+constant-range bars, and differential borders, font sizes and number formats.
+The new constant-bar fixture was compared with LibreOffice: single and repeated
+values use the configured minimum length (10% by default, 20% in the custom case).
+Negative-bar colors and gradients still differ from LibreOffice; this change does
+not claim enhanced negative-bar fidelity. Its visual gate fails on the prior
+candidate, which has no blue bar pixels. A second authored fixture checks visible
+red borders and percentage, date and currency output. Saved formula values,
+1904 dates, explicit border clearing, rule priority, and automatic versus hidden
+row heights have focused Rust regressions.
+
+`dbb53af` retains only requested chart cells, with separate request/output and scan
+budgets. A regression locates chart values after 100,001 unrelated cells and then
+loads a second chart range; another ensures interrupted scans cannot become
+partial caches. XML parsing remains whole-document, and later uncached ranges can
+require rescanning a sheet. This reduces retained values and avoids the previous
+100,000-cell cutoff, without promising unbounded large-sheet support.
+
+The final `nearby-original-final`, `nearby-expanded-final` and
+`nearby-authored-final` runs convert all 54 inputs with zero candidate feature
+failures. Existing page counts and text recall are unchanged. Conditional-format
+collection precision against LibreOffice rises from 96.33% to 96.79%; other
+existing text scores are unchanged. Full workspace all-feature tests and all ten
+runner tests pass. No runtime dependencies were added; Davros remains untouched.

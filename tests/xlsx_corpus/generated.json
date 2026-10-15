@@ -2,8 +2,24 @@
   "repository": "https://github.com/mnutt/libreoffice-rs",
   "revision": "e45b651b4541ce4388f18df5e7313b60e27855a1",
   "generated_by": "generate.py",
-  "generator_sha256": "19cc54bdeb51ffe84eec1a70ab328a19478612847ef233623aef166d54b4d102",
+  "generator_sha256": "0aee0513858402024e270a98fa376448a5bd454618d97a16c9a6351fbe549c3f",
   "fixtures": [
+    {
+      "id": "authored-conditional-styles",
+      "file": "authored-conditional-styles.xlsx",
+      "path": "tests/xlsx_corpus/files/authored-conditional-styles.xlsx",
+      "purpose": "conditional percent/date/currency formats and red borders",
+      "size": 2335,
+      "sha256": "9d24fda51042aa3889e6f7f7215fcaffcdd7ff34fb8fa5bc41f0e9c19fad5a1c"
+    },
+    {
+      "id": "authored-constant-bars",
+      "file": "authored-constant-bars.xlsx",
+      "path": "tests/xlsx_corpus/files/authored-constant-bars.xlsx",
+      "purpose": "constant and single-cell automatic bars, including zero and negative",
+      "size": 2265,
+      "sha256": "2903af2f74714015cdab18a8e850ff8a9025cbf493e5be7affb7412e2dc42d17"
+    },
     {
       "id": "authored-font-variants",
       "file": "authored-font-variants.xlsx",

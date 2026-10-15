@@ -202,5 +202,26 @@
         }
       }
     ]
+  },
+  "authored-constant-bars": {
+    "text": [
+      "Single positive",
+      "Single zero",
+      "Single negative",
+      "Custom lengths"
+    ],
+    "min_colors": {
+      "blue": 70
+    }
+  },
+  "authored-conditional-styles": {
+    "text": [
+      "12.50%",
+      "2024-01-01",
+      "$12.50"
+    ],
+    "min_colors": {
+      "red": 50
+    }
   }
 }
