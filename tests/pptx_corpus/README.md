@@ -78,3 +78,17 @@ The old importer used different page dimensions from every LibreOffice reference
 so a corpus-wide before/after pixel-error average is unavailable. Text recall,
 page geometry, selected visual probes, and direct inspection provide complementary
 evidence. `RESULTS.md` documents improvements and remaining limitations.
+
+For broader raster review without changing the historical exact-page-size scores:
+
+```sh
+python3 tests/pptx_corpus/visual_audit.py tests/pptx_corpus/runs/second-final \
+  --output tests/pptx_corpus/second-visual-audit.json
+```
+
+This accepts PDF dimension differences of at most 0.1 point, but still requires
+identical PNG dimensions and never resizes images. The second-pass audit covers
+579 decks / 710 pages instead of the 239 decks with exactly equal PDF dimensions.
+Its averages use a different cohort and must not be compared directly with the
+historical exact-size averages. It exposed missing interlaced PNGs and ignored
+layout color-map overrides among the largest remaining differences.
