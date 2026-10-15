@@ -13,6 +13,7 @@ pub struct OdfChart {
     x_axis: [Option<f64>; 3],
     connect_points: bool,
     series_lines: Vec<bool>,
+    markers: Vec<(String, f32, String)>,
     value_labels: Vec<bool>,
     point_colors: std::collections::BTreeMap<(usize, usize), String>,
     axis_format: String,
@@ -262,6 +263,7 @@ impl OdfChart {
             x_axis: [None; 3],
             connect_points: true,
             series_lines: Vec::new(),
+            markers: Vec::new(),
             value_labels: Vec::new(),
             point_colors: Default::default(),
             axis_format: String::new(),
@@ -349,6 +351,7 @@ impl OdfChart {
         let mut categories = Vec::new();
         let mut xs = Vec::new();
         let mut series_lines = Vec::new();
+        let mut markers = Vec::new();
         let mut value_labels = Vec::new();
         let mut point_colors = std::collections::BTreeMap::new();
         let mut data_formats = Vec::new();
@@ -412,6 +415,23 @@ impl OdfChart {
                 })
                 .unwrap_or_default();
             data_formats.push(format);
+            let marker = ser.child("marker");
+            markers.push((
+                marker
+                    .and_then(|n| n.child("symbol"))
+                    .and_then(|n| n.attr("val"))
+                    .unwrap_or("square")
+                    .into(),
+                marker
+                    .and_then(|n| n.child("size"))
+                    .and_then(|n| n.attr("val"))
+                    .and_then(|v| v.parse::<f32>().ok())
+                    .filter(|v| v.is_finite())
+                    .unwrap_or(4.0)
+                    .clamp(2.0, 72.0),
+                chart_paint(marker.and_then(|n| n.child("spPr")), theme)
+                    .unwrap_or_else(|| paint.clone()),
+            ));
             series_lines.push(
                 !ser.child("spPr")
                     .and_then(|n| n.child("ln"))
@@ -462,6 +482,7 @@ impl OdfChart {
         Some(Self {
             frame,
             series_lines,
+            markers,
             value_labels,
             point_colors,
             data_formats,
@@ -694,7 +715,29 @@ impl OdfChart {
                         page.line_rgb(px, py, cx, cy, r, g, b);
                     }
                     previous = Some((cx, cy));
-                    page.rect_fill_rgb(cx - 2.0, cy - 2.0, 4.0, 4.0, r, g, b);
+                    let marker = self.markers.get(si);
+                    let size = marker.map(|m| m.1).unwrap_or(4.0);
+                    let paint = marker.map(|m| color(&m.2)).unwrap_or((r, g, b));
+                    match marker.map(|m| m.0.as_str()).unwrap_or("square") {
+                        "none" => {}
+                        "circle" => page.ellipse_fill_stroke_rgb(
+                            cx,
+                            cy,
+                            size / 2.0,
+                            size / 2.0,
+                            paint,
+                            paint,
+                        ),
+                        _ => page.rect_fill_rgb(
+                            cx - size / 2.0,
+                            cy - size / 2.0,
+                            size,
+                            size,
+                            paint.0,
+                            paint.1,
+                            paint.2,
+                        ),
+                    }
                 } else if self.horizontal {
                     let band = ph / count as f32;
                     let bh = band * 0.6 / self.series.len() as f32;
@@ -785,13 +828,15 @@ mod tests {
     }
     #[test]
     fn ooxml_scatter_preserves_sparse_numeric_coordinates_and_no_fill() {
-        let xml = r#"<chartSpace><chart><autoTitleDeleted val="0"/><plotArea><scatterChart><ser><tx><v>Series</v></tx><spPr><ln><noFill/></ln></spPr><xVal><numLit><pt idx="1"><v>9</v></pt><pt idx="0"><v>2</v></pt></numLit></xVal><yVal><numRef><numCache><pt idx="0"><v>5</v></pt><pt idx="2"><v>NaN</v></pt></numCache></numRef></yVal></ser></scatterChart></plotArea></chart></chartSpace>"#;
+        let xml = r#"<chartSpace><chart><autoTitleDeleted val="0"/><plotArea><scatterChart><ser><tx><v>Series</v></tx><marker><symbol val="circle"/><size val="5"/></marker><spPr><ln><noFill/></ln></spPr><xVal><numLit><pt idx="1"><v>9</v></pt><pt idx="0"><v>2</v></pt></numLit></xVal><yVal><numRef><numCache><pt idx="0"><v>5</v></pt><pt idx="2"><v>NaN</v></pt></numCache></numRef></yVal></ser></scatterChart></plotArea></chart></chartSpace>"#;
         let root = crate::parse_xml_document(xml).unwrap();
         let c = OdfChart::from_ooxml(&root, Rect::default()).unwrap();
         assert_eq!(c.x_values.unwrap()[0], vec![Some(2.0), Some(9.0)]);
         assert_eq!(c.series[0].1, vec![Some(5.0), None, None]);
         assert_eq!(c.title, "Series");
         assert!(!c.series_lines[0]);
+        assert_eq!(c.markers[0].0,"circle");
+        assert_eq!(c.markers[0].1,5.0);
         let root = crate::parse_xml_document(&xml.replace("scatterChart", "pieChart")).unwrap();
         assert!(OdfChart::from_ooxml(&root, Rect::default()).is_none());
     }
