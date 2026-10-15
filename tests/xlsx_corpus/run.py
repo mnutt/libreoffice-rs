@@ -161,6 +161,26 @@ def compare_text(actual, reference):
                 missing=(r-a).most_common(20), extra=(a-r).most_common(20))
 
 
+def check_expectations(stage, text, expected):
+    failures = []
+    if stage['status'] != 'ok':
+        return ['candidate did not produce a valid PDF']
+    for key, metric in [('min_images', 'image_count'), ('min_pages', 'pages')]:
+        if stage['pdf'][metric] < expected.get(key, 0):
+            failures.append(f'{metric}: {stage["pdf"][metric]} < {expected[key]}')
+    normalize = lambda s: ' '.join(unicodedata.normalize('NFKC', s).casefold().split())
+    pages = text.split('\f')
+    for phrase in expected.get('text', []):
+        if normalize(phrase) not in normalize(text):
+            failures.append(f'missing text: {phrase}')
+    for page, phrases in expected.get('page_text', {}).items():
+        actual = pages[int(page)-1] if int(page) <= len(pages) else ''
+        for phrase in phrases:
+            if normalize(phrase) not in normalize(actual):
+                failures.append(f'page {page} missing text: {phrase}')
+    return failures
+
+
 def report(results, output):
     rows, sections = [], []
     for case in results['cases']:
@@ -196,6 +216,7 @@ def evaluate(args, manifest):
     # Fail loudly if isolation is unavailable, rather than recording every document as broken.
     subprocess.run(['bwrap', '--unshare-net', '--ro-bind', '/usr', '/usr', '--symlink', 'usr/lib', '/lib',
                     '--symlink', 'usr/lib64', '/lib64', '/usr/bin/true'], check=True)
+    expectations = json.loads((HERE/"expectations.json").read_text())
     references = None
     if args.references:
         references = json.loads((args.references/'results.json').read_text())
@@ -213,6 +234,7 @@ def evaluate(args, manifest):
             source_hash.update(str(path.relative_to(ROOT)).encode()+b'\0'+path.read_bytes()+b'\0')
     results = dict(schema_version=1, checkout_source_sha256=source_hash.hexdigest(), manifest_sha256=digest(HERE / 'manifest.json'),
                    runner_sha256=digest(Path(__file__)), candidate_sha256=digest(candidate),
+                   expectations_sha256=digest(HERE/"expectations.json"),
                    office2pdf_sha256=digest(bundle / 'davros-preview'),
                    fontconfig_sha256=digest(bundle/'fonts.conf'),
                    fonts={p.name: digest(p) for p in sorted((bundle/'fonts').glob('*'))},
@@ -269,13 +291,19 @@ def evaluate(args, manifest):
                         score = float(match[1])
                 comparison['raster_rmse'].append(score)
             case['comparisons'][a+'_vs_'+r] = comparison
+        text_file = output/fixture['id']/'candidate'/'output.txt'
+        case['expectation_failures'] = check_expectations(case['stages']['candidate'],
+            text_file.read_text() if text_file.exists() else '', expectations.get(fixture['id'], {}))
         results['cases'].append(case)
         print(fixture['id'], ', '.join(f'{k}={v["status"]}' for k,v in case['stages'].items()), flush=True)
         results['summary'] = {name: dict(Counter(c['stages'][name]['status'] for c in results['cases']))
                               for name in ['candidate','office2pdf','libreoffice']}
+        results['summary']['expectation_failures'] = sum(len(c['expectation_failures']) for c in results['cases'])
         (output/'results.json').write_text(json.dumps(results, indent=2)+'\n')
         report(results, output)
     print(output/'report.html')
+    if results['summary']['expectation_failures']:
+        raise SystemExit('Corpus feature expectations failed; see report.html')
 
 
 def main():

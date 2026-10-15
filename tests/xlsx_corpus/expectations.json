@@ -1,0 +1,43 @@
+{
+  "picture": {
+    "min_images": 1
+  },
+  "WithChart": {
+    "min_pages": 2,
+    "page_text": {
+      "2": [
+        "1st Column",
+        "2nd Column"
+      ]
+    }
+  },
+  "SimpleScatterChart": {
+    "min_pages": 2,
+    "page_text": {
+      "2": [
+        "Y",
+        "1.4"
+      ]
+    }
+  },
+  "simple-monthly-budget": {
+    "text": [
+      "Income",
+      "Expenses",
+      "Need to add more",
+      "expand when you press Enter"
+    ]
+  },
+  "date": {
+    "text": [
+      "2021-01-01",
+      "255:10:10"
+    ]
+  },
+  "date_1904": {
+    "text": [
+      "2021-01-01",
+      "255:10:10"
+    ]
+  }
+}

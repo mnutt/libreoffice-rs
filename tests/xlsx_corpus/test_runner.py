@@ -7,6 +7,13 @@ import unittest
 import run
 
 class CorpusTests(unittest.TestCase):
+    def test_feature_expectations_catch_missing_images_and_chart_pages(self):
+        stage={'status':'ok','pdf':{'pages':1,'image_count':0}}
+        expected={'min_images':1,'min_pages':2,'page_text':{'2':['Chart title']}}
+        self.assertEqual(len(run.check_expectations(stage,'Chart title',expected)),3)
+        stage['pdf']={'pages':2,'image_count':1}
+        self.assertEqual(run.check_expectations(stage,'cells\fChart   title\f',expected),[])
+
     def test_checked_in_manifest(self):
         run.validate_manifest(json.loads((run.HERE/'manifest.json').read_text()))
 

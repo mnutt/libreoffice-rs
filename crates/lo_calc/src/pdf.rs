@@ -440,6 +440,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
             }
             page.raw(&format!("q {} {} {} {} re W n",left+heading_w+repeat_w,bottom+layout.footer_height,available_w-repeat_w,available_h-repeat_h));
             for (f,name) in &images {
+                if !frame_intersects(*f,ox,oy,tw,th) {continue;}
                 page.image(name,left+heading_w+f.origin.x.as_pt()-ox,layout.page_height-top_margin-layout.header_height-heading_h-f.origin.y.as_pt()+oy-f.size.height.as_pt(),f.size.width.as_pt(),f.size.height.as_pt());
             }
             page.raw("Q");
@@ -449,16 +450,18 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                     left+heading_w+repeat_w, bottom+layout.footer_height, available_w-repeat_w, available_h-repeat_h
                 ));
                 for text in &layout.text_boxes {
+                    if !frame_intersects(text.frame,ox,oy,tw,th) {continue;}
                     let f=text.frame;let x=left+heading_w+f.origin.x.as_pt()-ox;
                     let y=layout.page_height-top_margin-layout.header_height-heading_h-f.origin.y.as_pt()+oy;
                     let w=f.size.width.as_pt();let h=f.size.height.as_pt();let pad=text.style.padding.as_pt();let size=text.style.font_size_pt.clamp(1.0,409.0);
                     page.raw(&format!("q {x} {} {w} {h} re W n",y-h));
                     if let Some((r,g,b))=grid_color(&text.style.background) {page.rect_fill_rgb(x,y-h,w,h,r,g,b);}
                     let (r,g,b)=grid_color(&text.style.foreground).unwrap_or((0.0,0.0,0.0));
-                    for (i,line) in grid_wrap(&text.text,(w-2.0*pad).max(1.0),size).iter().enumerate() {let baseline=y-pad-size-i as f32*size*1.2;if baseline<y-h {break;}page.text_rgb(x+pad,baseline,size,PdfFont::Helvetica,line,r,g,b);}
+                    for (i,line) in grid_wrap(&text.text,(w-2.0*pad).max(1.0),size).iter().enumerate() {let baseline=y-pad-size-i as f32*size*1.2;if baseline<y-h {break;}if baseline<bottom+layout.footer_height || baseline+size>layout.page_height-top_margin-layout.header_height-heading_h-repeat_h {continue;}page.text_rgb(x+pad,baseline,size,PdfFont::Helvetica,line,r,g,b);}
                     page.raw("Q");
                 }
                 for chart in &layout.charts {
+                    if !frame_intersects(chart.frame,ox,oy,tw,th) {continue;}
                     chart.render(page, layout.page_height, left+heading_w-ox, top_margin+layout.header_height+heading_h-oy);
                 }
                 page.raw("Q");
@@ -736,3 +739,5 @@ fn jpeg_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
     None
 }
 
+
+fn frame_intersects(f:lo_core::Rect,x:f32,y:f32,w:f32,h:f32)->bool {f.origin.x.as_pt()<x+w && f.origin.x.as_pt()+f.size.width.as_pt()>x && f.origin.y.as_pt()<y+h && f.origin.y.as_pt()+f.size.height.as_pt()>y}
