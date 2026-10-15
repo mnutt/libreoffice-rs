@@ -1,12 +1,17 @@
 //! Fill absent chart caches from saved local worksheet cells, without evaluating formulas.
 use lo_core::{CellAddr, CellValue, Result, XmlNode};
 use lo_zip::ZipArchive;
-use std::{collections::BTreeMap, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+};
 
 pub(crate) struct ChartReferences {
     targets: BTreeMap<String, String>,
     sheets: BTreeMap<String, BTreeMap<CellAddr, CellValue>>,
     budget: usize,
+    request_budget: usize,
+    scan_budget: usize,
 }
 impl ChartReferences {
     pub(crate) fn new(workbook: &XmlNode, rels: &BTreeMap<String, String>) -> Self {
@@ -25,6 +30,8 @@ impl ChartReferences {
             targets,
             sheets: BTreeMap::new(),
             budget: 100_000,
+            request_budget: 100_000,
+            scan_budget: 2_000_000,
         }
     }
     pub(crate) fn fill(
@@ -33,6 +40,79 @@ impl ChartReferences {
         zip: &ZipArchive,
         shared: &[String],
     ) -> Result<()> {
+        // Collect this chart's references before reading any sheet. Only requested
+        // cells (including absent cells) are retained across charts. Unrelated
+        // worksheet cells consume a separate scan budget, not the value budget.
+        let mut wanted = BTreeMap::<String, BTreeSet<CellAddr>>::new();
+        self.collect(node, &mut wanted);
+        for (name, addresses) in wanted {
+            let Some(path) = self.targets.get(&name) else {
+                continue;
+            };
+            if addresses.is_empty() || self.scan_budget == 0 {
+                continue;
+            }
+            let root = lo_core::parse_xml_document(&zip.read_string(path)?)?;
+            let mut remaining = addresses;
+            let mut found = BTreeMap::new();
+            if let Some(data) = root.child("sheetData") {
+                'rows: for row in data.children_named("row") {
+                    for cell in row.children_named("c") {
+                        if self.scan_budget == 0 {
+                            break 'rows;
+                        }
+                        self.scan_budget -= 1;
+                        if let Some(a) = cell.attr("r").and_then(address) {
+                            if remaining.remove(&a) {
+                                found.insert(a, crate::import::parse_xlsx_value(cell, shared));
+                            }
+                        }
+                        if remaining.is_empty() {
+                            break 'rows;
+                        }
+                    }
+                }
+            }
+            // Never turn an interrupted scan into a seemingly complete sparse cache.
+            if self.scan_budget == 0 && !remaining.is_empty() {
+                continue;
+            }
+            found.extend(remaining.into_iter().map(|a| (a, CellValue::Empty)));
+            self.sheets.entry(name).or_default().extend(found);
+        }
+        self.fill_cached(node);
+        Ok(())
+    }
+    fn collect(&mut self, node: &XmlNode, wanted: &mut BTreeMap<String, BTreeSet<CellAddr>>) {
+        let cache = match node.local_name() {
+            "numRef" => Some("numCache"),
+            "strRef" => Some("strCache"),
+            _ => None,
+        };
+        if let Some(cache) = cache {
+            if node.child(cache).is_none() {
+                if let Some((name, first, last)) =
+                    node.child("f").and_then(|f| range(&f.text_content()))
+                {
+                    let count = (last.row - first.row + 1).max(last.col - first.col + 1) as usize;
+                    if self.targets.contains_key(&name) && count <= self.request_budget {
+                        self.request_budget -= count;
+                        let cells = self.sheets.get(&name);
+                        for a in addresses(first, last) {
+                            if !cells.is_some_and(|cells| cells.contains_key(&a)) {
+                                wanted.entry(name.clone()).or_default().insert(a);
+                            }
+                        }
+                    }
+                }
+            }
+            return;
+        }
+        for child in &node.children {
+            self.collect(child, wanted);
+        }
+    }
+    fn fill_cached(&mut self, node: &mut XmlNode) {
         let cache = match node.local_name() {
             "numRef" => Some("numCache"),
             "strRef" => Some("strCache"),
@@ -43,35 +123,11 @@ impl ChartReferences {
             if node.child(cache).is_none() {
                 if let Some(reference) = node.child("f").map(|f| f.text_content()) {
                     if let Some((name, first, last)) = range(&reference) {
-                        if !self.sheets.contains_key(&name) {
-                            if let Some(path) = self.targets.get(&name) {
-                                let root = lo_core::parse_xml_document(&zip.read_string(path)?)?;
-                                let mut cells = BTreeMap::new();
-                                if let Some(data) = root.child("sheetData") {
-                                    for row in data.children_named("row") {
-                                        for cell in row.children_named("c") {
-                                            if self.budget == 0 {
-                                                break;
-                                            }
-                                            self.budget -= 1;
-                                            if let Some(a) = cell.attr("r").and_then(address) {
-                                                cells.insert(
-                                                    a,
-                                                    crate::import::parse_xlsx_value(cell, shared),
-                                                );
-                                            }
-                                        }
-                                        if self.budget == 0 {
-                                            break;
-                                        }
-                                    }
-                                }
-                                self.sheets.insert(name.clone(), cells);
-                            }
-                        }
                         if let Some(cells) = self.sheets.get(&name) {
                             let count = (last.row - first.row + 1).max(last.col - first.col + 1);
-                            if count as usize <= self.budget {
+                            if count as usize <= self.budget
+                                && addresses(first, last).all(|a| cells.contains_key(&a))
+                            {
                                 self.budget -= count as usize;
                                 let mut result = XmlNode {
                                     name: cache.into(),
@@ -115,13 +171,21 @@ impl ChartReferences {
                     }
                 }
             }
-            return Ok(());
+            return;
         }
         for child in &mut node.children {
-            self.fill(Arc::make_mut(child), zip, shared)?;
+            self.fill_cached(Arc::make_mut(child));
         }
-        Ok(())
     }
+}
+fn addresses(first: CellAddr, last: CellAddr) -> impl Iterator<Item = CellAddr> {
+    let count = (last.row - first.row + 1).max(last.col - first.col + 1);
+    (0..count).map(move |i| {
+        CellAddr::new(
+            first.row + if first.row == last.row { 0 } else { i },
+            first.col + if first.col == last.col { 0 } else { i },
+        )
+    })
 }
 fn address(s: &str) -> Option<CellAddr> {
     if s.len() > 16 {
@@ -214,5 +278,70 @@ mod tests {
         ] {
             assert!(range(s).is_none(), "{s}");
         }
+    }
+
+    #[test]
+    fn small_charts_on_large_sheets_only_retain_requested_cells() {
+        let mut data = String::from("<worksheet><sheetData><row>");
+        for row in 1..=100_001 {
+            data.push_str(&format!(r#"<c r="A{row}"><v>{row}</v></c>"#));
+        }
+        data.push_str(r#"<c r="B100001"><v>42</v></c><c r="C100001"><v>73</v></c></row></sheetData></worksheet>"#);
+        let zip_bytes =
+            lo_zip::write_zip_to_vec(&[lo_zip::ZipEntry::new("data.xml", data.into_bytes())])
+                .unwrap();
+        let zip = ZipArchive::new(&zip_bytes).unwrap();
+        let book = lo_core::parse_xml_document(
+            r#"<workbook><sheets><sheet name="Data" id="r1"/></sheets></workbook>"#,
+        )
+        .unwrap();
+        let mut refs =
+            ChartReferences::new(&book, &BTreeMap::from([("r1".into(), "data.xml".into())]));
+        let mut chart = lo_core::parse_xml_document(r#"<chart><numRef><f>Data!B100001:B100002</f></numRef><numRef><f>Data!A100001</f></numRef></chart>"#).unwrap();
+        refs.fill(&mut chart, &zip, &[]).unwrap();
+        assert_eq!(refs.sheets["data"].len(), 3); // two numbers and one known blank
+        assert_eq!(
+            chart.children[0].child("numCache").unwrap().children[0]
+                .child("v")
+                .unwrap()
+                .text_content(),
+            "42"
+        );
+        assert_eq!(refs.budget, 99_997);
+        let scan_budget = refs.scan_budget;
+        // Cached requests, including missing cells, do not rescan the sheet.
+        let mut cached =
+            lo_core::parse_xml_document(r#"<numRef><f>Data!B100001:B100002</f></numRef>"#).unwrap();
+        refs.fill(&mut cached, &zip, &[]).unwrap();
+        assert_eq!(refs.scan_budget, scan_budget);
+        // A later chart can request another range without losing earlier values.
+        let mut later =
+            lo_core::parse_xml_document(r#"<numRef><f>Data!C100001</f></numRef>"#).unwrap();
+        refs.fill(&mut later, &zip, &[]).unwrap();
+        assert_eq!(refs.sheets["data"].len(), 4);
+        assert_eq!(
+            later.child("numCache").unwrap().children[0]
+                .child("v")
+                .unwrap()
+                .text_content(),
+            "73"
+        );
+    }
+    #[test]
+    fn interrupted_chart_scan_does_not_publish_partial_cache() {
+        let zip_bytes = lo_zip::write_zip_to_vec(&[lo_zip::ZipEntry::new("data.xml", br#"<worksheet><sheetData><row><c r="A1"><v>1</v></c><c r="A2"><v>2</v></c></row></sheetData></worksheet>"#.to_vec())]).unwrap();
+        let zip = ZipArchive::new(&zip_bytes).unwrap();
+        let book = lo_core::parse_xml_document(
+            r#"<workbook><sheets><sheet name="Data" id="r1"/></sheets></workbook>"#,
+        )
+        .unwrap();
+        let mut refs =
+            ChartReferences::new(&book, &BTreeMap::from([("r1".into(), "data.xml".into())]));
+        refs.scan_budget = 1;
+        let mut chart =
+            lo_core::parse_xml_document(r#"<numRef><f>Data!A1:A2</f></numRef>"#).unwrap();
+        refs.fill(&mut chart, &zip, &[]).unwrap();
+        assert!(chart.child("numCache").is_none());
+        assert!(refs.sheets.is_empty());
     }
 }
