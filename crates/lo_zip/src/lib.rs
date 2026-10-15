@@ -449,6 +449,7 @@ pub fn odf_image(frame: &lo_core::XmlNode, zip: &ZipArchive) -> Option<lo_core::
             .and_then(odf_length)
             .filter(|v| *v > 0.0)?;
         return Some(lo_core::ImageElement {
+                crop: [0.0; 4], rotation: 0.0, flip_horizontal: false, flip_vertical: false,
             opacity: 255,
             name: href.to_string(),
             mime_type: mime.to_string(),

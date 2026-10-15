@@ -9,8 +9,8 @@ use lo_core::{PdfDocument, PdfFont, Presentation, ShapeKind, SlideElement, TextB
 use crate::chart::render_chart_rows_pdf;
 
 pub fn to_pdf(presentation: &Presentation) -> Vec<u8> {
-    let slide_w = presentation.page_size.width.as_pt().max(320.0);
-    let slide_h = presentation.page_size.height.as_pt().max(180.0);
+    let slide_w = presentation.page_size.width.as_pt().max(1.0);
+    let slide_h = presentation.page_size.height.as_pt().max(1.0);
     let mut pdf = PdfDocument::new();
 
     if presentation.slides.is_empty() {
@@ -22,6 +22,9 @@ pub fn to_pdf(presentation: &Presentation) -> Vec<u8> {
         return pdf.finish();
     }
 
+    // Images shared by slide masters should occupy one PDF resource per document.
+    // Borrow the original bytes so cache keys do not duplicate image allocations.
+    let mut image_cache = std::collections::HashMap::new();
     for slide in &presentation.slides {
         let resources: std::collections::BTreeMap<usize, String> = slide
             .elements
@@ -29,7 +32,12 @@ pub fn to_pdf(presentation: &Presentation) -> Vec<u8> {
             .enumerate()
             .filter_map(|(index, element)| {
                 if let SlideElement::Image(image) = element {
-                    register_image(&mut pdf, image).map(|name| (index, name))
+                    let svg_size = if image.mime_type == "image/svg+xml" {
+                        (image.frame.size.width.as_pt().to_bits(),image.frame.size.height.as_pt().to_bits())
+                    } else {(0,0)};
+                    let key=(image.mime_type.as_str(),image.data.as_slice(),image.opacity,svg_size);
+                    if let Some(name)=image_cache.get(&key) { return Some((index,String::clone(name))); }
+                    register_image(&mut pdf, image).map(|name| {image_cache.insert(key,name.clone());(index,name)})
                 } else {
                     None
                 }
@@ -60,8 +68,8 @@ pub fn to_pdf(presentation: &Presentation) -> Vec<u8> {
                 SlideElement::Shape(shape) => {
                     let x = shape.frame.origin.x.as_pt();
                     let y_top = shape.frame.origin.y.as_pt();
-                    let w = shape.frame.size.width.as_pt().max(2.0);
-                    let h = shape.frame.size.height.as_pt().max(2.0);
+                    let w = shape.frame.size.width.as_pt().max(0.0);
+                    let h = shape.frame.size.height.as_pt().max(0.0);
                     let y_bottom = slide_h - y_top - h;
                     let angle = (shape.style.rotation_millidegrees as f32 / 1000.0).to_radians();
                     let (sin, cos) = angle.sin_cos();
@@ -105,7 +113,16 @@ pub fn to_pdf(presentation: &Presentation) -> Vec<u8> {
                     let h = image.frame.size.height.as_pt();
                     if let Some(resource) = resources.get(&element_index) {
                         page.begin_tag("Figure", Some(&image.alt));
-                        page.image(resource, x, y, w, h);
+                        page.raw("q");
+                        let angle=-image.rotation.to_radians();let (sin,cos)=angle.sin_cos();
+                        let sx=if image.flip_horizontal{-1.0}else{1.0};let sy=if image.flip_vertical{-1.0}else{1.0};
+                        let (a,b,c,d)=(cos*sx,sin*sx,-sin*sy,cos*sy);let (cx,cy)=(x+w/2.0,y+h/2.0);
+                        page.raw(&format!("{a} {b} {c} {d} {} {} cm",cx-a*cx-c*cy,cy-b*cx-d*cy));
+                        page.raw(&format!("{x} {y} {w} {h} re W n"));
+                        let [left,top,right,bottom]=image.crop;
+                        let iw=w/(1.0-left-right).max(0.001);let ih=h/(1.0-top-bottom).max(0.001);
+                        page.image(resource,x-left*iw,y-bottom*ih,iw,ih);
+                        page.raw("Q");
                         page.end_tag();
                     } else {
                         page.rect_stroke(x, y, w, h);
@@ -155,6 +172,11 @@ fn render_text_box(page: &mut lo_core::PdfPage, slide_h: f32, text_box: &lo_core
     }
     if let Some(background) = parse_color(&style.background) {
         page.rect_fill_stroke_rgb(x, y_bottom, w, h, background, (0.75, 0.75, 0.75));
+    }
+    if !style.runs.is_empty() {
+        crate::pptx_text::render(page, slide_h-y_top-padding, x+padding, (w-padding*2.0).max(1.0), (h-padding*2.0).max(1.0), style);
+        if style.rotation != 0.0 { page.raw("Q"); }
+        return;
     }
     let (font, size) = if style.font_size_pt > 0.0 {
         (text_box_font(style), style.font_size_pt)
@@ -293,7 +315,7 @@ fn wrap_text_lines(text: &str, width: f32, font_size: f32, font: PdfFont) -> Vec
     out
 }
 
-fn parse_color(input: &str) -> Option<(f32, f32, f32)> {
+pub(crate) fn parse_color(input: &str) -> Option<(f32, f32, f32)> {
     let trimmed = input.trim().trim_start_matches('#');
     if trimmed.len() != 6 || !trimmed.is_ascii() {
         return None;
@@ -317,6 +339,7 @@ fn register_image(pdf: &mut PdfDocument, image: &lo_core::ImageElement) -> Optio
         "image/svg+xml" => raster_svg(image)?,
         "image/png" => lo_core::decode_png(&image.data).ok()?,
         "image/webp" => lo_core::decode_webp(&image.data).ok()?,
+        "image/gif" | "image/bmp" => lo_core::decode_legacy_image(&image.data,&image.mime_type).ok()?,
         _ => return None,
     };
     if image.opacity != 255 {
@@ -415,6 +438,7 @@ mod svg_tests {
     #[test]
     fn svg_raster_keeps_straight_alpha_and_rejects_external_images() {
         let image = lo_core::ImageElement {
+                crop: [0.0; 4], rotation: 0.0, flip_horizontal: false, flip_vertical: false,
             name: "test.svg".into(), mime_type: "image/svg+xml".into(), opacity: 255,
             data: br##"<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="5" height="10" fill="#ff0000" opacity="0.5"/><image href="file:///etc/passwd" x="5" width="5" height="10"/></svg>"##.to_vec(),
             frame: lo_core::Rect::new(lo_core::Length::pt(0.0),lo_core::Length::pt(0.0),lo_core::Length::pt(10.0),lo_core::Length::pt(10.0)), alt: String::new(),
@@ -424,5 +448,20 @@ mod svg_tests {
         assert!((127..=128).contains(&raster.pixels[3]));
         assert_eq!(raster.pixels[((raster.width - 1) * 4 + 3) as usize], 0);
         assert!((raster.width as usize * raster.height as usize) <= 2_000_000);
+    }
+}
+
+#[cfg(test)]
+mod shared_image_tests {
+    use super::*;
+    #[test]
+    fn repeated_master_images_share_one_pdf_resource() {
+        let data=lo_core::RasterImage::new(10,10,lo_core::Rgba::WHITE).encode_png();
+        let image=lo_core::ImageElement{name:"master.png".into(),mime_type:"image/png".into(),data,frame:lo_core::Rect::default(),alt:String::new(),opacity:255,crop:[0.0;4],rotation:0.0,flip_horizontal:false,flip_vertical:false};
+        let mut deck=Presentation::new("Shared image");
+        let mut slide=lo_core::Slide::default();slide.elements.push(SlideElement::Image(image));deck.slides.push(slide.clone());
+        let count=|bytes:Vec<u8>|String::from_utf8_lossy(&bytes).matches("/Subtype /Image").count();
+        let single=count(to_pdf(&deck));assert!(single>0);
+        deck.slides.extend([slide.clone(),slide]);assert_eq!(count(to_pdf(&deck)),single);
     }
 }

@@ -95,6 +95,40 @@ pub fn decode_webp(bytes: &[u8]) -> Result<RasterImage> {
     })
 }
 
+/// Decode the first frame of an embedded GIF or BMP with the preview allocation cap.
+pub fn decode_legacy_image(bytes: &[u8], mime: &str) -> Result<RasterImage> {
+    use image::ImageDecoder;
+    let format = match mime {
+        "image/gif" => image::ImageFormat::Gif,
+        "image/bmp" => image::ImageFormat::Bmp,
+        _ => return Err(LoError::Unsupported("embedded image format".into())),
+    };
+    let limits = crate::preview_limits::PreviewLimits::from_env()?;
+    let mut reader = image::ImageReader::with_format(std::io::Cursor::new(bytes), format);
+    let mut allocation = image::Limits::default();
+    allocation.max_alloc = Some(limits.inflate_bytes as u64);
+    reader.limits(allocation);
+    let decoder = reader
+        .into_decoder()
+        .map_err(|e| LoError::Parse(format!("invalid embedded image: {e}")))?;
+    let (width, height) = decoder.dimensions();
+    if u64::from(width) * u64::from(height) > limits.png_pixels as u64
+        || u64::from(width) * u64::from(height) * 4 > limits.inflate_bytes as u64
+    {
+        return Err(LoError::InvalidInput(
+            "embedded image exceeds preview allocation limit".into(),
+        ));
+    }
+    let image = image::DynamicImage::from_decoder(decoder)
+        .map_err(|e| LoError::Parse(format!("invalid embedded image: {e}")))?
+        .to_rgba8();
+    Ok(RasterImage {
+        width,
+        height,
+        pixels: image.into_raw(),
+    })
+}
+
 impl RasterImage {
     pub fn new(width: u32, height: u32, background: Rgba) -> Self {
         let mut pixels = vec![0u8; width as usize * height as usize * 4];
@@ -1010,5 +1044,15 @@ mod safety_tests {
         write_chunk(&mut png, b"IEND", &[]);
         let error = decode_png(&png).unwrap_err().to_string();
         assert!(error.contains("decompressed data exceeds limit"), "{error}");
+    }
+}
+
+#[cfg(test)]
+mod legacy_image_tests {
+    #[test]
+    fn oversized_gif_is_rejected_before_frame_allocation() {
+        let mut gif=b"GIF89a".to_vec();gif.extend_from_slice(&[255,255,255,255,0,0,0,59]);
+        assert!(super::decode_legacy_image(&gif,"image/gif").is_err());
+        assert!(super::decode_legacy_image(b"invalid","image/bmp").is_err());
     }
 }

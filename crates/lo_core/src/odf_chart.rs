@@ -39,6 +39,7 @@ struct OoxmlLayout {
     title_bold: bool,
     stacked: bool,
     pie_start: Option<f32>,
+    radar: Option<String>,
     pie_vary_colors: bool,
     category_title: (String, f32, bool),
     value_title: (String, f32, bool),
@@ -368,7 +369,7 @@ impl OdfChart {
         }
         let data = kinds[0];
         let kind = data.local_name();
-        if !matches!(kind, "barChart" | "lineChart" | "scatterChart" | "pieChart") {
+        if !matches!(kind, "barChart" | "lineChart" | "scatterChart" | "pieChart" | "radarChart") {
             return None;
         }
         let grouping = data
@@ -412,7 +413,15 @@ impl OdfChart {
             })
             .collect::<Vec<_>>();
             if categories.is_empty() {
-                categories = ser.child("cat").map(cached).unwrap_or_default();
+                let cat=ser.child("cat");
+                // Hierarchical category placement is retained by the Impress fallback renderer.
+                if cat.is_some_and(|n|n.child("multiLvlStrRef").is_some()) {return None;}
+                categories = cat.map(cached).unwrap_or_default();
+                let format=cat.and_then(|n|n.child("numRef")).and_then(|n|n.child("numCache"))
+                    .or_else(||cat.and_then(|n|n.child("numLit"))).and_then(|n|n.child("formatCode")).map(|n|n.text_content());
+                if let Some(format)=format {for label in &mut categories {
+                    if let Ok(value)=label.parse::<f64>() {if value.is_finite(){*label=crate::xlsx_format::number(value,&format,false);}}
+                }}
             }
             if kind == "scatterChart" {
                 xs.push(
@@ -559,6 +568,7 @@ impl OdfChart {
             frame,
             ooxml_layout: Some(OoxmlLayout {
                 stacked,
+                radar: (kind=="radarChart").then(||data.child("radarStyle").and_then(|n|n.attr("val")).unwrap_or("standard").to_string()),
                 gradients,
                 pie_vary_colors: data.child("varyColors").and_then(|n| n.attr("val")) == Some("1"),
                 pie_start: (kind == "pieChart").then(|| {
@@ -678,6 +688,103 @@ impl OdfChart {
             rect[0], rect[1], rect[2], rect[3], paint.0, paint.1, paint.2,
         );
     }
+    fn render_radar(&self, page: &mut PdfPage, rect: [f32; 4], legend: [f32; 2], style: &str) {
+        let count = self.categories.len();
+        if count < 3 {
+            return;
+        }
+        let [x, y, w, h] = rect;
+        let radius = w.min(h) * 0.40;
+        let (cx, cy) = (x + w / 2.0, y + h / 2.0);
+        let maximum = self
+            .axis_max
+            .unwrap_or_else(|| {
+                self.series
+                    .iter()
+                    .flat_map(|(_, v, _)| v.iter().flatten())
+                    .copied()
+                    .fold(0.0, f64::max)
+            })
+            .max(1.0);
+        let minimum = self.axis_min.unwrap_or(0.0).min(maximum - 1e-9);
+        let raw=(maximum-minimum)/2.0;
+        let power=10f64.powf(raw.log10().floor());
+        let step=self.axis_step.unwrap_or(power*if raw/power<=1.0{1.0}else if raw/power<=2.0{2.0}else if raw/power<=5.0{5.0}else{10.0});
+        let maximum=self.axis_max.unwrap_or_else(||(maximum/step).ceil()*step).max(minimum+1e-9);
+        let rings=(((maximum-minimum)/step).ceil() as usize).clamp(1,100);
+        let point = |i: usize, r: f32| {
+            let angle = i as f32 * std::f32::consts::TAU / count as f32;
+            (cx + r * angle.sin(), cy + r * angle.cos())
+        };
+        for ring in 0..=rings {
+            let value=(minimum+ring as f64*step).min(maximum);
+            let fraction=((value-minimum)/(maximum-minimum)) as f32;
+            if ring>0 {for i in 0..count {let a=point(i,radius*fraction);let b=point((i+1)%count,radius*fraction);page.line_rgb(a.0,a.1,b.0,b.1,0.8,0.8,0.8);}}
+            let label=crate::xlsx_format::number(value,&self.axis_format,false);
+            page.text(cx+3.0,cy+radius*fraction-self.font_size,self.font_size,PdfFont::Helvetica,&label);
+        }
+        for (i, label) in self.categories.iter().enumerate() {
+            let p = point(i, radius);
+            page.line_rgb(cx, cy, p.0, p.1, 0.8, 0.8, 0.8);
+            let p = point(i, radius + self.font_size * 1.3);
+            let tw = crate::font_metrics::measure_helvetica(label, self.font_size, false);
+            page.text(
+                p.0 - tw / 2.0,
+                p.1 - self.font_size / 3.0,
+                self.font_size,
+                PdfFont::Helvetica,
+                label,
+            );
+        }
+        for (si, (name, values, paint)) in self.series.iter().enumerate() {
+            let (r, g, b) = color(paint);
+            let points: Vec<_> = (0..count)
+                .map(|i| {
+                    values.get(i).copied().flatten().map(|v| {
+                        point(
+                            i,
+                            (((v - minimum) / (maximum - minimum)).clamp(0.0, 1.0) as f32) * radius,
+                        )
+                    })
+                })
+                .collect();
+            if style == "filled" && points.iter().all(Option::is_some) {
+                page.raw(&format!("q {r} {g} {b} rg"));
+                for (i, p) in points.iter().enumerate() {
+                    let p = p.unwrap();
+                    page.raw(&format!(
+                        "{} {} {}",
+                        p.0,
+                        p.1,
+                        if i == 0 { "m" } else { "l" }
+                    ));
+                }
+                page.raw("h f Q");
+            }
+            for i in 0..count {
+                if let (Some(a), Some(bpt)) = (points[i], points[(i + 1) % count]) {
+                    page.line_rgb(a.0, a.1, bpt.0, bpt.1, r, g, b);
+                }
+            }
+            if style == "marker" {
+                for p in points.iter().flatten() {
+                    page.ellipse_fill_stroke_rgb(p.0, p.1, 2.5, 2.5, (r, g, b), (r, g, b));
+                }
+            }
+            if self.legend {
+                let ly = legend[1] - (si as f32 + 1.0) * self.font_size * 1.4;
+                page.line_rgb(legend[0], ly, legend[0] + 8.0, ly, r, g, b);
+                page.text(
+                    legend[0] + 12.0,
+                    ly - self.font_size / 3.0,
+                    self.font_size,
+                    PdfFont::Helvetica,
+                    name,
+                );
+            }
+        }
+    }
+
     fn render_pie(
         &self,
         page: &mut PdfPage,
@@ -907,6 +1014,9 @@ impl OdfChart {
                 },
                 &self.title,
             );
+        }
+        if let Some(style)=self.ooxml_layout.as_ref().and_then(|l|l.radar.as_deref()) {
+            self.render_radar(page,[left,bottom,pw,ph],[x+legend_position[0]*w,page_height-y-legend_position[1]*h],style);return;
         }
         if let Some(start) = pie {
             self.render_pie(
@@ -1339,6 +1449,16 @@ fn plot_axis_font(chart: &XmlNode, styles: &OdfStyles) -> Option<f32> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn radar_uses_polar_geometry_and_cached_categories() {
+        let xml=r#"<chartSpace><chart><plotArea><radarChart><radarStyle val="marker"/><ser><tx><v>Series</v></tx><cat><strLit><pt idx="0"><v>North</v></pt><pt idx="1"><v>East</v></pt><pt idx="2"><v>West</v></pt></strLit></cat><val><numLit><pt idx="0"><v>1</v></pt><pt idx="1"><v>3</v></pt><pt idx="2"><v>2</v></pt></numLit></val></ser></radarChart></plotArea></chart></chartSpace>"#;
+        let root=crate::parse_xml_document(xml).unwrap();
+        let chart=super::OdfChart::from_ooxml(&root,crate::Rect::new(crate::Length::pt(0.0),crate::Length::pt(0.0),crate::Length::pt(400.0),crate::Length::pt(300.0))).unwrap();
+        assert_eq!(chart.ooxml_layout.as_ref().unwrap().radar.as_deref(),Some("marker"));
+        assert_eq!(chart.categories,["North","East","West"]);
+        let mut pdf=crate::PdfDocument::new();let i=pdf.add_page(400.0,300.0);chart.render(pdf.page_mut(i).unwrap(),300.0,0.0,0.0);assert!(pdf.finish().len()>1000);
+    }
+
     use super::*;
     #[test]
     fn pie_slices_preserve_proportions_start_angle_and_missing_indexes() {

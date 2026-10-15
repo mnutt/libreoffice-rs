@@ -26,6 +26,12 @@ pub enum ShapeKind {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ImageElement {
+    /// Source crop fractions: left, top, right, bottom.
+    pub crop: [f32; 4],
+    /// Clockwise rotation in degrees around the image center.
+    pub rotation: f32,
+    pub flip_horizontal: bool,
+    pub flip_vertical: bool,
     /// Overall image opacity, multiplied with intrinsic alpha.
     pub opacity: u8,
     pub name: String,

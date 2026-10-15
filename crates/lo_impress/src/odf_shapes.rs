@@ -493,6 +493,7 @@ pub(crate) fn artwork(node: &XmlNode, styles: &OdfStyles) -> Option<ImageElement
     }
     svg.push_str("</g></svg></svg>");
     Some(ImageElement {
+                crop: [0.0; 4], rotation: 0.0, flip_horizontal: false, flip_vertical: false,
         name: "ODF geometry".into(),
         mime_type: "image/svg+xml".into(),
         data: svg.into_bytes(),

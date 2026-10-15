@@ -92,6 +92,8 @@ pub struct ShapeStyle {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextBoxStyle {
+    pub runs: Vec<crate::calc::CellTextRun>,
+    pub line_spacing: f32,
     pub font_family: String,
     pub vertical_alignment: Alignment,
     pub paragraph_indents: Vec<f32>,
@@ -110,6 +112,8 @@ pub struct TextBoxStyle {
 impl Default for TextBoxStyle {
     fn default() -> Self {
         Self {
+            runs: Vec::new(),
+            line_spacing: 0.0,
             font_family: String::new(),
             vertical_alignment: Alignment::Start,
             paragraph_indents: Vec::new(),

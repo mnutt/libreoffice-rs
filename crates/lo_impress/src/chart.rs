@@ -1,10 +1,8 @@
-use std::collections::BTreeMap;
 use std::f32::consts::PI;
 
 use lo_core::{
-    parse_hex_color, parse_xml_document, PdfFont, PdfPage, RasterImage, Rgba, XmlNode,
+    parse_hex_color, PdfFont, PdfPage, RasterImage, Rgba, XmlNode,
 };
-use lo_zip::ZipArchive;
 
 const CHART_SPEC_ROW: &str = "__LO_CHART_SPEC__";
 const PALETTE: [&str; 8] = [
@@ -269,101 +267,12 @@ fn row_to_spec(row: &[String]) -> Option<ChartSpec> {
     decode_chart_spec(row.get(1)?)
 }
 
-pub(crate) fn chart_row_title(row: &[String]) -> Option<String> {
-    let spec = row_to_spec(row)?;
-    if spec.title.trim().is_empty() {
-        None
-    } else {
-        Some(spec.title)
-    }
-}
-
-pub(crate) fn graphic_frame_has_chart(node: &XmlNode) -> bool {
-    extract_chart_rel_id(node).is_some()
-}
-
-pub(crate) fn load_pptx_chart_rows(
-    zip: &ZipArchive,
-    slide_root: &XmlNode,
-    slide_rels: &BTreeMap<String, String>,
-) -> lo_core::Result<Vec<Vec<String>>> {
-    let mut refs = Vec::new();
-    collect_chart_refs(slide_root, slide_rels, &mut refs);
-    let mut out = Vec::new();
-    for (chart_index, (target, frame_mm)) in refs.into_iter().enumerate() {
-        if !zip.contains(&target) {
-            continue;
-        }
-        let chart = parse_xml_document(&zip.read_string(&target)?)?;
-        let spec = parse_chart_spec(&chart, frame_mm, chart_index);
-        if !spec.series.is_empty()
-            || !spec.title.trim().is_empty()
-            || !spec.category_axis_title.trim().is_empty()
-            || !spec.value_axis_title.trim().is_empty()
-        {
-            out.push(spec_to_row(&spec));
-        }
-    }
-    Ok(out)
-}
-
-fn collect_chart_refs(
-    node: &XmlNode,
-    slide_rels: &BTreeMap<String, String>,
-    out: &mut Vec<(String, (f32, f32, f32, f32))>,
-) {
-    if node.local_name() == "graphicFrame" {
-        if let Some(rel_id) = extract_chart_rel_id(node) {
-            if let Some(target) = slide_rels.get(&rel_id) {
-                out.push((target.clone(), parse_graphic_frame_transform(node)));
-            }
-        }
-    }
-    for child in &node.children {
-        collect_chart_refs(child, slide_rels, out);
-    }
-}
-
-fn extract_chart_rel_id(node: &XmlNode) -> Option<String> {
-    if node.local_name() == "chart" {
-        if let Some(rel_id) = node.attr("r:id").or_else(|| node.attr("id")) {
-            return Some(rel_id.to_string());
-        }
-    }
-    for child in &node.children {
-        if let Some(rel_id) = extract_chart_rel_id(child) {
-            return Some(rel_id);
-        }
-    }
-    None
-}
-
-fn parse_graphic_frame_transform(node: &XmlNode) -> (f32, f32, f32, f32) {
-    let xfrm = node.child("xfrm");
-    let off = xfrm.and_then(|n| n.child("off"));
-    let ext = xfrm.and_then(|n| n.child("ext"));
-    let to_mm = |value: f32| value / 36_000.0;
-    let x = off
-        .and_then(|n| n.attr("x"))
-        .and_then(|v| v.parse::<f32>().ok())
-        .map(to_mm)
-        .unwrap_or(20.0);
-    let y = off
-        .and_then(|n| n.attr("y"))
-        .and_then(|v| v.parse::<f32>().ok())
-        .map(to_mm)
-        .unwrap_or(20.0);
-    let w = ext
-        .and_then(|n| n.attr("cx"))
-        .and_then(|v| v.parse::<f32>().ok())
-        .map(to_mm)
-        .unwrap_or(160.0);
-    let h = ext
-        .and_then(|n| n.attr("cy"))
-        .and_then(|v| v.parse::<f32>().ok())
-        .map(to_mm)
-        .unwrap_or(95.0);
-    (x, y, w, h)
+// Keep previously supported area, doughnut, and combination charts while the
+// shared chart engine gains their exact OOXML layout semantics.
+pub(crate) fn fallback_chart(root: &XmlNode, frame: lo_core::Rect) -> Option<Vec<String>> {
+    let mm=|v:f32|v*25.4/72.0;
+    let spec=parse_chart_spec(root,(mm(frame.origin.x.as_pt()),mm(frame.origin.y.as_pt()),mm(frame.size.width.as_pt()),mm(frame.size.height.as_pt())),0);
+    (!spec.series.is_empty()).then(||spec_to_row(&spec))
 }
 
 fn parse_chart_spec(chart_root: &XmlNode, frame_mm: (f32, f32, f32, f32), palette_offset: usize) -> ChartSpec {

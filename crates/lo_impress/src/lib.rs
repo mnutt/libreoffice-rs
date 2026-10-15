@@ -1,3 +1,5 @@
+mod pptx_import;
+mod pptx_text;
 mod chart;
 #[cfg(feature = "svg")]
 mod odf_shapes;

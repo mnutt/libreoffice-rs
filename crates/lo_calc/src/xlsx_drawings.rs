@@ -201,6 +201,7 @@ pub(crate) fn import(
                 }
             }
             layout.images.push(ImageElement {
+                crop: [0.0; 4], rotation: 0.0, flip_horizontal: false, flip_vertical: false,
                 frame,
                 data,
                 mime_type: mime.into(),
