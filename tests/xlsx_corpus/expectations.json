@@ -69,5 +69,52 @@
         "Row 10"
       ]
     }
+  },
+  "authored-stacked-chart": {
+    "text": [
+      "Total",
+      "3"
+    ],
+    "min_colors": {
+      "blue": 100,
+      "orange": 100
+    }
+  },
+  "authored-cropped-image": {
+    "min_images": 1,
+    "min_colors": {
+      "blue": 1000
+    },
+    "max_colors": {
+      "red": 0
+    }
+  },
+  "authored-rich-text": {
+    "text": [
+      "Bold red",
+      "large italic"
+    ],
+    "min_colors": {
+      "red": 5
+    },
+    "fonts": [
+      "LiberationSans-Bold",
+      "LiberationSans-Italic"
+    ]
+  },
+  "authored-rich-shared": {
+    "text": [
+      "A large shared",
+      "TAIL",
+      "NEXT ROW",
+      "Neighbor"
+    ],
+    "min_colors": {
+      "red": 5
+    },
+    "fonts": [
+      "LiberationSans-Bold",
+      "LiberationSans-Italic"
+    ]
   }
 }

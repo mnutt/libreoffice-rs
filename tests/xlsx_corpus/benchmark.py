@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Measure release converters with identical corpus/fonts/Bubblewrap limits.
 
-GNU time reports converter peak RSS and wall time inside the sandbox. This is
+A wait4 supervisor reports converter peak RSS and wall time inside the sandbox. This is
 warm-cache, process-per-document work; it is not an in-process throughput test.
 """
 import argparse
@@ -27,7 +27,7 @@ def main():
                   manifest_sha256=run.digest(run.HERE/'manifest.json'),
                   fonts={f.name:run.digest(f) for f in sorted((bundle/'fonts').glob('*'))},
                   rustc=subprocess.check_output(['rustc','--version'],text=True).strip(),
-                  repetitions=args.repetitions, methodology='One unmeasured warmup per engine/document, alternating engine order, GNU time inside identical Bubblewrap limits; process-per-document. Candidate is a release XLSX-only adapter; baseline is the full Davros executable and additionally installs its own hardening.',
+                  repetitions=args.repetitions, methodology='One unmeasured warmup per engine/document, alternating engine order, wait4 resource accounting inside identical Bubblewrap limits; process-per-document. Candidate is a release XLSX-only adapter; baseline is the full Davros executable and additionally installs its own hardening.',
                   binary_bytes={'candidate':candidate.stat().st_size,'office2pdf':(bundle/'davros-preview').stat().st_size}, cases=[])
     for fixture in manifest['fixtures']:
         source = run.HERE/'files'/fixture['file']; run.verify(source, fixture)
@@ -38,7 +38,17 @@ def main():
             for engine, executable in engines:
                 work = output/fixture['id']/engine/str(trial);work.mkdir(parents=True)
                 command = run.sandbox(source, work, bundle, executable)
-                command[-3:] = ['/usr/bin/time','-f','{"seconds":%e,"peak_rss_kib":%M}', '-o','/work/usage.json']+command[-3:]
+                (work/'measure.py').write_text("""import os, time, json, sys
+start = time.perf_counter()
+pid = os.fork()
+if pid == 0:
+    os.execv(sys.argv[1], sys.argv[1:])
+_, status, usage = os.wait4(pid, 0)
+with open('/work/usage.json', 'w') as f:
+    json.dump(dict(seconds=time.perf_counter()-start, peak_rss_kib=usage.ru_maxrss), f)
+sys.exit(os.waitstatus_to_exitcode(status))
+""")
+                command[-3:] = ['/usr/bin/python3','/work/measure.py']+command[-3:]
                 stage = run.run(command, work, 60)
                 if stage['exit_code'] or stage['timeout']: raise RuntimeError((fixture['id'], engine, stage))
                 if not (work/'output.pdf').read_bytes().startswith(b'%PDF-'): raise RuntimeError('invalid PDF')

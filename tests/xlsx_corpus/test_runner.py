@@ -23,6 +23,11 @@ class CorpusTests(unittest.TestCase):
         run.validate_manifest(manifest)
         self.assertEqual(manifest['generator_sha256'],run.digest(run.HERE/'generate.py'))
 
+    def test_visual_expectations_catch_missing_features(self):
+        stage={'status':'ok','pdf':{'pages':1,'image_count':1,'colors':{'red':200,'blue':0},'font_names':['Helvetica']}}
+        expected={'min_colors':{'blue':100},'max_colors':{'red':0},'fonts':['LiberationSans-Bold']}
+        self.assertEqual(len(run.check_expectations(stage,'',expected)),3)
+
     def test_checked_in_manifest(self):
         run.validate_manifest(json.loads((run.HERE/'manifest.json').read_text()))
 

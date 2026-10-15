@@ -2,7 +2,7 @@
   "repository": "https://github.com/mnutt/libreoffice-rs",
   "revision": "e45b651b4541ce4388f18df5e7313b60e27855a1",
   "generated_by": "generate.py",
-  "generator_sha256": "00c83b06881a66f2ca2d3668cb09127898772b10b041cdea469037f0d9714d99",
+  "generator_sha256": "bbfb17f3a87ffa3c2cd964344a9216f4f1ca27a15ad5509e14515250bf8b10ec",
   "fixtures": [
     {
       "id": "authored-font-variants",
@@ -35,6 +35,14 @@
       "purpose": "mixed rich-text styles within one cell",
       "size": 2023,
       "sha256": "0a01338dc930d3ef339c5b7ac1f18b6f9284cd2984c8dcfb70208caf171eb683"
+    },
+    {
+      "id": "authored-rich-shared",
+      "file": "authored-rich-shared.xlsx",
+      "path": "tests/xlsx_corpus/files/authored-rich-shared.xlsx",
+      "purpose": "shared rich text, mixed-size wrapping and automatic row height",
+      "size": 2369,
+      "sha256": "b3d864fba9acdb13cca592bf93d28c934c48029b67c8e9487df3e6026c816937"
     },
     {
       "id": "authored-stacked-chart",

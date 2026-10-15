@@ -131,6 +131,23 @@ def sandbox(source, work, bundle, executable=None):
                   '--nodefault', '--norestore', '--convert-to', 'pdf', '--outdir', '/work', '/input.xlsx']
 
 
+def raster_color_counts(pdf):
+    """Small deterministic semantic probes, independent of font antialiasing."""
+    data = subprocess.check_output(['pdftoppm', '-f', '1', '-singlefile', '-scale-to', '600', str(pdf)], timeout=30)
+    match = re.match(rb'P6\s+(\d+)\s+(\d+)\s+255\s', data)
+    if not match:
+        raise ValueError('Unexpected PPM header')
+    pixels = data[match.end():]
+    if len(pixels) != int(match[1]) * int(match[2]) * 3:
+        raise ValueError('Unexpected PPM dimensions')
+    colors = dict(red=0, blue=0, orange=0)
+    for i in range(0, len(pixels), 3):
+        r,g,b = pixels[i:i+3]
+        colors['red'] += r > 180 and g < 100 and b < 100
+        colors['blue'] += b > 140 and r < 100 and g < 170
+        colors['orange'] += r > 180 and 80 < g < 180 and b < 100
+    return colors
+
 def inspect_pdf(pdf, previews):
     if not pdf.is_file() or pdf.read_bytes()[:5] != b'%PDF-':
         raise ValueError('No valid PDF output')
@@ -174,6 +191,15 @@ def check_expectations(stage, text, expected):
             failures.append(f'{metric}: {stage["pdf"][metric]} < {expected[key]}')
     if 'pages' in expected and stage['pdf']['pages'] != expected['pages']:
         failures.append(f'pages: {stage["pdf"]["pages"]} != {expected["pages"]}')
+    for color, minimum in expected.get('min_colors', {}).items():
+        if stage['pdf'].get('colors', {}).get(color, 0) < minimum:
+            failures.append(f'missing visible {color} pixels')
+    for color, maximum in expected.get('max_colors', {}).items():
+        if stage['pdf'].get('colors', {}).get(color, 0) > maximum:
+            failures.append(f'unexpected visible {color} pixels')
+    for font in expected.get('fonts', []):
+        if not any(name.endswith(font) for name in stage['pdf'].get('font_names', [])):
+            failures.append(f'missing font variant: {font}')
     normalize = lambda s: ' '.join(unicodedata.normalize('NFKC', s).casefold().split())
     for phrase in expected.get('absent_text', []):
         if normalize(phrase) in normalize(text):
@@ -279,6 +305,12 @@ def evaluate(args, manifest):
             if stage['status'] == 'ok':
                 try:
                     stage['pdf'] = inspect_pdf(pdf, args.preview_pages)
+                    expected = expectations.get(fixture['id'], {})
+                    if expected.get('min_colors') or expected.get('max_colors'):
+                        stage['pdf']['colors'] = raster_color_counts(pdf)
+                    if expected.get('fonts'):
+                        font_listing = subprocess.check_output(['pdffonts', str(pdf)], text=True, timeout=30)
+                        stage['pdf']['font_names'] = [line.split()[0] for line in font_listing.splitlines()[2:] if line.strip()]
                 except (ValueError, subprocess.SubprocessError, OSError) as error:
                     stage.update(status='invalid_pdf', inspection_error=str(error))
             case['stages'][name] = stage
