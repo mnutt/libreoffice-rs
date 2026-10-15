@@ -1,5 +1,9 @@
 [advisories]
 yanked = "deny"
+# ttf-parser is used for source-font metrics and PDF embedding. This advisory
+# reports unmaintained status, with no patched release. Keep this exception
+# specific to that notice; remove it when the font parser is replaced.
+ignore = ["RUSTSEC-2026-0192"]
 [licenses]
 confidence-threshold = 0.8
 allow = [
