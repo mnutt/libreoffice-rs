@@ -14,3 +14,6 @@ lo_core = { path = "../lo_core", version = "0.5.5" }
 lo_odf = { path = "../lo_odf", version = "0.5.3" }
 lo_zip = { path = "../lo_zip", version = "0.5.3" }
 unicode-width = "0.2.1"
+
+[lints]
+workspace = true

@@ -24,3 +24,6 @@ lo_base = { path = "../lo_base", version = "0.5.3" }
 lo_lok = { path = "../lo_lok", version = "0.5.3" }
 lo_uno = { path = "../lo_uno", version = "0.5.3" }
 lo_zip = { path = "../lo_zip", version = "0.5.3" }
+
+[lints]
+workspace = true

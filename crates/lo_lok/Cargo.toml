@@ -18,3 +18,6 @@ lo_impress = { path = "../lo_impress", version = "0.5.3" }
 lo_draw = { path = "../lo_draw", version = "0.5.3" }
 lo_math = { path = "../lo_math", version = "0.5.3" }
 lo_base = { path = "../lo_base", version = "0.5.3" }
+
+[lints]
+workspace = true

@@ -13,3 +13,6 @@ readme = "README.md"
 lo_core = { path = "../lo_core", version = "0.5.3" }
 lo_lok = { path = "../lo_lok", version = "0.5.3" }
 lo_uno = { path = "../lo_uno", version = "0.5.3" }
+
+[lints]
+workspace = true

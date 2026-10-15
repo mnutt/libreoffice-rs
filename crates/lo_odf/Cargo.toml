@@ -13,3 +13,6 @@ readme = "README.md"
 lo_core = { path = "../lo_core", version = "0.5.3" }
 lo_zip = { path = "../lo_zip", version = "0.5.3" }
 lo_math = { path = "../lo_math", version = "0.5.3" }
+
+[lints]
+workspace = true

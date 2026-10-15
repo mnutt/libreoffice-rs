@@ -11,3 +11,6 @@ readme = "README.md"
 
 [dependencies]
 lo_core = { path = "../lo_core", version = "0.5.3" }
+
+[lints]
+workspace = true

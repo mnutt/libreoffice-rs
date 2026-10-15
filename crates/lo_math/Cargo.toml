@@ -15,3 +15,6 @@ lo_zip = { path = "../lo_zip", version = "0.5.3" }
 
 [dev-dependencies]
 lo_odf = { path = "../lo_odf", version = "0.5.2" }
+
+[lints]
+workspace = true
