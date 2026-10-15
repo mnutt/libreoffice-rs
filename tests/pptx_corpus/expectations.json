@@ -159,5 +159,17 @@
       "blue": 11000
     },
     "reason": "Dashed lines preserve visible strokes and gaps instead of rendering solid or disappearing."
+  },
+  "lo-tdf156808-9a331d": {
+    "min_colors": {
+      "dark": 190000
+    },
+    "reason": "The interlaced PNG covers the slide in black instead of disappearing."
+  },
+  "lo-bnc584721_4-9eac37": {
+    "max_colors": {
+      "dark": 0
+    },
+    "reason": "The layout maps tx1 to white for its background."
   }
 }

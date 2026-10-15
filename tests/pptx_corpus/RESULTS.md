@@ -111,6 +111,24 @@ These styles remain approximations: line caps, joins and arrowheads need more
 work, as do exact glyph highlight ascent/descent bounds. The raw comparisons
 retain the small pixel regression on the line-properties fixture.
 
+## PNG and color-map pass
+
+The shared PNG decoder now supports Adam7 interlacing, packed grayscale/palette
+samples, 16-bit channels, and grayscale/RGB transparency keys. It retains bounded
+inflation and pixel limits and adds no dependencies. Odd-sized/empty Adam7 passes,
+per-pass filter history, truncation, palette transparency and 16-bit samples have
+unit coverage. PPTX layout/slide color-map overrides also resolve accent aliases
+against an unmodified theme palette, avoiding errors when two accents swap.
+
+All 627 checks pass and all 54 XLSX PDFs remain byte-identical
+(`third-pass-results.json`, `third-feature-checks.json`,
+`xlsx-third-regression.json`). Exact-size mean pixel error falls from 0.105821 to
+0.102016; text recall stays at 72.602%. The 579-deck rounding-tolerant audit falls
+from 0.097809 to 0.092620 (`third-visual-audit.json`). It also exposes a background
+inheritance regression on `lo-chart_pt_color_bg1-be2773`, which the exact-size
+cohort misses. The next pass corrects the background's color-map scope; this
+intermediate report deliberately preserves the regression.
+
 ## Remaining work, in priority order
 
 1. SmartArt layout for files without usable cached drawing shapes. Those diagrams
