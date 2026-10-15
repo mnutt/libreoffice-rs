@@ -283,6 +283,40 @@ pub fn try_render_document_pdf(doc: &TextDocument) -> Result<Vec<u8>> {
                 y = render_heading(&ctx, &mut pdf, &mut page_index, y, heading);
             }
             Block::Paragraph(paragraph) => {
+                let mut joined = paragraph.clone();
+                let mut end = block_index + 1;
+                if paragraph.style.odf_box.as_ref().is_some_and(|b| {
+                    b.join
+                        && parse_color(&b.background).is_some()
+                        && b.borders.iter().any(|v| v.contains("solid"))
+                }) {
+                    while let Some(Block::Paragraph(next)) = doc.body.get(end) {
+                        if next.style != paragraph.style || next.text_style != paragraph.text_style
+                        {
+                            break;
+                        }
+                        joined.spans.push(Inline::LineBreak);
+                        joined.spans.extend(next.spans.clone());
+                        end += 1;
+                    }
+                    if end > block_index + 1 {
+                        let size = paragraph.text_style.font_size_pt.max(1) as f32;
+                        joined.style.line_height_percent = (joined.style.line_height_percent as f32
+                            + (paragraph_margins(paragraph)[0] + paragraph_margins(paragraph)[1])
+                                / (size
+                                    * odf_line_metric(ctx.fonts.pick(
+                                        Some(&paragraph.text_style.font_family),
+                                        paragraph.text_style.bold,
+                                        paragraph.text_style.italic,
+                                    )))
+                                * 100.0)
+                            .round()
+                            .clamp(10.0, 1000.0)
+                            as u16;
+                        skip_until = end;
+                    }
+                }
+                let paragraph = &joined;
                 y = render_paragraph(
                     &ctx,
                     &mut pdf,
@@ -439,7 +473,11 @@ fn render_heading(
     let paragraph = styled_heading_paragraph(heading, size);
     let role = format!("H{}", heading.level.clamp(1, 6));
     y = render_paragraph(ctx, pdf, page_index, y, &paragraph, size, 0.0, &role);
-    y - HEADING_TRAILING_GAP
+    y - if heading.content.style.source_spacing {
+        0.0
+    } else {
+        HEADING_TRAILING_GAP
+    }
 }
 
 fn heading_font_size(level: u8) -> f32 {
@@ -454,12 +492,16 @@ fn heading_font_size(level: u8) -> f32 {
 
 fn styled_heading_paragraph(heading: &Heading, size: f32) -> Paragraph {
     let mut paragraph = heading.content.clone();
+    if paragraph.style.source_spacing {
+        return paragraph;
+    }
     paragraph.text_style.font_size_pt = size.round() as u16;
     paragraph.text_style.bold = true;
-    paragraph.style.margin_top_mm = paragraph
-        .style
-        .margin_top_mm
-        .max(if heading.level == 1 { 2 } else { 3 });
+    paragraph.style.margin_top_mm =
+        paragraph
+            .style
+            .margin_top_mm
+            .max(if heading.level == 1 { 2 } else { 3 });
     paragraph.style.margin_bottom_mm = paragraph.style.margin_bottom_mm.max(2);
     paragraph
 }
@@ -473,7 +515,11 @@ fn heading_height(ctx: &LayoutContext, heading: &Heading) -> f32 {
         ctx.page_w - ctx.margin_l - ctx.margin_r,
         &ctx.fonts,
         2,
-    ) + HEADING_TRAILING_GAP
+    ) + if heading.content.style.source_spacing {
+        0.0
+    } else {
+        HEADING_TRAILING_GAP
+    }
 }
 
 fn render_list(
@@ -604,6 +650,46 @@ fn following_keep_height(ctx: &LayoutContext, block: &Block) -> f32 {
     }
 }
 
+fn paragraph_margins(paragraph: &Paragraph) -> [f32; 4] {
+    paragraph
+        .style
+        .odf_margins_mpt
+        .map(|m| m.map(|v| v as f32 / 1000.0))
+        .unwrap_or([
+            mm_to_pt(paragraph.style.margin_top_mm),
+            mm_to_pt(paragraph.style.margin_bottom_mm),
+            mm_to_pt(paragraph.style.margin_left_mm),
+            mm_to_pt(paragraph.style.margin_right_mm),
+        ])
+}
+
+// hhea ascender - descender + lineGap, divided by unitsPerEm, for the
+// bundled Liberation families. ODF percentage spacing multiplies this natural
+// line box, not the nominal em size. Non-ODF layout keeps its existing policy.
+fn odf_line_metric(font: PdfFont) -> f32 {
+    if matches!(font, PdfFont::Courier) {
+        2320.0 / 2048.0
+    } else {
+        2355.0 / 2048.0
+    }
+}
+fn odf_descent(font: PdfFont) -> f32 {
+    match font {
+        PdfFont::Courier => 615.0 / 2048.0,
+        PdfFont::TimesRoman | PdfFont::TimesBold | PdfFont::TimesItalic => 443.0 / 2048.0,
+        _ => 434.0 / 2048.0,
+    }
+}
+fn run_line_height(paragraph: &Paragraph, run: &StyledRun) -> f32 {
+    run.size
+        * paragraph_line_factor(paragraph)
+        * if paragraph.style.source_spacing {
+            odf_line_metric(run.font)
+        } else {
+            1.0
+        }
+}
+
 fn paragraph_line_factor(paragraph: &Paragraph) -> f32 {
     if paragraph.style.line_height_percent > 0 {
         paragraph.style.line_height_percent as f32 / 100.0
@@ -621,6 +707,47 @@ fn paragraph_empty_line_height(paragraph: &Paragraph, default_size: f32, empty: 
         default_size
     };
     size * paragraph_line_factor(paragraph)
+        * if paragraph.style.source_spacing {
+            2355.0 / 2048.0
+        } else {
+            1.0
+        }
+}
+
+fn draw_edges(
+    page: &mut lo_core::PdfPage,
+    x: f32,
+    top: f32,
+    width: f32,
+    height: f32,
+    borders: &[String; 4],
+) {
+    for (side, border) in borders.iter().enumerate() {
+        let mut parts = border.split_whitespace();
+        let Some(thickness) = parts
+            .next()
+            .and_then(lo_core::style::odf_length)
+            .filter(|v| *v > 0.0)
+        else {
+            continue;
+        };
+        if parts.next() != Some("solid") {
+            continue;
+        }
+        let (r, g, b) = parts
+            .next()
+            .and_then(parse_color)
+            .unwrap_or((0.0, 0.0, 0.0));
+        page.line_width(thickness.clamp(0.25, 100.0));
+        let (x1, y1, x2, y2) = match side {
+            0 => (x, top, x, top - height),
+            1 => (x + width, top, x + width, top - height),
+            2 => (x, top, x + width, top),
+            _ => (x, top - height, x + width, top - height),
+        };
+        page.line_rgb(x1, y1, x2, y2, r, g, b);
+    }
+    page.line_width(1.0);
 }
 
 fn render_paragraph(
@@ -633,16 +760,23 @@ fn render_paragraph(
     extra_indent: f32,
     semantic_role: &str,
 ) -> f32 {
-    let left = ctx.margin_l + mm_to_pt(paragraph.style.margin_left_mm) + extra_indent;
-    let right = ctx.margin_r + mm_to_pt(paragraph.style.margin_right_mm);
+    let padding = paragraph
+        .style
+        .odf_box
+        .as_ref()
+        .map(|b| b.padding_mpt.map(|n| n as f32 / 1000.0))
+        .unwrap_or([0.0; 4]);
+    let margins = paragraph_margins(paragraph);
+    let left = ctx.margin_l + margins[2] + extra_indent + padding[0];
+    let right = ctx.margin_r + margins[3] + padding[1];
     let available_width = (ctx.page_w - left - right).max(48.0);
-    let margin_top = mm_to_pt(paragraph.style.margin_top_mm);
+    let margin_top = margins[0];
     let minimum_bottom_mm = if paragraph.style.source_spacing {
         0
     } else {
         minimum_paragraph_bottom_mm(semantic_role)
     };
-    let margin_bottom = mm_to_pt(paragraph.style.margin_bottom_mm.max(minimum_bottom_mm));
+    let margin_bottom = margins[1].max(mm_to_pt(minimum_bottom_mm));
     let runs = paragraph_runs(paragraph, default_size, &ctx.fonts);
     let lines = layout_runs(&runs, available_width);
     let line_heights = lines
@@ -650,7 +784,7 @@ fn render_paragraph(
         .map(|line| {
             line.runs
                 .iter()
-                .map(|run| run.size * paragraph_line_factor(paragraph))
+                .map(|run| run_line_height(paragraph, run))
                 .fold(
                     if paragraph.style.source_spacing {
                         paragraph_empty_line_height(paragraph, default_size, line.runs.is_empty())
@@ -661,7 +795,8 @@ fn render_paragraph(
                 )
         })
         .collect::<Vec<_>>();
-    let total_height = margin_top + line_heights.iter().sum::<f32>() + margin_bottom;
+    let total_height =
+        margin_top + padding[2] + line_heights.iter().sum::<f32>() + padding[3] + margin_bottom;
     let content_height = ctx.page_h - ctx.margin_t - ctx.margin_b;
     if total_height <= content_height
         && y - total_height < ctx.margin_b
@@ -671,10 +806,51 @@ fn render_paragraph(
         y = ctx.page_h - ctx.margin_t;
     }
     y -= margin_top;
-
+    // Draw decoration per page fragment so long paragraphs remain bounded to a page.
+    let mut fragment_start = true;
     for (line_index, line) in lines.iter().enumerate() {
         let line_height = line_heights[line_index];
-        y = ensure_room(ctx, pdf, page_index, y, line_height + 2.0);
+        let old_page = *page_index;
+        y = ensure_room(
+            ctx,
+            pdf,
+            page_index,
+            y,
+            line_height + padding[2] + padding[3] + 2.0,
+        );
+        fragment_start |= *page_index != old_page;
+        if fragment_start {
+            let remaining: f32 = line_heights[line_index..].iter().sum();
+            let height = (remaining + padding[2] + padding[3])
+                .min(y - ctx.margin_b)
+                .max(0.0);
+            if let Some(b) = &paragraph.style.odf_box {
+                let page = pdf.page_mut(*page_index).expect("paragraph page");
+                page.begin_artifact();
+                if let Some((r, g, blue)) = parse_color(&b.background) {
+                    page.rect_fill_rgb(
+                        left - padding[0],
+                        y - height,
+                        available_width + padding[0] + padding[1],
+                        height,
+                        r,
+                        g,
+                        blue,
+                    );
+                }
+                draw_edges(
+                    page,
+                    left - padding[0],
+                    y,
+                    available_width + padding[0] + padding[1],
+                    height,
+                    &b.borders,
+                );
+                page.end_artifact();
+            }
+            y -= padding[2];
+            fragment_start = false;
+        }
         // `y` is the free block boundary; PDF text APIs take a baseline.
         // Descend by one line box before drawing so glyph ascenders never
         // intrude into the preceding table, paragraph, or page margin.
@@ -701,7 +877,14 @@ fn render_paragraph(
             pdf.page_mut(*page_index).expect("page"),
             line,
             left,
-            y,
+            y + if paragraph.style.source_spacing {
+                line.runs
+                    .iter()
+                    .map(|run| run.size * odf_descent(run.font))
+                    .fold(0.0, f32::max)
+            } else {
+                0.0
+            },
             paragraph.style.alignment.clone(),
             available_width,
             justify,
@@ -709,7 +892,7 @@ fn render_paragraph(
         );
     }
 
-    y - margin_bottom
+    y - margin_bottom - padding[3]
 }
 
 fn paragraph_height(
@@ -719,17 +902,26 @@ fn paragraph_height(
     fonts: &FontResolver,
     minimum_bottom_mm: u16,
 ) -> f32 {
+    let margins = paragraph_margins(paragraph);
+    let padding = paragraph
+        .style
+        .odf_box
+        .as_ref()
+        .map(|b| b.padding_mpt.map(|v| v as f32 / 1000.0))
+        .unwrap_or([0.0; 4]);
     let lines = layout_runs(
         &paragraph_runs(paragraph, default_size, fonts),
-        available_width,
+        (available_width - margins[2] - margins[3] - padding[0] - padding[1]).max(48.0),
     );
-    mm_to_pt(paragraph.style.margin_top_mm)
+    margins[0]
+        + padding[2]
+        + padding[3]
         + lines
             .iter()
             .map(|line| {
                 line.runs
                     .iter()
-                    .map(|run| run.size * paragraph_line_factor(paragraph))
+                    .map(|run| run_line_height(paragraph, run))
                     .fold(
                         if paragraph.style.source_spacing {
                             paragraph_empty_line_height(
@@ -744,16 +936,11 @@ fn paragraph_height(
                     )
             })
             .sum::<f32>()
-        + mm_to_pt(
-            paragraph
-                .style
-                .margin_bottom_mm
-                .max(if paragraph.style.source_spacing {
-                    0
-                } else {
-                    minimum_bottom_mm
-                }),
-        )
+        + margins[1].max(if paragraph.style.source_spacing {
+            0.0
+        } else {
+            mm_to_pt(minimum_bottom_mm)
+        })
 }
 
 fn minimum_paragraph_bottom_mm(semantic_role: &str) -> u16 {
@@ -826,13 +1013,17 @@ fn render_odf_table(
                 {
                     page.rect_fill_rgb(x, y - cell_height, width, cell_height, red, green, blue);
                 }
-                if let Some(border) = layout.borders.get(&(r, c)).filter(|s| s.as_str() != "none") {
-                    let (red, green, blue) = border
-                        .split_whitespace()
-                        .last()
-                        .and_then(parse_color)
-                        .unwrap_or((0.0, 0.0, 0.0));
-                    page.rect_stroke_rgb(x, y - cell_height, width, cell_height, red, green, blue);
+                if let Some(edges) = layout.edge_borders.get(&(r, c)) {
+                    draw_edges(page, x, y, width, cell_height, edges);
+                } else if let Some(border) = layout.borders.get(&(r, c)) {
+                    draw_edges(
+                        page,
+                        x,
+                        y,
+                        width,
+                        cell_height,
+                        &std::array::from_fn(|_| border.clone()),
+                    );
                 }
                 let mut baseline = y
                     - 2.0
@@ -846,7 +1037,11 @@ fn render_odf_table(
                         line,
                         x + 2.0,
                         baseline,
-                        Alignment::Start,
+                        table.rows[r].cells[c]
+                            .paragraphs
+                            .first()
+                            .map(|p| p.style.alignment.clone())
+                            .unwrap_or_default(),
                         width - 4.0,
                         false,
                         "TD",
@@ -934,9 +1129,7 @@ fn table_column_widths(ctx: &LayoutContext, table: &Table) -> Vec<f32> {
                         .collect::<Vec<_>>()
                 })
                 .fold(0.0_f32, f32::max);
-            let minimum = (longest_token
-                + TABLE_CELL_HORIZONTAL_PADDING
-                + TABLE_WORD_FIT_SLOP)
+            let minimum = (longest_token + TABLE_CELL_HORIZONTAL_PADDING + TABLE_WORD_FIT_SLOP)
                 .clamp(32.0, available_width * 0.22);
             let ideal = (measure_text(&text, TABLE_FONT_SIZE, PdfFont::Helvetica)
                 + TABLE_CELL_HORIZONTAL_PADDING)
@@ -983,8 +1176,7 @@ fn layout_table_row(
     let mut cells = Vec::new();
     let mut height = 18.0_f32;
     for (index, cell) in row.cells.iter().enumerate() {
-        let width = col_widths.get(index).copied().unwrap_or(48.0)
-            - TABLE_CELL_HORIZONTAL_PADDING;
+        let width = col_widths.get(index).copied().unwrap_or(48.0) - TABLE_CELL_HORIZONTAL_PADDING;
         let lines = layout_cell(cell, width.max(16.0), fonts, header);
         let content_height = lines.iter().map(table_line_height).sum::<f32>();
         height = height.max(content_height + TABLE_CELL_VERTICAL_PADDING);
@@ -1314,15 +1506,17 @@ fn layout_runs(runs: &[StyledRun], max_width: f32) -> Vec<LineLayout> {
                 continue;
             }
             let token_width = measure_text(&token.text, token.size, token.font);
-            let is_space = token.text.chars().all(|ch| ch.is_whitespace());
+            let is_space = token
+                .text
+                .chars()
+                .all(|ch| ch.is_whitespace() && ch != '\u{a0}');
             if !is_space && token_width > max_width {
                 if !current.runs.is_empty() {
                     trim_trailing_spaces(&mut current);
                     lines.push(std::mem::take(&mut current));
                 }
                 for fragment in split_run_to_width(&token, max_width) {
-                    let fragment_width =
-                        measure_text(&fragment.text, fragment.size, fragment.font);
+                    let fragment_width = measure_text(&fragment.text, fragment.size, fragment.font);
                     if !current.runs.is_empty() && current.width + fragment_width > max_width {
                         lines.push(std::mem::take(&mut current));
                     }
@@ -1410,7 +1604,7 @@ fn tokenize_run(run: &StyledRun) -> Vec<StyledRun> {
             });
             continue;
         }
-        if ch.is_whitespace() {
+        if ch.is_whitespace() && ch != '\u{a0}' {
             flush(&mut out, &mut buffer, run);
             out.push(StyledRun {
                 text: ch.to_string(),
@@ -1433,7 +1627,8 @@ fn tokenize_run(run: &StyledRun) -> Vec<StyledRun> {
 }
 
 fn trim_trailing_spaces(line: &mut LineLayout) {
-    while matches!(line.runs.last(), Some(run) if run.text.chars().all(|ch| ch.is_whitespace())) {
+    while matches!(line.runs.last(), Some(run) if run.text.chars().all(|ch| ch.is_whitespace() && ch != '\u{a0}'))
+    {
         if let Some(run) = line.runs.pop() {
             line.width -= measure_text(&run.text, run.size, run.font);
         }
@@ -2263,5 +2458,43 @@ mod tests {
         let lines = layout_runs(&[run], 96.0);
         assert!(lines.len() > 1);
         assert!(lines.iter().all(|line| line.width <= 96.01));
+    }
+}
+
+#[cfg(test)]
+mod odf_box_tests {
+    use super::*;
+
+    #[test]
+    fn explicit_indentation_is_not_trimmed_by_wrapping() {
+        let run = StyledRun {
+            text: "\u{a0}\u{a0}\u{a0}\u{a0}code".into(),
+            font: PdfFont::Courier,
+            size: 10.0,
+            color: (0.0, 0.0, 0.0),
+            background: None,
+            underline: false,
+            link: None,
+        };
+        let lines = layout_runs(&[run], 100.0);
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].width, 48.0);
+        assert!(lines[0].runs[0]
+            .text
+            .starts_with("\u{a0}\u{a0}\u{a0}\u{a0}"));
+    }
+
+    #[test]
+    fn odf_heading_keeps_source_font_and_spacing() {
+        let mut paragraph = Paragraph::default();
+        paragraph.style.source_spacing = true;
+        paragraph.text_style.font_size_pt = 13;
+        paragraph.style.margin_bottom_mm = 0;
+        let heading = Heading {
+            level: 1,
+            content: paragraph.clone(),
+        };
+        let styled = styled_heading_paragraph(&heading, 20.0);
+        assert_eq!(styled, paragraph);
     }
 }

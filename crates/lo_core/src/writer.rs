@@ -82,6 +82,7 @@ pub struct TableRow {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct OdfTableLayout {
+    pub edge_borders: std::collections::BTreeMap<(usize, usize), [String; 4]>,
     pub columns: Vec<f32>,
     /// Zero spans mark covered cells; all other cells default to (1, 1).
     pub spans: std::collections::BTreeMap<(usize, usize), (usize, usize)>,

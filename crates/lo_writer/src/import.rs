@@ -108,8 +108,9 @@ pub fn from_pdf_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<TextDocu
             }
         }
         if !page_emitted && !normalized.trim().is_empty() {
-            doc.body
-                .push(Block::Paragraph(Paragraph::plain(normalized.trim().to_string())));
+            doc.body.push(Block::Paragraph(Paragraph::plain(
+                normalized.trim().to_string(),
+            )));
             emitted_any = true;
         }
     }
@@ -369,10 +370,9 @@ fn renumber_footnote_markers(doc: &mut TextDocument) {
     }
     fn walk_inline(inline: &mut Inline, foot: &mut u32, endn: &mut u32) {
         match inline {
-            Inline::Text(t)
-            | Inline::Bold(t)
-            | Inline::Italic(t)
-            | Inline::Code(t) => *t = replace_in_text(t, foot, endn),
+            Inline::Text(t) | Inline::Bold(t) | Inline::Italic(t) | Inline::Code(t) => {
+                *t = replace_in_text(t, foot, endn)
+            }
             Inline::Link { label, .. } => *label = replace_in_text(label, foot, endn),
             Inline::Styled { text, .. } => *text = replace_in_text(text, foot, endn),
             Inline::LineBreak => {}
@@ -501,6 +501,14 @@ pub fn from_odt_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<TextDocu
         }
     }
     enrich(&mut doc.body, &table_nodes, &named);
+    if zip.contains("styles.xml") {
+        let root = parse_xml_document(&zip.read_string("styles.xml")?)?;
+        let mut outlines = Vec::new();
+        root.descendants_named("outline-style", &mut outlines);
+        if let Some(outline) = outlines.first() {
+            number_odt_headings(&mut doc.body, outline, &mut [0; 10]);
+        }
+    }
     Ok(doc)
 }
 
@@ -541,7 +549,9 @@ fn parse_docx_numbering(zip: &ZipArchive) -> BTreeMap<String, bool> {
     // Map abstractNumId -> ordered?
     let mut abstracts: BTreeMap<String, bool> = BTreeMap::new();
     for an in root.children_named("abstractNum") {
-        let Some(id) = an.attr("abstractNumId") else { continue };
+        let Some(id) = an.attr("abstractNumId") else {
+            continue;
+        };
         let mut ordered = false;
         for lvl in an.children_named("lvl") {
             if lvl.attr("ilvl").unwrap_or("") != "0" {
@@ -555,7 +565,9 @@ fn parse_docx_numbering(zip: &ZipArchive) -> BTreeMap<String, bool> {
         abstracts.insert(id.to_string(), ordered);
     }
     for num in root.children_named("num") {
-        let Some(num_id) = num.attr("numId") else { continue };
+        let Some(num_id) = num.attr("numId") else {
+            continue;
+        };
         let abstract_id = num
             .child("abstractNumId")
             .and_then(|n| n.attr("val"))
@@ -792,7 +804,8 @@ fn walk_paragraph_items(
             }
             // Track-changes wrappers — descend so we don't lose the
             // <w:r> children that hold the actual deleted/inserted text.
-            "ins" | "del" | "moveTo" | "moveFrom" | "smartTag" | "customXml" | "sdt" | "sdtContent" => {
+            "ins" | "del" | "moveTo" | "moveFrom" | "smartTag" | "customXml" | "sdt"
+            | "sdtContent" => {
                 walk_paragraph_items(&child.items, base, hyperlink.clone(), relationships, info);
             }
             _ => {}
@@ -915,11 +928,7 @@ fn collect_cell_blocks(node: &XmlNode, out: &mut Vec<Paragraph>) {
                 for row in &nested.rows {
                     for c in &row.cells {
                         for p in &c.paragraphs {
-                            if !p
-                                .spans
-                                .iter()
-                                .all(|inline| inline_text(inline).is_empty())
-                            {
+                            if !p.spans.iter().all(|inline| inline_text(inline).is_empty()) {
                                 out.push(p.clone());
                             }
                         }
@@ -975,13 +984,49 @@ fn parse_odt_styles(named: &lo_core::style::OdfStyles) -> BTreeMap<String, Style
                 code: font.to_ascii_lowercase().contains("mono")
                     || font.to_ascii_lowercase().contains("courier"),
                 paragraph_style: Some(lo_core::ParagraphStyle {
+                    odf_margins_mpt: Some(
+                        ["margin-top", "margin-bottom", "margin-left", "margin-right"].map(
+                            |side| {
+                                get("paragraph-properties", side)
+                                    .and_then(lo_core::style::odf_length)
+                                    .map(|pt| (pt.clamp(0.0, 3000.0) * 1000.0).round() as i32)
+                                    .unwrap_or(0)
+                            },
+                        ),
+                    ),
+                    odf_box: Some(lo_core::style::OdfParagraphBox {
+                        background: get("paragraph-properties", "background-color")
+                            .unwrap_or("")
+                            .into(),
+                        borders: ["border-left", "border-right", "border-top", "border-bottom"]
+                            .map(|side| {
+                                get("paragraph-properties", side)
+                                    .or_else(|| get("paragraph-properties", "border"))
+                                    .unwrap_or("")
+                                    .into()
+                            }),
+                        padding_mpt: [
+                            "padding-left",
+                            "padding-right",
+                            "padding-top",
+                            "padding-bottom",
+                        ]
+                        .map(|side| {
+                            get("paragraph-properties", side)
+                                .or_else(|| get("paragraph-properties", "padding"))
+                                .and_then(lo_core::style::odf_length)
+                                .map(|pt| (pt.clamp(0.0, 1000.0) * 1000.0) as u32)
+                                .unwrap_or(0)
+                        }),
+                        join: get("paragraph-properties", "join-border") != Some("false"),
+                    }),
                     source_spacing: true,
                     line_height_percent: get("paragraph-properties", "line-height")
                         .and_then(|v| v.strip_suffix('%'))
                         .and_then(|v| v.parse::<f32>().ok())
                         .filter(|v| v.is_finite())
                         .map(|v| v.clamp(10.0, 1000.0).round() as u16)
-                        .unwrap_or(120),
+                        .unwrap_or(100),
                     alignment: match get("paragraph-properties", "text-align") {
                         Some("center") => lo_core::Alignment::Center,
                         Some("right" | "end") => lo_core::Alignment::End,
@@ -1053,6 +1098,88 @@ fn odt_span_style(base: &SpanStyle, props: &StyleProps) -> SpanStyle {
     out
 }
 
+fn number_odt_headings(blocks: &mut [Block], outline: &XmlNode, counters: &mut [u32; 10]) {
+    for block in blocks {
+        match block {
+            Block::Heading(h) => {
+                let level = usize::from(h.level.clamp(1, 10));
+                let Some(rule) = outline
+                    .children_named("outline-level-style")
+                    .find(|n| n.attr("level").and_then(|s| s.parse::<usize>().ok()) == Some(level))
+                else {
+                    continue;
+                };
+                if rule.attr("num-format") != Some("1") {
+                    continue;
+                }
+                let start = rule
+                    .attr("start-value")
+                    .and_then(|s| s.parse::<u32>().ok())
+                    .unwrap_or(1)
+                    .max(1);
+                counters[level - 1] = if counters[level - 1] == 0 {
+                    start
+                } else {
+                    counters[level - 1].saturating_add(1)
+                };
+                counters[level..].fill(0);
+                let display = rule
+                    .attr("display-levels")
+                    .and_then(|s| s.parse::<usize>().ok())
+                    .unwrap_or(1)
+                    .clamp(1, level);
+                let number = counters[level - display..level]
+                    .iter()
+                    .map(u32::to_string)
+                    .collect::<Vec<_>>()
+                    .join(".");
+                let mut label = format!(
+                    "{}{}{}",
+                    rule.attr("num-prefix").unwrap_or(""),
+                    number,
+                    rule.attr("num-suffix").unwrap_or("")
+                );
+                let alignment = rule
+                    .child("list-level-properties")
+                    .and_then(|n| n.child("list-level-label-alignment"));
+                let size = h.content.text_style.font_size_pt.max(1) as f32;
+                let gap = alignment
+                    .filter(|n| n.attr("label-followed-by") == Some("listtab"))
+                    .and_then(|n| n.attr("list-tab-stop-position"))
+                    .and_then(lo_core::style::odf_length)
+                    .map(|stop| {
+                        ((stop
+                            - crate::font_metrics::measure_text(
+                                &label,
+                                size,
+                                lo_core::PdfFont::HelveticaBold,
+                            ))
+                            / (size * 0.278))
+                            .round()
+                            .clamp(1.0, 32.0) as usize
+                    })
+                    .unwrap_or(1);
+                label.push_str(&"\u{a0}".repeat(gap));
+                h.content.spans.insert(
+                    0,
+                    Inline::Styled {
+                        text: label,
+                        style: h.content.text_style.clone(),
+                        url: None,
+                    },
+                );
+            }
+            Block::List(list) => {
+                for item in &mut list.items {
+                    number_odt_headings(&mut item.blocks, outline, counters);
+                }
+            }
+            Block::Section(section) => number_odt_headings(&mut section.blocks, outline, counters),
+            _ => {}
+        }
+    }
+}
+
 fn parse_odt_text_children(
     root: &XmlNode,
     styles: &BTreeMap<String, StyleProps>,
@@ -1105,7 +1232,14 @@ fn parse_odt_text_children(
                         });
                     }
                 }
-                if !items.is_empty() {
+                if !items.is_empty()
+                    && items
+                        .iter()
+                        .all(|item| item.blocks.iter().all(|b| matches!(b, Block::Heading(_))))
+                {
+                    doc.body
+                        .extend(items.into_iter().flat_map(|item| item.blocks));
+                } else if !items.is_empty() {
                     doc.body.push(Block::List(ListBlock {
                         ordered: false,
                         items,
@@ -1396,7 +1530,7 @@ fn parse_odt_items(
                         .and_then(|value| value.parse::<usize>().ok())
                         .unwrap_or(1);
                     spans.push(StyledSpan {
-                        text: " ".repeat(count),
+                        text: "\u{a0}".repeat(count.min(10_000)),
                         style: inherited.clone(),
                     });
                 }
@@ -1468,6 +1602,23 @@ fn odt_table_layout(
             ) {
                 layout.backgrounds.insert((r, c), value.into());
             }
+            layout.edge_borders.insert(
+                (r, c),
+                ["border-left", "border-right", "border-top", "border-bottom"].map(|side| {
+                    styles
+                        .property_in(name, "table-cell", "table-cell-properties", side)
+                        .or_else(|| {
+                            styles.property_in(
+                                name,
+                                "table-cell",
+                                "table-cell-properties",
+                                "border",
+                            )
+                        })
+                        .unwrap_or("")
+                        .into()
+                }),
+            );
             if let Some(value) =
                 styles.property_in(name, "table-cell", "table-cell-properties", "border")
             {
@@ -1662,5 +1813,83 @@ mod odf_image_tests {
         for value in ["-1cm", "NaNcm", "0in", "100000cm"] {
             assert!(odf_image_length(Some(value)).is_none());
         }
+    }
+}
+
+#[cfg(test)]
+mod writer_template_tests {
+    use super::*;
+
+    #[test]
+    fn outline_headings_in_list_wrappers_are_numbered_without_bullets() {
+        let content = r#"<document-content><body><text><h outline-level="1">Introduction</h><list><list-item><list><list-item><h outline-level="2">Model</h></list-item></list></list-item></list><h outline-level="2">Query</h><h outline-level="1">Next</h><h outline-level="2">Reset</h></text></body></document-content>"#;
+        let styles = r#"<document-styles><styles><outline-style><outline-level-style level="1" num-format="1"/><outline-level-style level="2" num-format="1" display-levels="2"/></outline-style></styles></document-styles>"#;
+        let mut bytes = std::io::Cursor::new(Vec::new());
+        lo_zip::write_zip(
+            &mut bytes,
+            &[
+                lo_zip::ZipEntry::new("content.xml", content.as_bytes().to_vec()),
+                lo_zip::ZipEntry::new("styles.xml", styles.as_bytes().to_vec()),
+            ],
+        )
+        .unwrap();
+        let doc = from_odt_bytes("outline", &bytes.into_inner()).unwrap();
+        let headings: Vec<_> = doc
+            .body
+            .iter()
+            .map(|b| match b {
+                Block::Heading(h) => h.content.to_plain_text().replace('\u{a0}', " "),
+                _ => panic!("outline wrappers must not create list bullets"),
+            })
+            .collect();
+        assert_eq!(
+            headings,
+            [
+                "1 Introduction",
+                "1.1 Model",
+                "1.2 Query",
+                "2 Next",
+                "2.1 Reset"
+            ]
+        );
+    }
+
+    #[test]
+    fn paragraph_boxes_inherit_and_explicit_spaces_survive() {
+        let root = parse_xml_document(r##"<styles><style name="Base" family="paragraph"><paragraph-properties background-color="#fff5e0" border="0.5pt solid #ff0000" padding="2pt" margin-bottom="0.05in"/></style><style name="Code" family="paragraph" parent-style-name="Base"><paragraph-properties border-left="none"/></style></styles>"##).unwrap();
+        let mut named = lo_core::style::OdfStyles::default();
+        named.collect(&root);
+        let styles = parse_odt_styles(&named);
+        let node =
+            parse_xml_document(r#"<p style-name="Code"><s c="4"/>indented<s c="1000000"/>end</p>"#)
+                .unwrap();
+        let paragraph = parse_odt_paragraph(&node, &styles);
+        let decoration = paragraph.style.odf_box.as_ref().unwrap();
+        assert_eq!(decoration.background, "#fff5e0");
+        assert_eq!(decoration.borders[0], "none");
+        assert_eq!(decoration.borders[1], "0.5pt solid #ff0000");
+        assert_eq!(decoration.padding_mpt, [2000; 4]);
+        assert_eq!(paragraph.style.odf_margins_mpt.unwrap()[1], 3600);
+        let text = paragraph.to_plain_text();
+        assert!(text.starts_with("\u{a0}\u{a0}\u{a0}\u{a0}indented"));
+        assert_eq!(text.matches('\u{a0}').count(), 10004);
+    }
+
+    #[test]
+    fn table_borders_preserve_each_edge() {
+        let root = parse_xml_document(r##"<styles><style name="Cell" family="table-cell"><table-cell-properties border="0.5pt solid #aaaaaa" border-top="none"/></style></styles>"##).unwrap();
+        let mut styles = lo_core::style::OdfStyles::default();
+        styles.collect(&root);
+        let node = parse_xml_document(r#"<table><table-row><table-cell style-name="Cell"><p>Body</p></table-cell></table-row></table>"#).unwrap();
+        let layout = odt_table_layout(&node, &styles);
+        assert_eq!(
+            layout.edge_borders[&(0, 0)],
+            [
+                "0.5pt solid #aaaaaa",
+                "0.5pt solid #aaaaaa",
+                "none",
+                "0.5pt solid #aaaaaa"
+            ]
+        );
     }
 }

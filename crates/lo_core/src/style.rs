@@ -26,7 +26,20 @@ pub struct TextStyle {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct OdfParagraphBox {
+    pub background: String,
+    /// Left, right, top, bottom.
+    pub borders: [String; 4],
+    pub padding_mpt: [u32; 4],
+    pub join: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ParagraphStyle {
+    /// ODF paragraph decoration; lengths are thousandths of a point.
+    pub odf_box: Option<OdfParagraphBox>,
+    /// Top, bottom, left, right margins in thousandths of a point.
+    pub odf_margins_mpt: Option<[i32; 4]>,
     pub source_spacing: bool,
     pub line_height_percent: u16,
     pub alignment: Alignment,
