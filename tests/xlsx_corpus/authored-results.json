@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "checkout_source_sha256": "4b5bacdc57b31ce35932703cbe796ecac19ee9f3903c88c60f417431f7dcbda5",
+  "checkout_source_sha256": "00cf489cb27cd56f5737b87c3a30c8f9f303cc2edf38118761df7de1b7ba5388",
   "manifest_sha256": "4ffd73f152a3c8161b2a2cfeff45c21b3dec7c9be9f5d9ce8fa845bef6d1873c",
-  "runner_sha256": "23f260ca7a01ed00bc75ebe2aa03d3fe12f40b6b393806f498e2aa85bdbf9f9c",
-  "candidate_sha256": "e7af92b4af503741d4af2bcbbd11d91d47ebebc0a92991bdb28f3127cd1ce201",
-  "expectations_sha256": "2da1cfe34b911d47cf8f939747d4e249e29f2725988b952ebc533755deaf1b73",
+  "runner_sha256": "8b26ea6645c1827530f1b2f751072f74e15a2086fb405a05bec648c69e5c7911",
+  "candidate_sha256": "8e12e2eda68fb1c1b3f1918020bb0ed69416cb0d37ecaeb4e83b7643d0c02b00",
+  "expectations_sha256": "cbfbbc7edb2b3bc896209ee35352fc26a9af288b6355d2276e1c126445f5a0c6",
   "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
   "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
   "fonts": {
@@ -24,7 +24,7 @@
   },
   "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
   "checkout_tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "checkout_revision": "91feb89e2cc26671a009d967ef5a159e64df3a24",
+  "checkout_revision": "a4b396def4618c62547fb33d22688854d42a0902",
   "cases": [
     {
       "id": "authored-font-variants",
@@ -245,7 +245,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.018,
+          "seconds": 0.017,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -390,7 +390,8 @@
               "blue": 0,
               "orange": 25,
               "green": 0,
-              "rose": 114
+              "rose": 114,
+              "dark": 96
             },
             "font_names": [
               "Helvetica",
@@ -430,7 +431,8 @@
               "blue": 0,
               "orange": 0,
               "green": 0,
-              "rose": 0
+              "rose": 0,
+              "dark": 19
             },
             "font_names": [
               "IJHFVX+LiberationSans"
@@ -462,7 +464,8 @@
               "blue": 0,
               "orange": 12,
               "green": 0,
-              "rose": 98
+              "rose": 98,
+              "dark": 101
             },
             "font_names": [
               "BAAAAA+LiberationSans-Bold",
@@ -661,7 +664,8 @@
               "blue": 27,
               "orange": 20,
               "green": 0,
-              "rose": 130
+              "rose": 130,
+              "dark": 15
             },
             "font_names": [
               "Helvetica",
@@ -702,7 +706,8 @@
               "blue": 0,
               "orange": 0,
               "green": 0,
-              "rose": 0
+              "rose": 0,
+              "dark": 22
             },
             "font_names": [
               "PIFYGT+LiberationSans"
@@ -734,7 +739,8 @@
               "blue": 0,
               "orange": 36,
               "green": 0,
-              "rose": 460
+              "rose": 460,
+              "dark": 35
             },
             "font_names": [
               "BAAAAA+LiberationSans",
@@ -998,7 +1004,8 @@
               "blue": 0,
               "orange": 22,
               "green": 0,
-              "rose": 462
+              "rose": 462,
+              "dark": 109
             },
             "font_names": [
               "Helvetica",
@@ -1039,7 +1046,8 @@
               "blue": 0,
               "orange": 37,
               "green": 0,
-              "rose": 473
+              "rose": 473,
+              "dark": 48
             },
             "font_names": [
               "QUMWAL+LiberationSans-Bold",
@@ -1073,7 +1081,8 @@
               "blue": 0,
               "orange": 21,
               "green": 0,
-              "rose": 420
+              "rose": 420,
+              "dark": 66
             },
             "font_names": [
               "BAAAAA+LiberationSans",
@@ -1289,7 +1298,8 @@
               "blue": 2765,
               "orange": 5372,
               "green": 0,
-              "rose": 5372
+              "rose": 5372,
+              "dark": 57
             }
           }
         },
@@ -1317,7 +1327,8 @@
               "blue": 2607,
               "orange": 5293,
               "green": 0,
-              "rose": 5293
+              "rose": 5293,
+              "dark": 69
             }
           },
           "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-stacked-chart/office2pdf"
@@ -1346,7 +1357,8 @@
               "blue": 2997,
               "orange": 5832,
               "green": 0,
-              "rose": 5832
+              "rose": 5832,
+              "dark": 43
             }
           },
           "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-stacked-chart/libreoffice"
@@ -1426,7 +1438,8 @@
               "blue": 34656,
               "orange": 0,
               "green": 0,
-              "rose": 0
+              "rose": 0,
+              "dark": 50
             }
           }
         },
@@ -1454,7 +1467,8 @@
               "blue": 17328,
               "orange": 0,
               "green": 0,
-              "rose": 17328
+              "rose": 17328,
+              "dark": 74
             }
           },
           "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-cropped-image/office2pdf"
@@ -1483,7 +1497,8 @@
               "blue": 34656,
               "orange": 0,
               "green": 0,
-              "rose": 0
+              "rose": 0,
+              "dark": 76
             }
           },
           "reused_from": "/tmp/davros-libreoffice-fork-20261014/tests/xlsx_corpus/runs/rich-shrink-final/authored-cropped-image/libreoffice"

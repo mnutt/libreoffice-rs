@@ -8,9 +8,9 @@ files and six are upstream-authored English business examples. They broaden
 feature coverage, but are not a representative production sample. The same
 checked-in upstream license notices apply.
 
-Renderer fixes: `54aeb62`; corpus expansion: `91feb89`.
+Renderer fixes: `54aeb62` and `a4b396d`; corpus expansion: `91feb89`.
 The [before report](runs/expanded-initial/report.html) and
-[after report](runs/expanded-verified/report.html) contain PDFs and previews.
+[after report](runs/chart-fidelity-expanded/report.html) contain PDFs and previews.
 `expanded-baseline.json` and `expanded-results.json` preserve the measurements.
 
 ## Defects fixed
@@ -27,12 +27,23 @@ blank page with only footer cells. Two independent problems caused this:
   preserved. Missing values stay gaps. External references, unions, expressions,
   and oversized ranges are not evaluated. Work is bounded across the workbook.
 
-Three charts now appear, and word recall against LibreOffice rises from **3.8%
-to 89.1%**. The fourth is a pie chart, still unsupported. The second bar chart's
-gradient fills also remain wrong (black), and axis titles/spacing need work.
-This is a substantial recovery, not complete chart parity. PDF checks require
-series names, year labels, and visible blue/orange bars; the original output
-fails all of those checks.
+The first fix restored three charts and raised word recall against LibreOffice
+from 3.8% to 89.1%. The follow-up adds the fourth (2-D pie), linear gradient bar
+fills, and axis titles, raising recall to **97.3%**. Pie slice proportions, start
+angle and point colors follow the source; pie legends use category labels and the
+saved font size. Axis titles reserve space beside the ticks. Linear gradients
+use up to 16 source stops and 64 clipped vector strips per bar, adding no runtime
+dependency. Gradient fills previously fell through to the black outline color.
+
+PDF checks now inspect specific normalized page regions: the pie region must
+contain blue pixels, and the gradient bars must not be black. The earlier output
+has zero blue pixels in the pie region and 6,198 dark pixels in the gradient
+region; the corrected output passes both checks. Text checks also require
+Revenue/Year titles. This is not full chart parity: axis tick selection, borders,
+spacing and source print pagination still differ. Exploded or negative-value pies,
+radial gradients, per-point gradients and gradient outlines remain unsupported.
+Only ordinary one-series 2-D pies are enabled; other pie families are not
+silently converted to this type.
 
 **Missing conditional heatmap.** The regional sales dashboard rendered its
 numeric cells white despite a source red/yellow/green scale. Two- and three-color
@@ -57,7 +68,7 @@ on three expanded files. All candidate feature expectations pass. The original
 | ExcelPivotTableSample | 84.6% | 3 / 3 / 3 |
 | WithDrawing | 90.0% | 1 / 2 / 2 |
 | WithTextBox | 100.0% | 1 / 1 / 1 |
-| 123233_charts | 89.1% | 1 / 2 / 2 |
+| 123233_charts | 97.3% | 1 / 2 / 2 |
 | chart_sheet | 100.0% | 2 / 2 / 2 |
 | issue_1603_gift_budget | 59.9% | 2 / 2 / 3 |
 | issue_1181_fit_to_height | 77.0% | 3 / 3 / 2 |
@@ -88,8 +99,9 @@ so its later pages have not received raster review in this batch.
 
 ## Remaining findings and next priorities
 
-1. Finish the chart workbook: pie charts, gradient fills, axis titles and layout.
-   Fit-to-height and gift-budget examples also retain chart/layout differences.
+1. Refine chart tick bounds, borders, legend spacing and source layout. Extend
+   coverage beyond basic pies and linear gradients. Fit-to-height and gift-budget
+   examples retain chart/layout differences.
 2. Extend conditional-format coverage: icon sets, automatic data-bar bounds,
    negative axes, and formula rules beyond simple scalar comparisons.
 3. Investigate gift-budget (59.9% LO recall), conditional cell comparisons (81.8%),
@@ -99,8 +111,8 @@ so its later pages have not received raster review in this batch.
    remains unsupported; the basic table samples look plain in both candidate and
    LibreOffice, so they do not establish style fidelity.
 
-No cases were removed or existing thresholds relaxed to hide defects. This batch
-passes 30 Calc unit tests, twelve XLSX integration tests and nine runner tests,
+No cases were removed or existing thresholds relaxed to hide defects. The full workspace all-feature test suite passes, including 36 core tests,
+30 Calc unit tests and twelve XLSX integration tests. Ten runner tests pass,
 including saved formula/gap handling, package case ambiguity, numeric percentile
-selection, conditional priority, and visible-color checks. It does not certify
+selection, conditional priority, pie proportions, gradient interpolation and region-specific visible-color checks. It does not certify
 arbitrary-XLSX replacement readiness. Davros remains uncommitted.

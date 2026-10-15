@@ -136,10 +136,12 @@ No new runtime dependency was added.
 
 Charts use cached indexed points (including gaps), numeric scatter coordinates,
 series/point colors from the workbook theme, clustered and stacked bars (including
-separate positive/negative accumulators), named series, legends, data labels,
-number formats and explicit value-axis bounds. Scatter series with no line remain
+separate positive/negative accumulators), basic 2-D pies, named series, legends, data labels,
+number formats, axis titles and explicit value-axis bounds. Linear bar gradients
+retain source stops through bounded vector subdivision. Pie legends use category
+labels; slice proportions and the source start angle are preserved. Scatter series with no line remain
 unconnected. These are preview charts: combination/percent-stacked/logarithmic charts,
-full source plot layout, marker families beyond circle/square, smoothing, and chart style extensions are not
+exploded/negative-value pies, radial/per-point gradients, full source plot layout, marker families beyond circle/square, smoothing, and chart style extensions are not
 complete. Unsupported chart families are not approximated as a different type.
 
 Conditional rules support scalar `cellIs` and simple comparison expressions,
@@ -228,3 +230,9 @@ and `expanded-results.json` preserve before/after measurements, including failed
 reference conversions. The large conditional-format collection has more than ten
 pages: text and page geometry cover all pages, but raster review is limited to the
 first ten. Use the full PDFs for later pages.
+
+Chart visual regressions can inspect normalized page regions using `regions` in
+`expectations.json`. Each region specifies `box: [left, top, right, bottom]` in
+0–1 page coordinates plus `min_colors`/`max_colors`. This prevents another chart
+elsewhere on the page from satisfying a missing pie's color check. Regions use the
+same fixed 600-pixel page raster and are recorded in the raw result JSON.
