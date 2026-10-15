@@ -2,7 +2,7 @@
   "repository": "https://github.com/mnutt/libreoffice-rs",
   "revision": "e45b651b4541ce4388f18df5e7313b60e27855a1",
   "generated_by": "generate.py",
-  "generator_sha256": "0bd43d517991c22dd9ecb9d3e994dceb0722e633234ea520d658f73b621886c9",
+  "generator_sha256": "19cc54bdeb51ffe84eec1a70ab328a19478612847ef233623aef166d54b4d102",
   "fixtures": [
     {
       "id": "authored-font-variants",
@@ -35,6 +35,14 @@
       "purpose": "mixed rich-text styles within one cell",
       "size": 2054,
       "sha256": "3fea6473eabcb4ec9947e1a17ff5835084921cfe54a3f9e9722fc26c1750e8dd"
+    },
+    {
+      "id": "authored-rich-shrink",
+      "file": "authored-rich-shrink.xlsx",
+      "path": "tests/xlsx_corpus/files/authored-rich-shrink.xlsx",
+      "purpose": "shrink mixed-size rich text uniformly; blue tail must remain visible",
+      "size": 2128,
+      "sha256": "8e344448dd4f0c45f1b5fa0311d6d607e41dbb7a2de64368fc3bb34cdde7d977"
     },
     {
       "id": "authored-rich-shared",

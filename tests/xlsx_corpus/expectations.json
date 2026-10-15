@@ -116,5 +116,20 @@
       "LiberationSans-Bold",
       "LiberationSans-Italic"
     ]
+  },
+  "authored-rich-shrink": {
+    "text": [
+      "TAIL",
+      "Neighbor"
+    ],
+    "pages": 1,
+    "min_colors": {
+      "red": 5,
+      "blue": 3
+    },
+    "fonts": [
+      "LiberationSans-Bold",
+      "LiberationSans-Italic"
+    ]
   }
 }

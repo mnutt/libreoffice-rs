@@ -153,6 +153,25 @@ fn layout(runs: &[CellTextRun], width: f32, wrap: bool) -> Vec<Line> {
     }
     lines
 }
+// Scale every run by the same factor so mixed sizes retain their proportions.
+// Wrapped text takes precedence over shrink-to-fit, as for plain cell text.
+fn fitted_layout(runs: &[CellTextRun], width: f32, style: &CellStyle) -> Vec<Line> {
+    let mut lines = layout(runs, width, style.wrap);
+    if style.shrink_to_fit && !style.wrap {
+        let widest = lines.iter().map(|line| line.width).fold(0.0_f32, f32::max);
+        let scale = (width / widest.max(1.0)).min(1.0);
+        for line in &mut lines {
+            line.width *= scale;
+            line.height *= scale;
+            line.size *= scale;
+            for fragment in &mut line.fragments {
+                fragment.width *= scale;
+                fragment.size *= scale;
+            }
+        }
+    }
+    lines
+}
 pub(crate) fn height(runs: &[CellTextRun], width: f32, wrap: bool) -> f32 {
     layout(runs, width.max(1.0), wrap)
         .iter()
@@ -171,7 +190,7 @@ pub(crate) fn render(
     visible_width: f32,
     indent: f32,
 ) {
-    let lines = layout(runs, (width - 4.0 - indent).max(1.0), style.wrap);
+    let lines = fitted_layout(runs, (width - 4.0 - indent).max(1.0), style);
     let total: f32 = lines.iter().map(|l| l.height).sum();
     let mut y = match style.vertical_alignment {
         Some(Alignment::End) => top - height + total + 1.0,
@@ -217,6 +236,29 @@ pub(crate) fn render(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shrink_fits_all_runs_without_changing_size_ratios_or_wrapping() {
+        let node = lo_core::parse_xml_document(r#"<is><r><rPr><b/><sz val="24"/></rPr><t>Wide heading </t></r><r><rPr><i/><sz val="12"/></rPr><t>TAIL</t></r></is>"#).unwrap();
+        let mut style = CellStyle {
+            shrink_to_fit: true,
+            ..Default::default()
+        };
+        let runs = parse(&node, &style, &[]);
+        let lines = fitted_layout(&runs, 60.0, &style);
+        assert_eq!(lines.len(), 1);
+        assert!((lines[0].width - 60.0).abs() < 0.001);
+        assert_eq!(lines[0].fragments.last().unwrap().text, "TAIL");
+        assert!(
+            (lines[0].fragments[0].size / lines[0].fragments.last().unwrap().size - 2.0).abs()
+                < 0.001
+        );
+        assert!(lines[0].size < 24.0);
+        assert_eq!(fitted_layout(&runs, 1000.0, &style)[0].size, 24.0);
+        style.wrap = true;
+        let wrapped = fitted_layout(&runs, 60.0, &style);
+        assert!(wrapped.len() > 1);
+        assert_eq!(wrapped[0].size, 24.0);
+    }
     #[test]
     fn mixed_runs_preserve_styles_and_share_one_word() {
         let node = lo_core::parse_xml_document(r#"<is><r><rPr><b/><color rgb="FFFF0000"/></rPr><t>Hel</t></r><r><rPr><i/><sz val="18"/></rPr><t>lo world</t></r></is>"#).unwrap();

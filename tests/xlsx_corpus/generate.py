@@ -24,6 +24,8 @@ def generate():
             'xl/styles.xml': styles(),
             'xl/worksheets/sheet1.xml': f'<worksheet xmlns="{NS}" xmlns:r="{REL}"><sheetFormatPr baseColWidth="8" defaultRowHeight="15"/><cols><col min="1" max="1" width="24" customWidth="1"/><col min="2" max="2" width="24" customWidth="1"/></cols><sheetData>{body}</sheetData><pageMargins left="0.5" right="0.5" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="1"/>{extra}</worksheet>',
         }
+        if name == 'authored-rich-shrink':
+            parts['xl/styles.xml'] = parts['xl/styles.xml'].replace('wrapText="1"', 'shrinkToFit="1"')
         if name == 'authored-rich-shared':
             parts['xl/sharedStrings.xml'] = f'<sst xmlns="{NS}" count="1" uniqueCount="1"><si><r><rPr><b/><sz val="20"/><color rgb="FFFF0000"/></rPr><t xml:space="preserve">A large shared </t></r><r><rPr><i/></rPr><t>string wraps across styled runs and keeps TAIL</t></r></si></sst>'
             parts['xl/_rels/workbook.xml.rels'] = parts['xl/_rels/workbook.xml.rels'].replace('</Relationships>', f'<Relationship Id="strings" Type="{REL}/sharedStrings" Target="sharedStrings.xml"/></Relationships>')
@@ -67,6 +69,8 @@ def cases():
     runs = '<r><rPr><b/><color rgb="FFFF0000"/></rPr><t>Bold red </t></r><r><rPr><i/><sz val="18"/></rPr><t>large italic</t></r>'
     yield 'authored-rich-text', 'mixed rich-text styles within one cell', f'<row r="1" ht="70" customHeight="1"><c r="A1" t="inlineStr"><is>{runs}</is></c></row>', '', ''
 
+    shrink_runs = '<r><rPr><b/><sz val="20"/><color rgb="FFFF0000"/></rPr><t xml:space="preserve">A wide heading needs </t></r><r><rPr><i/></rPr><t xml:space="preserve">smaller styled text and </t></r><r><rPr><b/><sz val="24"/><color rgb="FF0000FF"/></rPr><t>TAIL</t></r>'
+    yield 'authored-rich-shrink', 'shrink mixed-size rich text uniformly; blue tail must remain visible', f'<row r="1" ht="30" customHeight="1"><c r="A1" t="inlineStr"><is>{shrink_runs}</is></c>{cell("B1", "Neighbor")}</row>', '', ''
     yield 'authored-rich-shared', 'shared rich text, mixed-size wrapping and automatic row height', '<row r="1"><c r="A1" t="s"><v>0</v></c>'+cell('B1','Neighbor')+'</row><row r="2">'+cell('A2','NEXT ROW')+'</row>', '', ''
     yield 'authored-stacked-chart', 'stacked columns must accumulate rather than cluster', '<row r="1">'+cell('A1','Stacked chart probe')+'</row><row r="2">'+cell('A2','Total')+'<c r="B2"><v>1</v></c></row><row r="3"><c r="B3"><v>2</v></c></row>', '<drawing r:id="drawing"/>', ''
     yield 'authored-cropped-image', 'image source crop removes left red half', '<row r="1">'+cell('A1','Crop probe: only blue should appear')+'</row>', '<drawing r:id="drawing"/>', ''
