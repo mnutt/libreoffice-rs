@@ -162,6 +162,71 @@ fn grid_color(value: &str) -> Option<(f32, f32, f32)> {
 }
 
 fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut PdfDocument) {
+    let [l, r, t, b] = layout.margins.unwrap_or([layout.margin; 4]);
+    let mut scale = layout.print_scale.clamp(0.1, 4.0);
+    if let Some((across, down)) = layout.fit_to_pages {
+        let (mut row, mut col) = sheet.max_extent();
+        for (a, (cols, rows)) in &layout.merges {
+            row = row.max(a.row.saturating_add(*rows).saturating_sub(1));
+            col = col.max(a.col.saturating_add(*cols).saturating_sub(1));
+        }
+        let mut w = (0..=col.min(16383))
+            .map(|c| {
+                layout
+                    .columns
+                    .get(&c)
+                    .copied()
+                    .unwrap_or(layout.default_column_width)
+            })
+            .sum::<f32>();
+        let mut h = (0..=row.min(1048575))
+            .map(|r| {
+                layout
+                    .rows
+                    .get(&r)
+                    .copied()
+                    .unwrap_or(layout.default_row_height)
+            })
+            .sum::<f32>();
+        for f in layout
+            .images
+            .iter()
+            .map(|i| i.frame)
+            .chain(layout.charts.iter().map(|c| c.frame))
+            .chain(layout.text_boxes.iter().map(|t| t.frame))
+        {
+            w = w.max(f.origin.x.as_pt() + f.size.width.as_pt());
+            h = h.max(f.origin.y.as_pt() + f.size.height.as_pt());
+        }
+        scale = 1.0;
+        if across > 0 {
+            scale = scale.min((layout.page_width - l - r) * across as f32 / w.max(1.0));
+        }
+        if down > 0 {
+            scale = scale.min((layout.page_height - t - b) * down as f32 / h.max(1.0));
+        }
+        scale = scale.clamp(0.1, 1.0);
+    }
+    let mut logical = layout.clone();
+    logical.page_width /= scale;
+    logical.page_height /= scale;
+    logical.margins = Some([l / scale, r / scale, t / scale, b / scale]);
+    render_scaled_grid(
+        sheet,
+        &logical,
+        pdf,
+        (layout.page_width, layout.page_height),
+        scale,
+    );
+}
+
+fn render_scaled_grid(
+    sheet: &Sheet,
+    layout: &lo_core::calc::SheetLayout,
+    pdf: &mut PdfDocument,
+    paper: (f32, f32),
+    scale: f32,
+) {
     use lo_core::{style::Alignment, CellAddr};
     if sheet.cells.is_empty()
         && layout.charts.is_empty()
@@ -313,8 +378,14 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
             {
                 continue;
             }
-            let index = pdf.add_page(layout.page_width, layout.page_height);
+            let left = if layout.horizontal_centered {
+                left + ((available_w - tw - repeat_w) / 2.0).max(0.0)
+            } else {
+                left
+            };
+            let index = pdf.add_page(paper.0, paper.1);
             let page = pdf.page_mut(index).expect("grid page");
+            page.raw(&format!("q {scale} 0 0 {scale} 0 0 cm"));
             let mut top = layout.page_height - top_margin - layout.header_height - heading_h;
             if layout.print_headings {
                 let mut hx = left + heading_w;
@@ -634,6 +705,7 @@ fn render_grid(sheet: &Sheet, layout: &lo_core::calc::SheetLayout, pdf: &mut Pdf
                 }
                 page.raw("Q");
             }
+            page.raw("Q");
         }
     }
 }
@@ -727,6 +799,32 @@ mod pagination_tests {
     use super::*;
     use lo_core::CellAddr;
     #[test]
+    fn print_fit_scales_content_without_changing_paper_size() {
+        let mut book = Workbook::default();
+        let sheet = &mut book.sheets[0];
+        for r in 0..8 {
+            for c in 0..4 {
+                sheet.set(CellAddr::new(r, c), CellValue::Number(42.0));
+            }
+        }
+        sheet.layout = Some(lo_core::calc::SheetLayout {
+            page_width: 200.0,
+            page_height: 200.0,
+            margin: 20.0,
+            default_column_width: 80.0,
+            default_row_height: 40.0,
+            fit_to_pages: Some((1, 1)),
+            ..Default::default()
+        });
+        assert_eq!(render(&book).pages().len(), 1);
+        let pdf = String::from_utf8_lossy(&to_pdf(&book)).into_owned();
+        assert!(pdf.contains("q 0.5 0 0 0.5 0 0 cm"));
+        assert!(pdf.contains("/MediaBox [0 0 200.00 200.00]"));
+        // Natural-width preview still retains vertical pagination at source scale.
+        let pdf = String::from_utf8_lossy(&to_pdf_preview(&book)).into_owned();
+        assert_eq!(pdf.matches("/Type /Page ").count(), 2);
+    }
+    #[test]
     fn repeated_titles_reserve_space_on_later_pages() {
         assert_eq!(
             grid_bands_repeated(&[20.0; 8], 60.0, Some((0, 0))),
@@ -803,6 +901,8 @@ pub fn to_pdf_preview(workbook: &Workbook) -> Vec<u8> {
         let Some(layout) = sheet.layout.as_mut() else {
             continue;
         };
+        layout.print_scale = 1.0;
+        layout.fit_to_pages = None;
         for (a, (cols, _)) in &layout.merges {
             max_col = max_col.max(a.col.saturating_add(*cols).saturating_sub(1));
         }

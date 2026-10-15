@@ -263,6 +263,17 @@ fn parse_xlsx_sheet(
         layout.default_row_height = positive(format, "defaultRowHeight", 15.0).clamp(0.0, 409.0);
     }
     if let Some(setup) = root.child("pageSetup") {
+        layout.print_scale = positive(setup, "scale", 100.0).clamp(10.0, 400.0) / 100.0;
+        if root
+            .child("sheetPr")
+            .and_then(|n| n.child("pageSetUpPr"))
+            .is_some_and(|n| truth(n.attr("fitToPage")))
+        {
+            layout.fit_to_pages = Some((
+                positive(setup, "fitToWidth", 1.0).min(100.0) as u16,
+                positive(setup, "fitToHeight", 1.0).min(100.0) as u16,
+            ));
+        }
         let (w, h) = match setup.attr("paperSize") {
             Some("9") => (595.28, 841.89),
             Some("8") => (841.89, 1190.55),
@@ -485,6 +496,7 @@ fn parse_xlsx_sheet(
         *current = current.max(height.min(409.0));
     }
     if let Some(options) = root.child("printOptions") {
+        layout.horizontal_centered = truth(options.attr("horizontalCentered"));
         layout.print_headings = truth(options.attr("headings"));
         layout.print_gridlines = truth(options.attr("gridLines"));
     }
