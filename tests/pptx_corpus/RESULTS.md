@@ -129,6 +129,29 @@ inheritance regression on `lo-chart_pt_color_bg1-be2773`, which the exact-size
 cohort misses. The next pass corrects the background's color-map scope; this
 intermediate report deliberately preserves the regression.
 
+## Bitmap fills and background inheritance
+
+Bitmap-filled shapes and picture crop-to-shape outlines now use the same vector
+clipping paths as ordinary geometry. Negative source cropping preserves padding,
+image alpha modifiers are honored, and tiled textures preserve PNG physical DPI,
+scale, alignment, offsets and alternating flips. PDF tile painting is capped at
+10,000 placements per image; larger patterns currently fall back to a stretched
+image. Non-PDF exporters do not yet implement all these image properties.
+
+Inherited backgrounds now resolve colors in their defining master/layout rather
+than accidentally applying a slide-local override. An integration test covers
+both the inherited white background and a black slide-local shape under the same
+override.
+
+All 627 feature checks pass (`fourth-feature-checks.json`), including new negative
+controls for ellipse clipping and background-map scope. All 54 XLSX PDFs remain
+byte-identical (`xlsx-fourth-regression.json`). The exact-size mean RMSE falls to
+0.100248, with 10 improvements over 0.01 and no regressions at that threshold.
+The 579-deck audit reaches 0.088917; mean text recall remains 72.602%. Full raw
+comparisons are in `fourth-pass-results.json` and `fourth-visual-audit.json`.
+The crop-to-shape fixture improves from 0.382520 to 0.004914, and negative cropping
+corrects the SVG clipping probe from 0.138974 to 0.007454 mean pixel error.
+
 ## Remaining work, in priority order
 
 1. SmartArt layout for files without usable cached drawing shapes. Those diagrams

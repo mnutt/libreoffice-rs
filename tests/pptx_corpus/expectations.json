@@ -171,5 +171,41 @@
       "dark": 0
     },
     "reason": "The layout maps tx1 to white for its background."
+  },
+  "lo-crop-to-shape-14c240": {
+    "min_colors": {
+      "green": 3000,
+      "dark": 50000
+    },
+    "regions": [
+      {
+        "box": [
+          0,
+          0,
+          0.1,
+          0.1
+        ],
+        "max_colors": {
+          "dark": 0
+        }
+      }
+    ],
+    "reason": "The smile bitmap remains visible but its top-left rectangular corner is clipped by the ellipse."
+  },
+  "lo-chart_pt_color_bg1-be2773": {
+    "regions": [
+      {
+        "box": [
+          0,
+          0,
+          0.1,
+          0.1
+        ],
+        "max_colors": {
+          "dark": 0
+        }
+      }
+    ],
+    "reason": "An inherited master background retains the master color map despite the slide override."
   }
 }

@@ -1,0 +1,15 @@
+{
+  "cases": 54,
+  "changed_pdf_ids": [],
+  "expectation_failure_ids": [],
+  "reference_runs": [
+    "pptx-final-original",
+    "pptx-final-expanded",
+    "pptx-final-authored"
+  ],
+  "candidate_runs": [
+    "pptx-fourth-original",
+    "pptx-fourth-expanded",
+    "pptx-fourth-authored"
+  ]
+}
