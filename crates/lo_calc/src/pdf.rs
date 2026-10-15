@@ -149,7 +149,7 @@ fn render(workbook: &Workbook) -> PdfDocument {
     pdf
 }
 
-fn grid_color(value: &str) -> Option<(f32, f32, f32)> {
+pub(crate) fn grid_color(value: &str) -> Option<(f32, f32, f32)> {
     let hex = value.strip_prefix('#')?;
     if hex.len() != 6 || !hex.is_ascii() {
         return None;
@@ -338,7 +338,16 @@ fn render_scaled_grid(
     let images: Vec<_> = layout
         .images
         .iter()
-        .filter_map(|i| register_image(pdf, i).map(|name| (i.frame, name)))
+        .enumerate()
+        .filter_map(|(index, i)| {
+            register_image(pdf, i).map(|name| {
+                (
+                    i.frame,
+                    name,
+                    layout.image_crops.get(&index).copied().unwrap_or([0.0; 4]),
+                )
+            })
+        })
         .collect();
     let valid_repeat = |repeat: Option<(u32, u32)>, sizes: &[f32], available: f32| {
         repeat.filter(|(a, b)| {
@@ -381,7 +390,7 @@ fn render_scaled_grid(
             let th: f32 = heights[rows.clone()].iter().sum();
             let image_present = images
                 .iter()
-                .map(|(f, _)| f)
+                .map(|(f, _, _)| f)
                 .chain(layout.charts.iter().map(|c| &c.frame))
                 .chain(layout.text_boxes.iter().map(|t| &t.frame))
                 .any(|f| {
@@ -565,6 +574,18 @@ fn render_scaled_grid(
                                 visible_w = layout.page_width - right - x;
                             }
                         }
+                        if rotation == 0 {
+                            if let (Some(runs), Some(style)) = (
+                                layout.rich_text.get(&CellAddr::new(r as u32, c as u32)),
+                                style,
+                            ) {
+                                crate::xlsx_rich_text::render(
+                                    page, runs, style, x, top, w, h, visible_w, indent,
+                                );
+                                x += w;
+                                continue;
+                            }
+                        }
                         page.raw(&format!("q {} {} {} {} re W n", x, top - h, visible_w, h));
                         let lines = if style.is_some_and(|s| s.wrap) {
                             grid_wrap_font(&text, (w - 4.0 - indent).max(1.0), size, font)
@@ -649,23 +670,25 @@ fn render_scaled_grid(
                 available_w - repeat_w,
                 available_h - repeat_h
             ));
-            for (f, name) in &images {
+            for (f, name, crop) in &images {
                 if !frame_intersects(*f, ox, oy, tw, th) {
                     continue;
                 }
-                page.image(
-                    name,
-                    left + heading_w + f.origin.x.as_pt() - ox,
-                    layout.page_height
-                        - top_margin
-                        - layout.header_height
-                        - heading_h
-                        - f.origin.y.as_pt()
-                        + oy
-                        - f.size.height.as_pt(),
-                    f.size.width.as_pt(),
-                    f.size.height.as_pt(),
-                );
+                let x = left + heading_w + f.origin.x.as_pt() - ox;
+                let y = layout.page_height
+                    - top_margin
+                    - layout.header_height
+                    - heading_h
+                    - f.origin.y.as_pt()
+                    + oy
+                    - f.size.height.as_pt();
+                let w = f.size.width.as_pt();
+                let h = f.size.height.as_pt();
+                if let Some((ix, iy, iw, ih)) = cropped_image_rect(x, y, w, h, *crop) {
+                    page.raw(&format!("q {x} {y} {w} {h} re W n"));
+                    page.image(name, ix, iy, iw, ih);
+                    page.raw("Q");
+                }
             }
             page.raw("Q");
             {
@@ -770,6 +793,27 @@ fn repeated_indices(repeat: Option<(u32, u32)>, start: usize, len: usize) -> Vec
         _ => Vec::new(),
     }
 }
+fn cropped_image_rect(
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    crop: [f32; 4],
+) -> Option<(f32, f32, f32, f32)> {
+    let [left, top, right, bottom] = crop;
+    let visible_w = 1.0 - left - right;
+    let visible_h = 1.0 - top - bottom;
+    if !crop.iter().all(|v| v.is_finite() && v.abs() <= 10.0)
+        || visible_w <= 0.001
+        || visible_h <= 0.001
+    {
+        return None;
+    }
+    let iw = w / visible_w;
+    let ih = h / visible_h;
+    Some((x - left * iw, y - bottom * ih, iw, ih))
+}
+
 fn grid_bands_region(
     sizes: &[f32],
     available: f32,
@@ -839,6 +883,18 @@ pub fn to_pdf(workbook: &Workbook) -> Vec<u8> {
 mod pagination_tests {
     use super::*;
     use lo_core::CellAddr;
+    #[test]
+    fn cropped_images_scale_and_translate_before_frame_clipping() {
+        assert_eq!(
+            cropped_image_rect(10.0, 20.0, 100.0, 50.0, [0.5, 0.0, 0.0, 0.0]),
+            Some((-90.0, 20.0, 200.0, 50.0))
+        );
+        assert_eq!(
+            cropped_image_rect(10.0, 20.0, 100.0, 50.0, [0.0, 0.0, 0.0, 0.5]),
+            Some((10.0, -30.0, 100.0, 100.0))
+        );
+        assert!(cropped_image_rect(0.0, 0.0, 1.0, 1.0, [0.5; 4]).is_none());
+    }
     #[test]
     fn print_area_and_manual_breaks_bound_page_ranges() {
         let sizes = [20.0; 10];

@@ -8,6 +8,7 @@ mod xlsx_conditional;
 mod xlsx_drawings;
 mod xlsx_format;
 mod xlsx_styles;
+mod xlsx_rich_text;
 
 pub use html::to_html;
 pub use import::{from_ods_bytes, from_xlsx_bytes, load_bytes};

@@ -187,6 +187,16 @@ pub(crate) fn import(
             if data.len() > 32 * 1024 * 1024 {
                 continue;
             }
+            if let Some(crop) = pic.child("blipFill").and_then(|n| n.child("srcRect")) {
+                let values =
+                    ["l", "t", "r", "b"].map(|key| number(crop, key).unwrap_or(0.0) / 100000.0);
+                if values.iter().all(|v| v.abs() <= 10.0)
+                    && 1.0 - values[0] - values[2] > 0.001
+                    && 1.0 - values[1] - values[3] > 0.001
+                {
+                    layout.image_crops.insert(layout.images.len(), values);
+                }
+            }
             layout.images.push(ImageElement {
                 frame,
                 data,

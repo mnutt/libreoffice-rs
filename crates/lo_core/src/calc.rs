@@ -116,6 +116,12 @@ impl Range {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct CellTextRun {
+    pub text: String,
+    pub style: CellStyle,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct SheetLayout {
     /// Chart sheets fit their drawing to one paper page even in natural-width preview.
     pub chart_sheet: bool,
@@ -144,6 +150,9 @@ pub struct SheetLayout {
     pub hidden: bool,
     pub charts: Vec<crate::odf_chart::OdfChart>,
     pub images: Vec<crate::ImageElement>,
+    pub rich_text: BTreeMap<CellAddr, Vec<CellTextRun>>,
+    /// Source cropping fractions [left, top, right, bottom], keyed by image index.
+    pub image_crops: BTreeMap<usize, [f32; 4]>,
     pub text_boxes: Vec<crate::TextBox>,
     /// Fraction, RGB color, and whether to retain text for cached conditional data bars.
     pub data_bars: BTreeMap<CellAddr, (f32, String, bool)>,
@@ -178,6 +187,8 @@ impl Default for SheetLayout {
             hidden: false,
             charts: Vec::new(),
             images: Vec::new(),
+            image_crops: BTreeMap::new(),
+            rich_text: BTreeMap::new(),
             text_boxes: Vec::new(),
             data_bars: BTreeMap::new(),
             page_width: 595.28,

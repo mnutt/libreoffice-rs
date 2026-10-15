@@ -43,13 +43,21 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
     };
     let workbook_root = parse_xml_document(&zip.read_string("xl/workbook.xml")?)?;
     let rels = parse_relationships(&zip, "xl/workbook.xml")?;
-    let shared_strings = if zip.contains("xl/sharedStrings.xml") {
-        parse_shared_strings(&parse_xml_document(
+    let shared_root = if zip.contains("xl/sharedStrings.xml") {
+        Some(parse_xml_document(
             &zip.read_string("xl/sharedStrings.xml")?,
         )?)
     } else {
-        Vec::new()
+        None
     };
+    let shared_strings = shared_root
+        .as_ref()
+        .map(parse_shared_strings)
+        .unwrap_or_default();
+    let shared_nodes: Vec<_> = shared_root
+        .as_ref()
+        .map(|n| n.children_named("si").collect())
+        .unwrap_or_default();
 
     let styles_xml = if zip.contains("xl/styles.xml") {
         Some(parse_xml_document(&zip.read_string("xl/styles.xml")?)?)
@@ -83,8 +91,15 @@ pub fn from_xlsx_bytes(title: impl Into<String>, bytes: &[u8]) -> Result<Workboo
                 continue;
             }
             let sheet_xml = parse_xml_document(&zip.read_string(&target)?)?;
-            let mut sheet =
-                parse_xlsx_sheet(&name, &sheet_xml, &shared_strings, &styles, date_1904)?;
+            let mut sheet = parse_xlsx_sheet_rich(
+                &name,
+                &sheet_xml,
+                &shared_strings,
+                &styles,
+                date_1904,
+                &shared_nodes,
+                &crate::xlsx_styles::theme_colors(theme_xml.as_ref()),
+            )?;
             sheet.layout.as_mut().unwrap().hidden =
                 matches!(sheet_node.attr("state"), Some("hidden" | "veryHidden"));
             crate::xlsx_drawings::import(
@@ -251,12 +266,24 @@ fn xlsx_text(node: &XmlNode) -> String {
     out
 }
 
+#[cfg(test)]
 fn parse_xlsx_sheet(
+    name: &str,
+    root: &XmlNode,
+    strings: &[String],
+    styles: &crate::xlsx_styles::Styles,
+    date_1904: bool,
+) -> Result<Sheet> {
+    parse_xlsx_sheet_rich(name, root, strings, styles, date_1904, &[], &[])
+}
+fn parse_xlsx_sheet_rich(
     name: &str,
     root: &XmlNode,
     shared_strings: &[String],
     styles: &crate::xlsx_styles::Styles,
     date_1904: bool,
+    shared_nodes: &[&XmlNode],
+    theme: &[String],
 ) -> Result<Sheet> {
     use crate::xlsx_styles::{positive, truth};
     use lo_core::{calc::SheetLayout, style::Alignment};
@@ -447,6 +474,19 @@ fn parse_xlsx_sheet(
                 {
                     continue;
                 }
+                let rich_node = if cell.attr("t") == Some("s") {
+                    cell.child("v")
+                        .and_then(|v| v.text_content().parse::<usize>().ok())
+                        .and_then(|i| shared_nodes.get(i).copied())
+                } else {
+                    cell.child("is")
+                };
+                if let Some(node) = rich_node {
+                    let runs = crate::xlsx_rich_text::parse(node, &style, theme);
+                    if !runs.is_empty() {
+                        layout.rich_text.insert(addr, runs);
+                    }
+                }
                 sheet.set(addr, value);
                 sheet.display_values.insert(addr, display);
                 sheet.cells.get_mut(&addr).unwrap().style = Some(style);
@@ -496,7 +536,7 @@ fn parse_xlsx_sheet(
         if explicit_rows.contains(&addr.row) {
             continue;
         }
-        let Some(style) = cell.style.as_ref().filter(|s| s.wrap) else {
+        let Some(style) = cell.style.as_ref().filter(|s| s.wrap || layout.rich_text.contains_key(addr)) else {
             continue;
         };
         let (span, rows) = layout.merges.get(addr).copied().unwrap_or((1, 1));
@@ -526,6 +566,11 @@ fn parse_xlsx_sheet(
             * size
             * 1.2
             + 3.0;
+        let height = if let Some(runs) = layout.rich_text.get(addr) {
+            crate::xlsx_rich_text::height(runs, (width - 4.0 - indent).max(1.0), style.wrap)
+        } else {
+            height
+        };
         let current = layout
             .rows
             .entry(addr.row)
