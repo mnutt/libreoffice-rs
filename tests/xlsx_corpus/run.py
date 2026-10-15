@@ -103,6 +103,9 @@ def run(command, directory, timeout):
                 stderr=(directory / 'stderr.log').read_text(errors='replace')[-3000:])
 
 
+PREVIEW_LIMIT_ENV = ('LIBREOFFICE_RS_MAX_ZIP_ENTRY_BYTES', 'LIBREOFFICE_RS_MAX_ZIP_TOTAL_BYTES',
+                 'LIBREOFFICE_RS_MAX_INFLATE_BYTES', 'LIBREOFFICE_RS_MAX_PNG_PIXELS')
+
 def sandbox(source, work, bundle, executable=None):
     cmd = ['bwrap', '--die-with-parent', '--unshare-net', '--unshare-pid',
            '--ro-bind', '/usr', '/usr', '--ro-bind', '/etc', '/etc']
@@ -118,6 +121,9 @@ def sandbox(source, work, bundle, executable=None):
             '--setenv', 'DAVROS_PREVIEW_FONTS', '/bundle/fonts',
             '--setenv', 'FONTCONFIG_FILE', '/bundle/fonts.conf',
             '--setenv', 'RAYON_NUM_THREADS', '2']
+    for name in PREVIEW_LIMIT_ENV:
+        if name in os.environ:
+            cmd += ['--setenv', name, os.environ[name]]
     if executable:
         return cmd + ['--ro-bind', str(executable), '/converter', '/converter', '/input.xlsx', '/work/output.pdf']
     profile = work / 'profile/user'
@@ -290,6 +296,7 @@ def evaluate(args, manifest):
             source_hash.update(str(path.relative_to(ROOT)).encode()+b'\0'+path.read_bytes()+b'\0')
     results = dict(schema_version=1, checkout_source_sha256=source_hash.hexdigest(), manifest_sha256=digest(args.manifest),
                    runner_sha256=digest(Path(__file__)), candidate_sha256=digest(candidate),
+                   preview_limit_overrides={name: os.environ[name] for name in PREVIEW_LIMIT_ENV if name in os.environ},
                    expectations_sha256=digest(HERE/"expectations.json"),
                    office2pdf_sha256=digest(bundle / 'davros-preview'),
                    fontconfig_sha256=digest(bundle/'fonts.conf'),

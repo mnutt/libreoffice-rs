@@ -249,3 +249,44 @@ Chart visual regressions can inspect normalized page regions using `regions` in
 0–1 page coordinates plus `min_colors`/`max_colors`. This prevents another chart
 elsewhere on the page from satisfying a missing pie's color check. Regions use the
 same fixed 600-pixel page raster and are recorded in the raw result JSON.
+
+## Allocation limits and ad hoc overrides
+
+The fork reads these trusted process settings when importing or decoding. Values
+must be positive decimal integers without unit suffixes; invalid, zero, negative,
+non-Unicode or overflowing values return a configuration error. There is no
+unlimited sentinel.
+
+| Environment variable | Default | Meaning |
+| --- | ---: | --- |
+| `LIBREOFFICE_RS_MAX_ZIP_ENTRY_BYTES` | 67108864 (64 MiB) | Maximum expanded size of one ZIP entry |
+| `LIBREOFFICE_RS_MAX_ZIP_TOTAL_BYTES` | 268435456 (256 MiB) | Maximum sum of central-directory expanded sizes |
+| `LIBREOFFICE_RS_MAX_INFLATE_BYTES` | 67108864 (64 MiB) | Maximum generic Flate output and PNG scanline bytes |
+| `LIBREOFFICE_RS_MAX_PNG_PIXELS` | 16000000 | Maximum decoded PNG pixel count |
+
+ZIP metadata is checked before entry allocation. Inflation cannot exceed the
+central-directory size, even when data descriptors are used. PNG inflation cannot
+exceed the scanline size calculated from its dimensions, even if the configured
+ceiling is higher. The XLSX renderer also honors the configurable pixel ceiling
+in its early image check. Invalid or oversized images are omitted by the preview
+renderer; the decoding API itself returns an error. Oversized ZIPs fail import.
+
+For example, temporarily permit a larger workbook entry and package:
+
+```sh
+LIBREOFFICE_RS_MAX_ZIP_ENTRY_BYTES=134217728 \
+LIBREOFFICE_RS_MAX_ZIP_TOTAL_BYTES=536870912 \
+target/debug/examples/xlsx-preview input.xlsx output.pdf
+```
+
+For larger PNGs, both pixel and scanline limits may need increasing. The corpus
+runner explicitly forwards all four settings through its cleared sandbox
+environment and records `preview_limit_overrides` in results. An integrating
+application must likewise pass them to the renderer. Existing external memory,
+CPU and time limits remain independent; these settings do not replace sandboxing
+or guarantee a bound on total process memory.
+
+All workspace crates now inherit `unsafe_code = "forbid"` from the root manifest.
+This policy covers their library, binary, test and example targets, not third-party
+dependencies. Shared A1 parsing rejects column overflow, coordinate serialization
+handles maximal `u32` values, and non-ASCII hex colors return the fallback color.

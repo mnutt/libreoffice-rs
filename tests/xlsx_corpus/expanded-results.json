@@ -1,9 +1,10 @@
 {
   "schema_version": 1,
-  "checkout_source_sha256": "82d32d0160f95ff35b146bbc5a2e816ec9ada8248fb34b2ed2683bd411a3b96c",
+  "checkout_source_sha256": "8eb079a94ad28c0bae46f682796f276f13fcaadacf15075c0cc70874fa365c0b",
   "manifest_sha256": "f8c939f2c0c9d51c5e0afca408311cdf383308d3a0728df4f738265b71a4d6fe",
-  "runner_sha256": "8b26ea6645c1827530f1b2f751072f74e15a2086fb405a05bec648c69e5c7911",
-  "candidate_sha256": "67ec65201da2339802b4025aab3b1e7a28316c7023ef466a08beedf17c8d6527",
+  "runner_sha256": "caf0e357a948aa2dc19972210f292d55dd0e68fcc52e944761afe69100500caa",
+  "candidate_sha256": "334e2d374a991bc14bc85d293d86717e755d6fd9f3c9849e04d2810318e3c231",
+  "preview_limit_overrides": {},
   "expectations_sha256": "59043cbae6c05b6f4d4cf1835d5853a4225c297d0d23843b44398694d0513c0c",
   "office2pdf_sha256": "d17bc5ed427aa6159f7301d08c8489a9ea3ac39790a68a11c47f0b8130e70d04",
   "fontconfig_sha256": "2502c16958c33fc95fe86f846a01a2bacff9d97219b179df611a9b987bfd17ae",
@@ -23,8 +24,8 @@
     "NotoSans-Regular.ttf": "478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823"
   },
   "libreoffice_version": "LibreOffice 26.2.5.2 620(Build:2)",
-  "checkout_tracked_diff_sha256": "842a282049325e356fd601d40b916e85adf2cfc70894b0a543b210798e5b7d74",
-  "checkout_revision": "d78ff147c5298544578874b898527b1ef933f3bf",
+  "checkout_tracked_diff_sha256": "1c3b908e260b6fa42f5bf13ebafbe534a6e77e17a65516b18865665f8c516929",
+  "checkout_revision": "e05171c3449561b91c01a02266f74c34cd3174db",
   "cases": [
     {
       "id": "expanded-ExcelTables",
@@ -33,7 +34,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.069,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -1088,7 +1089,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.036,
+          "seconds": 0.034,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -1212,7 +1213,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.47,
+          "seconds": 0.467,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -1751,7 +1752,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.172,
+          "seconds": 0.115,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2328,7 +2329,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.041,
+          "seconds": 0.035,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -2439,7 +2440,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.037,
+          "seconds": 0.034,
           "stderr": "Preview font warning: rendering 14 unsupported Unicode characters as boxes; missing U+0627, U+0628, U+0629, U+0631, U+0635, U+0639, U+0644, U+0646\n",
           "status": "ok",
           "pdf": {
@@ -2783,7 +2784,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 1.37,
+          "seconds": 1.268,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -3274,7 +3275,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.065,
+          "seconds": 0.066,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -3518,7 +3519,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.033,
+          "seconds": 0.034,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -3982,7 +3983,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.034,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {
@@ -4228,7 +4229,7 @@
         "candidate": {
           "exit_code": 0,
           "timeout": false,
-          "seconds": 0.037,
+          "seconds": 0.033,
           "stderr": "",
           "status": "ok",
           "pdf": {

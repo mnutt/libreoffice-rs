@@ -165,3 +165,12 @@ failures. Existing page counts and text recall are unchanged. Conditional-format
 collection precision against LibreOffice rises from 96.33% to 96.79%; other
 existing text scores are unchanged. Full workspace all-feature tests and all ten
 runner tests pass. No runtime dependencies were added; Davros remains untouched.
+
+## Allocation hardening follow-up
+
+`hardened-env-original`, `hardened-env-expanded` and `hardened-env-authored` record
+all 54 conversions with zero feature failures after bounded ZIP/PNG inflation and
+shared-parser fixes. Page counts and every recorded comparison metric are
+unchanged from the adjacent-edge-case runs. Eleven runner tests pass, including
+explicit forwarding of the four configurable allocation limits through the
+sandbox. See [README.md](README.md#allocation-limits-and-ad-hoc-overrides).

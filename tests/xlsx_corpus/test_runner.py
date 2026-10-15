@@ -8,6 +8,15 @@ from unittest.mock import patch
 import run
 
 class CorpusTests(unittest.TestCase):
+    def test_limit_overrides_are_explicitly_forwarded_through_clearenv(self):
+        settings = {name: str(100 + i) for i, name in enumerate(run.PREVIEW_LIMIT_ENV)}
+        with patch.dict(run.os.environ, settings, clear=True):
+            cmd = run.sandbox(Path('/input'), Path('/work'), Path('/bundle'), Path('/converter'))
+        self.assertIn('--clearenv', cmd)
+        for name, value in settings.items():
+            i = cmd.index(name)
+            self.assertEqual(cmd[i-1:i+2], ['--setenv', name, value])
+
     def test_feature_expectations_catch_missing_images_and_chart_pages(self):
         stage={'status':'ok','pdf':{'pages':1,'image_count':0}}
         expected={'min_images':1,'min_pages':2,'page_text':{'2':['Chart title']}}

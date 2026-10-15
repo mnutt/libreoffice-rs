@@ -1,6 +1,6 @@
 # XLSX fidelity milestone
 
-Implementation: `dbb53af` (including `c456ceb`) on `davros-fixes`. This is progress toward a replacement,
+Implementation: configurable decompression hardening after `dbb53af` on `davros-fixes`. This is progress toward a replacement,
 not a claim of complete Excel fidelity or a production renderer switch.
 
 `features.json` records the 24 upstream fixtures; `authored-results.json` records
@@ -8,8 +8,8 @@ ten deterministic authored probes. `expanded-results.json` adds 20 upstream
 regression/example workbooks; see [EXPANDED.md](EXPANDED.md). Reports include source and binary hashes,
 font configuration, reference provenance, and feature expectations. PDFs, PNGs,
 and HTML comparisons remain local ignored artifacts under `runs/`. The latest
-[original](runs/nearby-original-final/report.html) and
-[authored](runs/nearby-authored-final/report.html) reports show all three engines.
+[original](runs/hardened-env-original/report.html) and
+[authored](runs/hardened-env-authored/report.html) reports show all three engines.
 `baseline.json` preserves the original grid-only measurements.
 
 ## Supported and tested improvements
@@ -123,11 +123,21 @@ size or arbitrary-document throughput.
 
 ## Validation
 
-The affected Calc tests pass (33 unit and eighteen XLSX integration tests), as do ten
+The affected Calc tests pass (33 unit and eighteen XLSX integration tests), as do eleven
 corpus-runner tests. The full workspace all-feature suite also passes after the conditional-style and chart-reference
-changes (36 core tests). The source-font embedding regression was
+changes (41 core tests). The source-font embedding regression was
 also run with the bundled fonts. All pages are inspected for text and geometry; the first ten are rasterized per
 fixture. Provenance stays attached to each measurement.
 
 The fork changes are published on `davros-fixes`. Davros integration changes remain
 uncommitted, and its optional renderer pin is an earlier fork milestone.
+
+The hardening follow-up rejects oversized ZIP metadata before allocation, bounds
+stored/fixed/dynamic Deflate expansion and PNG scanlines, and fixes shared Unicode
+color/address panics. All 54 feature gates pass with unchanged comparison metrics
+and page counts. Environment overrides and their defaults are documented in
+[README.md](README.md#allocation-limits-and-ad-hoc-overrides). Full workspace tests
+pass, including 41 core tests, 10 ZIP unit tests and the real-deflate integration
+test. The malformed 4 GiB ZIP-header probe now exits with a normal error under a
+256 MiB address-space limit instead of aborting. These are targeted mitigations,
+not a complete security audit or an assertion that dependencies contain no unsafe.
