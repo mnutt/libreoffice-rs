@@ -43,7 +43,7 @@ the output; they are review triggers, not proof of parity. Focused runs apply th
 visual audit and regression findings alongside the PDFs.
 
 Completed byte-identical candidate artifacts are shared through hard links under
-an exclusive lock. In-progress runs are never compacted, and all paths and bytes
+an exclusive lock. In-progress conversions are never compacted, and all paths and bytes
 are retained. `--resume loop-TIMESTAMP` repeats audit/report/gate stages using the
 saved immutable candidate, so quota interruptions do not require conversion again.
 For a focused resume, supply the original `--ids` as well.

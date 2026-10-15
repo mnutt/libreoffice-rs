@@ -31,12 +31,21 @@ def compact_completed_candidates(runs):
 
 def _compact_completed_candidates(runs):
     seen, inodes = {}, {}
+    completed = {}
     saved = 0
     for path in sorted(runs.glob('*/**/candidate/*')):
         if path.suffix not in ('.pdf', '.png', '.txt') or not path.is_file():
             continue
-        # Never touch an in-progress conversion or rasterization.
-        if not (path.parent.parent.parent/'results.json').is_file():
+        # results.json is updated after each fully rendered case, not only at
+        # the end of a shard. Its mere existence does not make every case safe.
+        result_path = path.parent.parent.parent/'results.json'
+        if result_path not in completed:
+            try:
+                result = json.loads(result_path.read_text())
+                completed[result_path] = {case['id'] for case in result.get('cases', [])}
+            except (OSError, json.JSONDecodeError):
+                completed[result_path] = set()
+        if path.parent.parent.name not in completed[result_path]:
             continue
         stat = path.stat()
         identity = (stat.st_dev,stat.st_ino)

@@ -40,7 +40,7 @@ class CandidateCompactionTest(unittest.TestCase):
                 path = folder/'page-1.png'
                 path.write_bytes(b'identical image bytes')
                 paths.append(path)
-                (root/name/'results.json').write_text('{}')
+                (root/name/'results.json').write_text('{"cases":[{"id":"fixture"}]}')
             with patch.object(loop.os, 'replace', side_effect=OSError('interrupted')):
                 with self.assertRaises(OSError):
                     loop.compact_completed_candidates(root)
@@ -60,8 +60,10 @@ class CandidateCompactionTest(unittest.TestCase):
                 path=folder/'page-1.png'
                 path.write_bytes(b'identical image bytes')
                 paths.append(path)
-                if name != 'active':
-                    (root/name/'results.json').write_text('{}')
+                # An active shard already has results for other completed cases.
+                (root/name/'results.json').write_text(
+                    '{"cases":[{"id":"fixture"}]}' if name != 'active'
+                    else '{"cases":[{"id":"previous-fixture"}]}')
             active_inode=paths[2].stat().st_ino
             self.assertEqual(loop.compact_completed_candidates(root),len(b'identical image bytes'))
             self.assertEqual(paths[0].stat().st_ino,paths[1].stat().st_ino)
